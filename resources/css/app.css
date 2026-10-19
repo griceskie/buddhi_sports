@@ -25,6 +25,9 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -33,84 +36,306 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 }
 
-@layer base {
-  .theme {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif
-  }
+/* iOS colour names as Tailwind colours (bg-labels-secondary, text-accents-blue, …) */
+@theme inline {
+  --color-accents-red: var(--accents-red);
+  --color-accents-orange: var(--accents-orange);
+  --color-accents-yellow: var(--accents-yellow);
+  --color-accents-green: var(--accents-green);
+  --color-accents-mint: var(--accents-mint);
+  --color-accents-teal: var(--accents-teal);
+  --color-accents-cyan: var(--accents-cyan);
+  --color-accents-blue: var(--accents-blue);
+  --color-accents-indigo: var(--accents-indigo);
+  --color-accents-purple: var(--accents-purple);
+  --color-accents-pink: var(--accents-pink);
+  --color-accents-brown: var(--accents-brown);
+  --color-backgrounds-primary: var(--backgrounds-primary);
+  --color-backgrounds-secondary: var(--backgrounds-secondary);
+  --color-backgrounds-tertiary: var(--backgrounds-tertiary);
+  --color-backgrounds-primary-elevated: var(--backgrounds-primary-elevated);
+  --color-backgrounds-secondary-elevated: var(--backgrounds-secondary-elevated);
+  --color-backgrounds-tertiary-elevated: var(--backgrounds-tertiary-elevated);
+  --color-backgrounds-grouped-primary: var(--backgrounds-grouped-primary);
+  --color-backgrounds-grouped-secondary: var(--backgrounds-grouped-secondary);
+  --color-backgrounds-grouped-tertiary: var(--backgrounds-grouped-tertiary);
+  --color-backgrounds-grouped-primary-elevated: var(--backgrounds-grouped-primary-elevated);
+  --color-backgrounds-grouped-secondary-elevated: var(--backgrounds-grouped-secondary-elevated);
+  --color-backgrounds-grouped-tertiary-elevated: var(--backgrounds-grouped-tertiary-elevated);
+  --color-fills-primary: var(--fills-primary);
+  --color-fills-secondary: var(--fills-secondary);
+  --color-fills-tertiary: var(--fills-tertiary);
+  --color-fills-quaternary: var(--fills-quaternary);
+  --color-fills-vibrant-primary: var(--fills-vibrant-primary);
+  --color-fills-vibrant-secondary: var(--fills-vibrant-secondary);
+  --color-fills-vibrant-tertiary: var(--fills-vibrant-tertiary);
+  --color-grays-black: var(--grays-black);
+  --color-grays-white: var(--grays-white);
+  --color-grays-gray: var(--grays-gray);
+  --color-grays-gray-2: var(--grays-gray-2);
+  --color-grays-gray-3: var(--grays-gray-3);
+  --color-grays-gray-4: var(--grays-gray-4);
+  --color-grays-gray-5: var(--grays-gray-5);
+  --color-grays-gray-6: var(--grays-gray-6);
+  --color-labels-primary: var(--labels-primary);
+  --color-labels-secondary: var(--labels-secondary);
+  --color-labels-tertiary: var(--labels-tertiary);
+  --color-labels-quaternary: var(--labels-quaternary);
+  --color-labels-vibrant-primary: var(--labels-vibrant-primary);
+  --color-labels-vibrant-secondary: var(--labels-vibrant-secondary);
+  --color-labels-vibrant-tertiary: var(--labels-vibrant-tertiary);
+  --color-labels-vibrant-quaternary: var(--labels-vibrant-quaternary);
+  --color-labels-vibrant-controls-primary: var(--labels-vibrant-controls-primary);
+  --color-labels-vibrant-controls-secondary: var(--labels-vibrant-controls-secondary);
+  --color-labels-vibrant-controls-tertiary: var(--labels-vibrant-controls-tertiary);
+  --color-overlays-default: var(--overlays-default);
+  --color-overlays-activity-view-controller: var(--overlays-activity-view-controller);
+  --color-separators-opaque: var(--separators-opaque);
+  --color-separators-non-opaque: var(--separators-non-opaque);
+  --color-separators-vibrant: var(--separators-vibrant);
+  --color-miscellaneous-segmented-control-selected: var(--miscellaneous-segmented-control-selected);
+  --color-miscellaneous-tab-bar-selection: var(--miscellaneous-tab-bar-selection);
+  --color-miscellaneous-buttons-bg-destructive: var(--miscellaneous-buttons-bg-destructive);
+  --color-miscellaneous-keyboards-emoji-mic: var(--miscellaneous-keyboards-emoji-mic);
+  --color-miscellaneous-toggle-ax-label-off: var(--miscellaneous-toggle-ax-label-off);
+  --color-miscellaneous-sidebar-bg-active: var(--miscellaneous-sidebar-bg-active);
+  --color-miscellaneous-sidebar-bg-inactive: var(--miscellaneous-sidebar-bg-inactive);
+  --color-accessible-blue: var(--accessible-blue);
+  --color-accessible-green: var(--accessible-green);
+  --color-accessible-red: var(--accessible-red);
+  --color-accessible-orange: var(--accessible-orange);
+  --color-accessible-teal: var(--accessible-teal);
+  --color-accessible-gray: var(--accessible-gray);
+}
 
+/* Breeze bridge: the palette shades the Breeze components use (gray, indigo, red, green),
+   set to iOS Light values so PrimaryButton, TextInput, NavLink, Modal… match without code changes.
+   Breeze writes bg-white directly, so these stay Light. */
+@theme {
+  --color-gray-50: #f2f2f7; /* Grays/Gray 6 */
+  --color-gray-100: #f2f2f7; /* Grays/Gray 6 */
+  --color-gray-200: #e5e5ea; /* Grays/Gray 5 */
+  --color-gray-300: #d1d1d6; /* Grays/Gray 4 */
+  --color-gray-400: #6c6c70; /* accessible-gray */
+  --color-gray-500: #6c6c70; /* accessible-gray */
+  --color-gray-600: #727272; /* Labels - Vibrant/Secondary */
+  --color-gray-700: #3c3c43; /* Labels base colour */
+  --color-gray-800: #1a1a1a; /* Labels - Vibrant/Primary */
+  --color-gray-900: #000000; /* Labels/Primary */
+  --color-gray-950: #000000; /* Labels/Primary */
+  --color-indigo-50: color-mix(in srgb, #0088ff 8%, white); /* Accents/Blue tint */
+  --color-indigo-100: color-mix(in srgb, #0088ff 15%, white); /* Accents/Blue tint */
+  --color-indigo-400: #0088ff; /* Accents/Blue */
+  --color-indigo-500: #0088ff; /* Accents/Blue */
+  --color-indigo-600: #1e6ef4; /* accessible-blue */
+  --color-indigo-700: color-mix(in srgb, #1e6ef4 80%, black); /* accessible-blue, darker */
+  --color-indigo-800: color-mix(in srgb, #1e6ef4 70%, black); /* accessible-blue, darker */
+  --color-red-50: color-mix(in srgb, #ff383c 8%, white); /* Accents/Red tint */
+  --color-red-100: color-mix(in srgb, #ff383c 15%, white); /* Accents/Red tint */
+  --color-red-400: #ff383c; /* Accents/Red */
+  --color-red-500: #ff383c; /* Accents/Red */
+  --color-red-600: #e9152d; /* accessible-red */
+  --color-red-700: color-mix(in srgb, #e9152d 80%, black); /* accessible-red, darker */
+  --color-red-800: color-mix(in srgb, #e9152d 70%, black); /* accessible-red, darker */
+  --color-green-50: color-mix(in srgb, #34c759 8%, white); /* Accents/Green tint */
+  --color-green-100: color-mix(in srgb, #34c759 15%, white); /* Accents/Green tint */
+  --color-green-400: #34c759; /* Accents/Green */
+  --color-green-500: #34c759; /* Accents/Green */
+  --color-green-600: #008932; /* accessible-green */
+  --color-green-700: color-mix(in srgb, #008932 80%, black); /* accessible-green, darker */
+  --color-green-800: color-mix(in srgb, #008932 70%, black); /* accessible-green, darker */
+}
+
+@layer base {
+  /* Colours — Figma "ada iPhone duo nya" › Colors (62 colour variables, Light/Dark)
+     + 6 accessible-* (Apple HIG Increased-contrast values, used where text sits on or in the colour).
+     Layer 1 holds every value; change colours here only. */
   :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0)
+    --accents-red: #ff383c;
+    --accents-orange: #ff8d28;
+    --accents-yellow: #ffcc00;
+    --accents-green: #34c759;
+    --accents-mint: #00c8b3;
+    --accents-teal: #00c3d0;
+    --accents-cyan: #00c0e8;
+    --accents-blue: #0088ff;
+    --accents-indigo: #6155f5;
+    --accents-purple: #cb30e0;
+    --accents-pink: #ff2d55;
+    --accents-brown: #ac7f5e;
+    --backgrounds-primary: #ffffff;
+    --backgrounds-secondary: #f2f2f7;
+    --backgrounds-tertiary: #ffffff;
+    --backgrounds-primary-elevated: #ffffff;
+    --backgrounds-secondary-elevated: #f2f2f7;
+    --backgrounds-tertiary-elevated: #ffffff;
+    --backgrounds-grouped-primary: #f2f2f7;
+    --backgrounds-grouped-secondary: #ffffff;
+    --backgrounds-grouped-tertiary: #f2f2f7;
+    --backgrounds-grouped-primary-elevated: #f2f2f7;
+    --backgrounds-grouped-secondary-elevated: #ffffff;
+    --backgrounds-grouped-tertiary-elevated: #f2f2f7;
+    --fills-primary: #78787833;
+    --fills-secondary: #78788029;
+    --fills-tertiary: #7676801f;
+    --fills-quaternary: #74748014;
+    --fills-vibrant-primary: #cccccc;
+    --fills-vibrant-secondary: #e0e0e0;
+    --fills-vibrant-tertiary: #ededed;
+    --grays-black: #000000;
+    --grays-white: #ffffff;
+    --grays-gray: #8e8e93;
+    --grays-gray-2: #aeaeb2;
+    --grays-gray-3: #c7c7cc;
+    --grays-gray-4: #d1d1d6;
+    --grays-gray-5: #e5e5ea;
+    --grays-gray-6: #f2f2f7;
+    --labels-primary: #000000;
+    --labels-secondary: #3c3c4399;
+    --labels-tertiary: #3c3c434c;
+    --labels-quaternary: #3c3c432e;
+    --labels-vibrant-primary: #1a1a1a;
+    --labels-vibrant-secondary: #727272;
+    --labels-vibrant-tertiary: #bfbfbf;
+    --labels-vibrant-quaternary: #d9d9d9;
+    --labels-vibrant-controls-primary: #1a1a1a;
+    --labels-vibrant-controls-secondary: #727272;
+    --labels-vibrant-controls-tertiary: #bfbfbf;
+    --overlays-default: #00000033;
+    --overlays-activity-view-controller: #00000033;
+    --separators-opaque: #c6c6c8;
+    --separators-non-opaque: #0000001f;
+    --separators-vibrant: #e6e6e6;
+    --miscellaneous-segmented-control-selected: #ffffff;
+    --miscellaneous-tab-bar-selection: var(--accents-blue);
+    --miscellaneous-buttons-bg-destructive: #ff383c24;
+    --miscellaneous-keyboards-emoji-mic: #000000;
+    --miscellaneous-toggle-ax-label-off: #b3b3b3;
+    --miscellaneous-sidebar-bg-active: #dae6f2;
+    --miscellaneous-sidebar-bg-inactive: #edf4fa;
+    --accessible-blue: #1e6ef4;
+    --accessible-green: #008932;
+    --accessible-red: #e9152d;
+    --accessible-orange: #c55300;
+    --accessible-teal: #008198;
+    --accessible-gray: #6c6c70;
   }
 
   .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0)
+    --accents-red: #ff4245;
+    --accents-orange: #ff9230;
+    --accents-yellow: #ffd600;
+    --accents-green: #30d158;
+    --accents-mint: #00dac3;
+    --accents-teal: #00d2e0;
+    --accents-cyan: #3cd3fe;
+    --accents-blue: #0091ff;
+    --accents-indigo: #6d7cff;
+    --accents-purple: #db34f2;
+    --accents-pink: #ff375f;
+    --accents-brown: #b78a66;
+    --backgrounds-primary: #000000;
+    --backgrounds-secondary: #1c1c1e;
+    --backgrounds-tertiary: #2c2c2e;
+    --backgrounds-primary-elevated: #1c1c1e;
+    --backgrounds-secondary-elevated: #2c2c2e;
+    --backgrounds-tertiary-elevated: #3a3a3c;
+    --backgrounds-grouped-primary: #000000;
+    --backgrounds-grouped-secondary: #1c1c1e;
+    --backgrounds-grouped-tertiary: #2c2c2e;
+    --backgrounds-grouped-primary-elevated: #1c1c1e;
+    --backgrounds-grouped-secondary-elevated: #2c2c2e;
+    --backgrounds-grouped-tertiary-elevated: #3a3a3c;
+    --fills-primary: #7878805c;
+    --fills-secondary: #78788052;
+    --fills-tertiary: #7676803d;
+    --fills-quaternary: #7676802e;
+    --fills-vibrant-primary: #333333;
+    --fills-vibrant-secondary: #1f1f1f;
+    --fills-vibrant-tertiary: #121212;
+    --grays-gray-2: #636366;
+    --grays-gray-3: #48484a;
+    --grays-gray-4: #3a3a3c;
+    --grays-gray-5: #2c2c2e;
+    --grays-gray-6: #1c1c1e;
+    --labels-primary: #ffffff;
+    --labels-secondary: #ebebf5b2;
+    --labels-tertiary: #ebebf54c;
+    --labels-quaternary: #ebebf529;
+    --labels-vibrant-primary: #f5f5f5;
+    --labels-vibrant-secondary: #8a8a8a;
+    --labels-vibrant-tertiary: #404040;
+    --labels-vibrant-quaternary: #262626;
+    --labels-vibrant-controls-primary: #f5f5f5;
+    --labels-vibrant-controls-secondary: #8a8a8a;
+    --labels-vibrant-controls-tertiary: #404040;
+    --overlays-default: #0000007a;
+    --overlays-activity-view-controller: #0000004a;
+    --separators-opaque: #38383a;
+    --separators-non-opaque: #ffffff2b;
+    --separators-vibrant: #1a1a1a;
+    --miscellaneous-segmented-control-selected: #ffffff45;
+    --miscellaneous-tab-bar-selection: #ffffff;
+    --miscellaneous-buttons-bg-destructive: #ff424524;
+    --miscellaneous-keyboards-emoji-mic: #ffffff;
+    --miscellaneous-toggle-ax-label-off: #a6a6a6;
+    --miscellaneous-sidebar-bg-active: #141517;
+    --miscellaneous-sidebar-bg-inactive: #131414;
+    --accessible-green: var(--accents-green);
+    --accessible-red: var(--accents-red);
+    --accessible-orange: var(--accents-orange);
+    --accessible-teal: var(--accents-teal);
+    --accessible-gray: var(--labels-secondary);
+  }
+
+  /* Layer 2: shadcn tokens, aliases only. */
+  :root {
+    --background: var(--backgrounds-primary);
+    --foreground: var(--labels-primary);
+    --card: var(--backgrounds-grouped-secondary);
+    --card-foreground: var(--labels-primary);
+    --popover: var(--backgrounds-grouped-secondary-elevated);
+    --popover-foreground: var(--labels-primary);
+    --primary: var(--accessible-blue);
+    --primary-foreground: var(--grays-white);
+    --secondary: var(--grays-gray-5);
+    --secondary-foreground: var(--labels-primary);
+    --muted: var(--fills-tertiary);
+    --muted-foreground: var(--accessible-gray);
+    --accent: var(--fills-secondary);
+    --accent-foreground: var(--labels-primary);
+    --destructive: var(--accessible-red);
+    --destructive-foreground: var(--grays-white);
+    --success: var(--accessible-green);
+    --success-foreground: var(--grays-white);
+    --border: var(--separators-opaque);
+    --input: var(--separators-opaque);
+    --ring: var(--accents-blue);
+    --chart-1: var(--accents-blue);
+    --chart-2: var(--accessible-green);
+    --chart-3: var(--accessible-orange);
+    --chart-4: var(--accents-indigo);
+    --chart-5: var(--accessible-teal);
+    --sidebar: var(--backgrounds-grouped-secondary);
+    --sidebar-foreground: var(--labels-primary);
+    --sidebar-primary: var(--accessible-blue);
+    --sidebar-primary-foreground: var(--grays-white);
+    --sidebar-accent: var(--miscellaneous-sidebar-bg-active);
+    --sidebar-accent-foreground: var(--labels-primary);
+    --sidebar-border: var(--separators-opaque);
+    --sidebar-ring: var(--accents-blue);
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --destructive-foreground: var(--grays-black);
+    --success-foreground: var(--grays-black);
   }
 
   * {
