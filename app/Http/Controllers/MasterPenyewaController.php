@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class MasterPenyewaController extends Controller
@@ -31,7 +32,7 @@ class MasterPenyewaController extends Controller
         $request->validate([
             'txtnama' => 'required|string|max:255',
             'txtnohp' => 'required|string|max:255',
-            'txtemail' => 'required|email|max:255',
+            'txtemail' => 'required|email|max:255|unique:penyewas,email',
             'txtpassword' => 'required|string|min:6',
         ]);
 
@@ -50,7 +51,7 @@ class MasterPenyewaController extends Controller
             'txtid' => 'required|integer',
             'txtnama' => 'required|string|max:255',
             'txtnohp' => 'required|string|max:255',
-            'txtemail' => 'required|email|max:255',
+            'txtemail' => ['required', 'email', 'max:255', Rule::unique('penyewas', 'email')->ignore($request->txtid, 'idPenyewa')],
             'txtpassword' => 'nullable|string|min:6',
         ]);
 

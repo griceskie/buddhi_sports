@@ -68,13 +68,21 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 # Project
 
-Buddhi Sports is a Laravel 12 + Inertia.js (React/TSX) app for renting badminton and basketball courts (see [PRD.md](PRD.md)). UI components use shadcn/ui (`resources/js/Components/ui/`) with Tailwind v4.
+Buddhi Sports is a Laravel 12 + Inertia.js (React/TSX) app for renting badminton and basketball courts (see [PRD.md](PRD.md)). UI uses the Buddhi Sports design system with Tailwind v4:
+- Colours: iOS palette (Light/Dark) in `resources/css/app.css`, exposed as Tailwind colours (`bg-backgrounds-grouped-primary`, `text-labels-secondary`, ...) and aliased to shadcn tokens (`bg-background`, `text-muted-foreground`, `border`, `text-destructive`, `bg-success`). Use tokens in new code, not raw `gray-*`/`indigo-*`.
+- Components: shadcn-style on Base UI in `resources/js/Components/ui/` (button, input, select, card, table, badge, alert, dialog, alert-dialog, dropdown-menu, tabs, currency-input, ...) plus `format.ts` (`formatRupiah`, `BULAN`, ...). The Breeze components (`TextInput`, `PrimaryButton`, `Dropdown`, `Modal`, ...) were removed; don't reintroduce them.
+- App-level helpers in `resources/js/Components/`: `FormSelect` (string-valued Select for forms, `''` = nothing chosen), `DeleteButton` (Hapus + AlertDialog confirm, used in TampilData), `FlashMessage` (`Alert`), `Wordmark`, `InputError`.
+- Layouts in `resources/js/Layouts/`: `AdminLayout` (admin nav; `navItems={[]}` for Manager), `PenyewaLayout` (Penyewa: Home + Booking tabs, name menu with red Log Out), `GuestLayout` (optional `title`/`description`). Pages put content directly inside; the layouts provide the container.
+- Page patterns: TampilData = `Card` > `Table` with status badges and `TableEmpty`; Form pages = `Card` > `CardContent` > `form.space-y-4` with `Label` + control + `InputError`, full-width submit `Button`.
+- React 18: components that need a `ref` must use `React.forwardRef` (as `ui/input` and `ui/textarea` do).
 
 Models use custom primary keys (e.g. `idPenyewa`, `idLapangan`) and `$timestamps = false`. See [implementation-plan.md](implementation-plan.md) for the master-data CRUD pattern in progress (controllers use `DB::table(...)` query builder, not Eloquent, to match an existing template style — follow that pattern for new master-data controllers unless told otherwise).
 
 # Commands
 - Dev server (Vite): `npm run dev`
 - Build: `npm run build`
+- Type check: `npx tsc --noEmit`
+- After pulling, run `npm install` if `package.json` changed (the design-system PR added `date-fns`, `react-day-picker`, `recharts`, `react-is`).
 - PHP dev server + queue + Vite together: `composer dev`
 - Laravel dev server only: `php artisan serve`
 - Run tests: `php artisan test` (or `vendor/bin/phpunit`)
@@ -89,12 +97,17 @@ Models use custom primary keys (e.g. `idPenyewa`, `idLapangan`) and `$timestamps
 - Controllers return `Inertia::render('Page/Path', [...])`, not Blade views.
 - Master-data controllers follow the `Master{Model}Controller` naming and method pattern already used (`tampilData`, `tampilFormTambah`, `tampilFormEdit`, `insertData`, `updateData`, `deleteData{Model}`).
 
-# Progress (2026-10-18)
+# Progress (2026-10-19)
 Details and open items: [implementation-plan.md](implementation-plan.md).
 - Done: CRUD for all 7 models (`Master*Controller` + 21 TSX pages in `resources/js/Pages/Master/`, wrapped in `AdminLayout`).
+- Done: design system applied to all layouts and pages (Auth, Profile, Home, Booking, Admin/Manager dashboards, 21 Master pages).
+- Done: Penyewa nav is Home (route `dashboard`) + Booking (route `booking`, empty placeholder page); Penyewa logout redirects to `/login`.
 - Done: multi-role auth — guard `web` = `Penyewa` (`/login`, `/register`), guards `admin`/`manager` via `/login-pengelola` (two tabs). Admin/Manager dashboards are placeholders.
 - In progress: SMTP via Mailtrap sandbox for Penyewa password reset (`.env` still `MAIL_MAILER=log`; credentials must come from the user, never invented).
-- Open: no unique check on username/email; booking end time not validated after start time.
+- Done: Admin/Manager profile (`/profile-pengelola`, `PengelolaProfileController`, route group `auth:admin,manager`): edit nama/username + change password. `AdminLayout` shows a name dropdown (Profile, Log Out) from the shared `pengelola` prop; nav items default by role.
+- Done: unique validation for `admins.username`, `managers.username`, `penyewas.email` in master controllers (validation only, no DB constraint).
+- Open: booking end time not validated after start time.
+- Open (deferred by user): booking status values `Dipesan`/`Dibayar`/`Dibatalkan` don't match the design system's `BookingStatusBadge` (`dipesan`/`dikonfirmasi`/`selesai`/`dibatalkan`); `Dibayar` renders as a neutral outline badge. Lapangan `Kosong`/`Terbooking` are mapped by `CourtStatusBadge`.
 
 # Failing tests (8 of 25, `php artisan test`)
 Cause: Breeze tests still create accounts with `User::factory()` and field `name`, but guard `web` now uses `Penyewa` (`namaPenyewa`, `noHp`). Fix needs a `PenyewaFactory` and updated test fields.

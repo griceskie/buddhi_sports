@@ -1,8 +1,20 @@
+import DeleteButton from '@/Components/DeleteButton';
 import FlashMessage from '@/Components/FlashMessage';
-import { Button } from '@/Components/ui/button';
+import { buttonVariants } from '@/Components/ui/button';
+import { Card } from '@/Components/ui/card';
+import { BULAN, formatRupiah } from '@/Components/ui/format';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableEmpty,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/ui/table';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { confirmDelete } from '@/lib/confirmDelete';
 import { Head, Link } from '@inertiajs/react';
+import { Pencil, Plus } from 'lucide-react';
 
 type Laporan = {
     idLaporan: number;
@@ -19,7 +31,7 @@ export default function TampilData({ datalaporan }: { datalaporan: Laporan[] }) 
     return (
         <AdminLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Data Laporan Pembayaran
                 </h2>
             }
@@ -29,63 +41,51 @@ export default function TampilData({ datalaporan }: { datalaporan: Laporan[] }) 
             <FlashMessage />
 
             <div className="mb-4">
-                <Link href="/formlaporanpembayaran">
-                    <Button>Tambah Laporan</Button>
+                <Link href="/formlaporanpembayaran" className={buttonVariants()}>
+                    <Plus />
+                    Tambah Laporan
                 </Link>
             </div>
 
-            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th className="px-4 py-3">Bulan</th>
-                            <th className="px-4 py-3">Tahun</th>
-                            <th className="px-4 py-3">Total Pemasukan</th>
-                            <th className="px-4 py-3">Tgl Laporan</th>
-                            <th className="px-4 py-3 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
+            <Card className="gap-0 overflow-hidden py-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Bulan</TableHead>
+                            <TableHead>Tahun</TableHead>
+                            <TableHead>Total Pemasukan</TableHead>
+                            <TableHead>Tgl Laporan</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {datalaporan.map((row) => (
-                            <tr key={row.idLaporan}>
-                                <td className="px-4 py-3">{row.bulan}</td>
-                                <td className="px-4 py-3">{row.tahun}</td>
-                                <td className="px-4 py-3">
-                                    Rp{row.totalPemasukan.toLocaleString('id-ID')}
-                                </td>
-                                <td className="px-4 py-3">{row.tglLaporan}</td>
-                                <td className="px-4 py-3 text-right">
+                            <TableRow key={row.idLaporan}>
+                                <TableCell>{BULAN[row.bulan - 1] ?? row.bulan}</TableCell>
+                                <TableCell>{row.tahun}</TableCell>
+                                <TableCell>{formatRupiah(row.totalPemasukan)}</TableCell>
+                                <TableCell>{row.tglLaporan}</TableCell>
+                                <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
-                                        <Link href={`/editlaporanpembayaran/${row.idLaporan}`}>
-                                            <Button variant="outline" size="sm">
-                                                Edit
-                                            </Button>
-                                        </Link>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() =>
-                                                confirmDelete(
-                                                    `/deletelaporanpembayaran/${row.idLaporan}`,
-                                                )
-                                            }
+                                        <Link
+                                            href={`/editlaporanpembayaran/${row.idLaporan}`}
+                                            className={buttonVariants({
+                                                variant: 'outline',
+                                                size: 'sm',
+                                            })}
                                         >
-                                            Hapus
-                                        </Button>
+                                            <Pencil />
+                                            Edit
+                                        </Link>
+                                        <DeleteButton href={`/deletelaporanpembayaran/${row.idLaporan}`} />
                                     </div>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ))}
-                        {datalaporan.length === 0 && (
-                            <tr>
-                                <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
-                                    Belum ada data.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                        {datalaporan.length === 0 && <TableEmpty colSpan={5} />}
+                    </TableBody>
+                </Table>
+            </Card>
         </AdminLayout>
     );
 }

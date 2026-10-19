@@ -1,26 +1,21 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Card, CardContent } from '@/Components/ui/card';
+import PenyewaLayout from '@/Layouts/PenyewaLayout';
 import { Head } from '@inertiajs/react';
 
 export default function Dashboard() {
     return (
-        <AuthenticatedLayout
+        <PenyewaLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Home
                 </h2>
             }
         >
             <Head title="Home" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            You're logged in!
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </AuthenticatedLayout>
+            <Card>
+                <CardContent>You're logged in!</CardContent>
+            </Card>
+        </PenyewaLayout>
     );
 }

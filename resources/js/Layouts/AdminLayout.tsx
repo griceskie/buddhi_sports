@@ -1,7 +1,21 @@
+import { buttonVariants } from '@/Components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from '@/Components/ui/dropdown-menu';
+import Wordmark from '@/Components/Wordmark';
+import { PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
+import { cn } from 'cn';
+import { ChevronDown, LogOut, User } from 'lucide-react';
 import { PropsWithChildren, ReactNode } from 'react';
 
-const navItems = [
+type NavItem = { href: string; label: string };
+
+const adminNav: NavItem[] = [
     { href: '/tampilpenyewa', label: 'Penyewa' },
     { href: '/tampiladmin', label: 'Admin' },
     { href: '/tampilmanager', label: 'Manager' },
@@ -11,60 +25,94 @@ const navItems = [
     { href: '/tampillaporanpembayaran', label: 'Laporan Pembayaran' },
 ];
 
+export const navLinkClass = (active: boolean) =>
+    cn(
+        'shrink-0 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+        active
+            ? 'bg-muted text-foreground'
+            : 'text-muted-foreground hover:text-foreground',
+    );
+
 export default function AdminLayout({
     header,
     children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
-    const { url } = usePage();
+    navItems,
+}: PropsWithChildren<{ header?: ReactNode; navItems?: NavItem[] }>) {
+    const { url, props } = usePage<PageProps>();
+    const pengelola = props.pengelola;
+    const items = navItems ?? (pengelola?.role === 'admin' ? adminNav : []);
+    const dashboardRoute =
+        pengelola?.role === 'manager' ? 'dashboard.manager' : 'dashboard.admin';
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="border-b border-gray-200 bg-white">
+        <div className="min-h-screen bg-backgrounds-grouped-primary">
+            <nav className="border-b bg-background">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 items-center justify-between gap-4">
-                        <div className="flex items-center gap-6 overflow-x-auto">
-                            <span className="shrink-0 font-semibold text-gray-800">
-                                Buddhi Sports
-                            </span>
-                            {navItems.map((item) => (
+                        <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+                            <Link href={route(dashboardRoute)} className="me-4 shrink-0">
+                                <Wordmark />
+                            </Link>
+                            {items.map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`shrink-0 text-sm font-medium ${
-                                        url.startsWith(item.href)
-                                            ? 'text-gray-900'
-                                            : 'text-gray-500 hover:text-gray-700'
-                                    }`}
+                                    className={navLinkClass(url.startsWith(item.href))}
                                 >
                                     {item.label}
                                 </Link>
                             ))}
                         </div>
 
-                        <Link
-                            href={route('logout.pengelola')}
-                            method="post"
-                            as="button"
-                            className="shrink-0 rounded-md bg-gray-800 px-3 py-1.5 text-sm text-white hover:bg-gray-700"
-                        >
-                            Log Out
-                        </Link>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                className={cn(buttonVariants({ variant: 'ghost' }), 'shrink-0')}
+                            >
+                                {pengelola?.nama}
+                                <ChevronDown className="text-muted-foreground" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56 p-0">
+                                <DropdownMenuLabel className="border-b px-3 py-2">
+                                    {pengelola?.username} ·{' '}
+                                    {pengelola?.role === 'admin' ? 'Admin' : 'Manager'}
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem
+                                    className="rounded-none px-3 py-2"
+                                    render={<Link href={route('profile.pengelola')} />}
+                                >
+                                    <User />
+                                    Profile
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    variant="destructive"
+                                    className="rounded-none px-3 py-2"
+                                    render={
+                                        <Link
+                                            href={route('logout.pengelola')}
+                                            method="post"
+                                            as="button"
+                                        />
+                                    }
+                                >
+                                    <LogOut className="text-destructive" />
+                                    Log Out
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </nav>
 
             {header && (
-                <header className="bg-white shadow">
+                <header className="border-b bg-background">
                     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                         {header}
                     </div>
                 </header>
             )}
 
-            <main>
-                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                    {children}
-                </div>
+            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                {children}
             </main>
         </div>
     );

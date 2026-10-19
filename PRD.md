@@ -65,6 +65,7 @@
      - **Registrasi & Login Penyewa**
        - Penyewa baru melakukan registrasi (nama, no HP, email, password) sebelum dapat melakukan booking.
        - Penyewa yang sudah terdaftar login menggunakan akun yang dimiliki untuk melakukan booking.
+       - Setelah login, Penyewa melihat menu Home dan Booking; setelah logout, Penyewa diarahkan kembali ke halaman login.
      - **Pengelolaan Data Lapangan**
        - Admin mengelola data 3 hall bulutangkis dan 1 lapangan basket, termasuk nama, jenis, tarif per jam, dan status.
        - Tarif sewa: lapangan bulutangkis Rp 50.000,-/jam, lapangan basket Rp 100.000,-/jam.
@@ -93,6 +94,8 @@
      - Hanya Admin yang dapat mengubah data master lapangan dan memverifikasi pembayaran.
    - **Usability Requirements:**
      - Antarmuka booking dan pembayaran harus mudah dipahami oleh pengguna umum (mahasiswa maupun masyarakat), tanpa memerlukan pelatihan khusus.
+     - Seluruh halaman (Penyewa, Admin, Manajer) memakai satu design system Buddhi Sports: palet warna iOS (terang/gelap) dan komponen shadcn/ui yang sama, sehingga tampilan form, tabel, status, dan dialog konsisten.
+     - Tindakan yang tidak bisa dibatalkan (menghapus data, menghapus akun) selalu meminta konfirmasi lewat dialog.
    - **Availability Requirements:**
      - Sistem harus dapat diakses selama jam operasional penyewaan lapangan berlangsung.
    - **Compliance Requirements:**

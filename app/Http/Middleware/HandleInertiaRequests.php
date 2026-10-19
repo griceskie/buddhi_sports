@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Admin;
+use App\Models\Manager;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -34,6 +36,20 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // closure: dievaluasi setelah middleware auth:admin/manager memilih guard, jadi $request->user() sudah benar
+            'pengelola' => function () use ($request) {
+                $user = $request->user();
+
+                if ($user instanceof Admin) {
+                    return ['role' => 'admin', 'nama' => $user->namaAdmin, 'username' => $user->username];
+                }
+
+                if ($user instanceof Manager) {
+                    return ['role' => 'manager', 'nama' => $user->namaManager, 'username' => $user->username];
+                }
+
+                return null;
+            },
             'flash' => [
                 'error' => session('error'),
                 'success' => session('success'),

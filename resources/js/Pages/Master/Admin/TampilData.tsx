@@ -1,8 +1,19 @@
+import DeleteButton from '@/Components/DeleteButton';
 import FlashMessage from '@/Components/FlashMessage';
-import { Button } from '@/Components/ui/button';
+import { buttonVariants } from '@/Components/ui/button';
+import { Card } from '@/Components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableEmpty,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/ui/table';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { confirmDelete } from '@/lib/confirmDelete';
 import { Head, Link } from '@inertiajs/react';
+import { Pencil, Plus } from 'lucide-react';
 
 type Admin = {
     idAdmin: number;
@@ -14,7 +25,7 @@ export default function TampilData({ dataadmin }: { dataadmin: Admin[] }) {
     return (
         <AdminLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Data Admin
                 </h2>
             }
@@ -24,55 +35,47 @@ export default function TampilData({ dataadmin }: { dataadmin: Admin[] }) {
             <FlashMessage />
 
             <div className="mb-4">
-                <Link href="/formadmin">
-                    <Button>Tambah Admin</Button>
+                <Link href="/formadmin" className={buttonVariants()}>
+                    <Plus />
+                    Tambah Admin
                 </Link>
             </div>
 
-            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th className="px-4 py-3">Nama</th>
-                            <th className="px-4 py-3">Username</th>
-                            <th className="px-4 py-3 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
+            <Card className="gap-0 overflow-hidden py-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nama</TableHead>
+                            <TableHead>Username</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {dataadmin.map((row) => (
-                            <tr key={row.idAdmin}>
-                                <td className="px-4 py-3">{row.namaAdmin}</td>
-                                <td className="px-4 py-3">{row.username}</td>
-                                <td className="px-4 py-3 text-right">
+                            <TableRow key={row.idAdmin}>
+                                <TableCell>{row.namaAdmin}</TableCell>
+                                <TableCell>{row.username}</TableCell>
+                                <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
-                                        <Link href={`/editadmin/${row.idAdmin}`}>
-                                            <Button variant="outline" size="sm">
-                                                Edit
-                                            </Button>
-                                        </Link>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() =>
-                                                confirmDelete(`/deleteadmin/${row.idAdmin}`)
-                                            }
+                                        <Link
+                                            href={`/editadmin/${row.idAdmin}`}
+                                            className={buttonVariants({
+                                                variant: 'outline',
+                                                size: 'sm',
+                                            })}
                                         >
-                                            Hapus
-                                        </Button>
+                                            <Pencil />
+                                            Edit
+                                        </Link>
+                                        <DeleteButton href={`/deleteadmin/${row.idAdmin}`} />
                                     </div>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ))}
-                        {dataadmin.length === 0 && (
-                            <tr>
-                                <td colSpan={3} className="px-4 py-6 text-center text-gray-400">
-                                    Belum ada data.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                        {dataadmin.length === 0 && <TableEmpty colSpan={3} />}
+                    </TableBody>
+                </Table>
+            </Card>
         </AdminLayout>
     );
 }

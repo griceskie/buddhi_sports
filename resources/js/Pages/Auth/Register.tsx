@@ -1,7 +1,7 @@
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -29,15 +29,15 @@ export default function Register() {
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="namaPenyewa" value="Nama" />
+                    <Label htmlFor="namaPenyewa">Nama</Label>
 
-                    <TextInput
+                    <Input
                         id="namaPenyewa"
                         name="namaPenyewa"
                         value={data.namaPenyewa}
-                        className="mt-1 block w-full"
+                        className="mt-1"
                         autoComplete="name"
-                        isFocused={true}
+                        autoFocus
                         onChange={(e) => setData('namaPenyewa', e.target.value)}
                         required
                     />
@@ -46,13 +46,13 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="noHp" value="No HP" />
+                    <Label htmlFor="noHp">No HP</Label>
 
-                    <TextInput
+                    <Input
                         id="noHp"
                         name="noHp"
                         value={data.noHp}
-                        className="mt-1 block w-full"
+                        className="mt-1"
                         autoComplete="tel"
                         onChange={(e) => setData('noHp', e.target.value)}
                         required
@@ -62,14 +62,14 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
+                    <Label htmlFor="email">Email</Label>
 
-                    <TextInput
+                    <Input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        className="mt-1"
                         autoComplete="username"
                         onChange={(e) => setData('email', e.target.value)}
                         required
@@ -79,14 +79,14 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
+                    <Label htmlFor="password">Password</Label>
 
-                    <TextInput
+                    <Input
                         id="password"
                         type="password"
                         name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
+                        className="mt-1"
                         autoComplete="new-password"
                         onChange={(e) => setData('password', e.target.value)}
                         required
@@ -96,17 +96,14 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
+                    <Label htmlFor="password_confirmation">Confirm Password</Label>
 
-                    <TextInput
+                    <Input
                         id="password_confirmation"
                         type="password"
                         name="password_confirmation"
                         value={data.password_confirmation}
-                        className="mt-1 block w-full"
+                        className="mt-1"
                         autoComplete="new-password"
                         onChange={(e) =>
                             setData('password_confirmation', e.target.value)
@@ -121,13 +118,18 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4 flex flex-col gap-3">
-                    <PrimaryButton className="w-full" disabled={processing}>
+                    <Button
+                        type="submit"
+                        size="lg"
+                        className="w-full"
+                        disabled={processing}
+                    >
                         Register
-                    </PrimaryButton>
+                    </Button>
 
                     <Link
                         href={route('login')}
-                        className="rounded-md text-center text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="text-center text-sm text-muted-foreground underline hover:text-foreground"
                     >
                         Already registered?
                     </Link>

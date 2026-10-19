@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class MasterManagerController extends Controller
@@ -30,7 +31,7 @@ class MasterManagerController extends Controller
     public function insertData(Request $request){
         $request->validate([
             'txtnama' => 'required|string|max:255',
-            'txtusername' => 'required|string|max:255',
+            'txtusername' => 'required|string|max:255|unique:managers,username',
             'txtpassword' => 'required|string|min:6',
         ]);
 
@@ -47,7 +48,7 @@ class MasterManagerController extends Controller
         $request->validate([
             'txtid' => 'required|integer',
             'txtnama' => 'required|string|max:255',
-            'txtusername' => 'required|string|max:255',
+            'txtusername' => ['required', 'string', 'max:255', Rule::unique('managers', 'username')->ignore($request->txtid, 'idManager')],
             'txtpassword' => 'nullable|string|min:6',
         ]);
 

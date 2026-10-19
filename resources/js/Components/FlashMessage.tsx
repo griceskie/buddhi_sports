@@ -1,5 +1,7 @@
+import { Alert, AlertTitle } from '@/Components/ui/alert';
 import { PageProps } from '@/types';
 import { usePage } from '@inertiajs/react';
+import { CircleAlert, CircleCheck } from 'lucide-react';
 
 export default function FlashMessage() {
     const { flash } = usePage<PageProps>().props;
@@ -11,14 +13,16 @@ export default function FlashMessage() {
     return (
         <div className="mb-4 space-y-2">
             {flash.error && (
-                <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {flash.error}
-                </div>
+                <Alert variant="destructive">
+                    <CircleAlert />
+                    <AlertTitle>{flash.error}</AlertTitle>
+                </Alert>
             )}
             {flash.success && (
-                <div className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-700">
-                    {flash.success}
-                </div>
+                <Alert variant="success">
+                    <CircleCheck />
+                    <AlertTitle>{flash.success}</AlertTitle>
+                </Alert>
             )}
         </div>
     );

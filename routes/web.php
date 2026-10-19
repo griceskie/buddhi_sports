@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\PengelolaAuthenticatedSessionController;
+use App\Http\Controllers\Auth\PengelolaProfileController;
 use App\Http\Controllers\MasterAdminController;
 use App\Http\Controllers\MasterBookingController;
 use App\Http\Controllers\MasterLapanganController;
@@ -46,6 +47,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/login-pengelola', [PengelolaAuthenticatedSessionController::class, 'store']);
 });
 Route::post('/logout-pengelola', [PengelolaAuthenticatedSessionController::class, 'destroy'])->name('logout.pengelola');
+
+// Profil Admin & Manager (guard yang login otomatis dipakai oleh $request->user())
+Route::middleware('auth:admin,manager')->group(function () {
+    Route::get('/profile-pengelola', [PengelolaProfileController::class, 'edit'])->name('profile.pengelola');
+    Route::patch('/profile-pengelola', [PengelolaProfileController::class, 'update'])->name('profile.pengelola.update');
+    Route::put('/profile-pengelola/password', [PengelolaProfileController::class, 'updatePassword'])->name('profile.pengelola.password');
+});
 
 // Panel Admin: dashboard + semua data master
 Route::middleware('auth:admin')->group(function () {

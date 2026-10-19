@@ -1,8 +1,21 @@
+import DeleteButton from '@/Components/DeleteButton';
 import FlashMessage from '@/Components/FlashMessage';
-import { Button } from '@/Components/ui/button';
+import { BookingStatusBadge } from '@/Components/ui/badge';
+import { buttonVariants } from '@/Components/ui/button';
+import { Card } from '@/Components/ui/card';
+import { formatRupiah } from '@/Components/ui/format';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableEmpty,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/ui/table';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { confirmDelete } from '@/lib/confirmDelete';
 import { Head, Link } from '@inertiajs/react';
+import { Pencil, Plus } from 'lucide-react';
 
 type Booking = {
     idBooking: number;
@@ -20,7 +33,7 @@ export default function TampilData({ databooking }: { databooking: Booking[] }) 
     return (
         <AdminLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Data Booking
                 </h2>
             }
@@ -30,67 +43,55 @@ export default function TampilData({ databooking }: { databooking: Booking[] }) 
             <FlashMessage />
 
             <div className="mb-4">
-                <Link href="/formbooking">
-                    <Button>Tambah Booking</Button>
+                <Link href="/formbooking" className={buttonVariants()}>
+                    <Plus />
+                    Tambah Booking
                 </Link>
             </div>
 
-            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th className="px-4 py-3">ID Penyewa</th>
-                            <th className="px-4 py-3">ID Lapangan</th>
-                            <th className="px-4 py-3">Tanggal</th>
-                            <th className="px-4 py-3">Jam</th>
-                            <th className="px-4 py-3">Total</th>
-                            <th className="px-4 py-3">Status</th>
-                            <th className="px-4 py-3 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
+            <Card className="gap-0 overflow-hidden py-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>ID Penyewa</TableHead>
+                            <TableHead>ID Lapangan</TableHead>
+                            <TableHead>Tanggal</TableHead>
+                            <TableHead>Jam</TableHead>
+                            <TableHead>Total</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {databooking.map((row) => (
-                            <tr key={row.idBooking}>
-                                <td className="px-4 py-3">{row.idPenyewa}</td>
-                                <td className="px-4 py-3">{row.idLapangan}</td>
-                                <td className="px-4 py-3">{row.tanggal}</td>
-                                <td className="px-4 py-3">
-                                    {row.jamMulai.slice(0, 5)}-{row.jamSelesai.slice(0, 5)}
-                                </td>
-                                <td className="px-4 py-3">
-                                    Rp{row.totalBayar.toLocaleString('id-ID')}
-                                </td>
-                                <td className="px-4 py-3">{row.status}</td>
-                                <td className="px-4 py-3 text-right">
+                            <TableRow key={row.idBooking}>
+                                <TableCell>{row.idPenyewa}</TableCell>
+                                <TableCell>{row.idLapangan}</TableCell>
+                                <TableCell>{row.tanggal}</TableCell>
+                                <TableCell>{row.jamMulai.slice(0, 5)}-{row.jamSelesai.slice(0, 5)}</TableCell>
+                                <TableCell>{formatRupiah(row.totalBayar)}</TableCell>
+                                <TableCell><BookingStatusBadge status={row.status} /></TableCell>
+                                <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
-                                        <Link href={`/editbooking/${row.idBooking}`}>
-                                            <Button variant="outline" size="sm">
-                                                Edit
-                                            </Button>
-                                        </Link>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() =>
-                                                confirmDelete(`/deletebooking/${row.idBooking}`)
-                                            }
+                                        <Link
+                                            href={`/editbooking/${row.idBooking}`}
+                                            className={buttonVariants({
+                                                variant: 'outline',
+                                                size: 'sm',
+                                            })}
                                         >
-                                            Hapus
-                                        </Button>
+                                            <Pencil />
+                                            Edit
+                                        </Link>
+                                        <DeleteButton href={`/deletebooking/${row.idBooking}`} />
                                     </div>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ))}
-                        {databooking.length === 0 && (
-                            <tr>
-                                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
-                                    Belum ada data.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                        {databooking.length === 0 && <TableEmpty colSpan={7} />}
+                    </TableBody>
+                </Table>
+            </Card>
         </AdminLayout>
     );
 }

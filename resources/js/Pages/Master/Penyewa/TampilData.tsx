@@ -1,8 +1,19 @@
+import DeleteButton from '@/Components/DeleteButton';
 import FlashMessage from '@/Components/FlashMessage';
-import { Button } from '@/Components/ui/button';
+import { buttonVariants } from '@/Components/ui/button';
+import { Card } from '@/Components/ui/card';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableEmpty,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/ui/table';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { confirmDelete } from '@/lib/confirmDelete';
 import { Head, Link } from '@inertiajs/react';
+import { Pencil, Plus } from 'lucide-react';
 
 type Penyewa = {
     idPenyewa: number;
@@ -15,7 +26,7 @@ export default function TampilData({ datapenyewa }: { datapenyewa: Penyewa[] }) 
     return (
         <AdminLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Data Penyewa
                 </h2>
             }
@@ -25,57 +36,49 @@ export default function TampilData({ datapenyewa }: { datapenyewa: Penyewa[] }) 
             <FlashMessage />
 
             <div className="mb-4">
-                <Link href="/formpenyewa">
-                    <Button>Tambah Penyewa</Button>
+                <Link href="/formpenyewa" className={buttonVariants()}>
+                    <Plus />
+                    Tambah Penyewa
                 </Link>
             </div>
 
-            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th className="px-4 py-3">Nama</th>
-                            <th className="px-4 py-3">No HP</th>
-                            <th className="px-4 py-3">Email</th>
-                            <th className="px-4 py-3 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
+            <Card className="gap-0 overflow-hidden py-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nama</TableHead>
+                            <TableHead>No HP</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {datapenyewa.map((row) => (
-                            <tr key={row.idPenyewa}>
-                                <td className="px-4 py-3">{row.namaPenyewa}</td>
-                                <td className="px-4 py-3">{row.noHp}</td>
-                                <td className="px-4 py-3">{row.email}</td>
-                                <td className="px-4 py-3 text-right">
+                            <TableRow key={row.idPenyewa}>
+                                <TableCell>{row.namaPenyewa}</TableCell>
+                                <TableCell>{row.noHp}</TableCell>
+                                <TableCell>{row.email}</TableCell>
+                                <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
-                                        <Link href={`/editpenyewa/${row.idPenyewa}`}>
-                                            <Button variant="outline" size="sm">
-                                                Edit
-                                            </Button>
-                                        </Link>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() =>
-                                                confirmDelete(`/deletepenyewa/${row.idPenyewa}`)
-                                            }
+                                        <Link
+                                            href={`/editpenyewa/${row.idPenyewa}`}
+                                            className={buttonVariants({
+                                                variant: 'outline',
+                                                size: 'sm',
+                                            })}
                                         >
-                                            Hapus
-                                        </Button>
+                                            <Pencil />
+                                            Edit
+                                        </Link>
+                                        <DeleteButton href={`/deletepenyewa/${row.idPenyewa}`} />
                                     </div>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ))}
-                        {datapenyewa.length === 0 && (
-                            <tr>
-                                <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
-                                    Belum ada data.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                        {datapenyewa.length === 0 && <TableEmpty colSpan={4} />}
+                    </TableBody>
+                </Table>
+            </Card>
         </AdminLayout>
     );
 }

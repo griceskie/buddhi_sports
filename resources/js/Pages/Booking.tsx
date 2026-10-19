@@ -1,16 +1,16 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PenyewaLayout from '@/Layouts/PenyewaLayout';
 import { Head } from '@inertiajs/react';
 
 export default function Booking() {
     return (
-        <AuthenticatedLayout
+        <PenyewaLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Booking
                 </h2>
             }
         >
             <Head title="Booking" />
-        </AuthenticatedLayout>
+        </PenyewaLayout>
     );
 }

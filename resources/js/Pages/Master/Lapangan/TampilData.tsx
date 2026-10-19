@@ -1,8 +1,21 @@
+import DeleteButton from '@/Components/DeleteButton';
 import FlashMessage from '@/Components/FlashMessage';
-import { Button } from '@/Components/ui/button';
+import { CourtStatusBadge } from '@/Components/ui/badge';
+import { buttonVariants } from '@/Components/ui/button';
+import { Card } from '@/Components/ui/card';
+import { formatRupiah } from '@/Components/ui/format';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableEmpty,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/Components/ui/table';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { confirmDelete } from '@/lib/confirmDelete';
 import { Head, Link } from '@inertiajs/react';
+import { Pencil, Plus } from 'lucide-react';
 
 type Lapangan = {
     idLapangan: number;
@@ -16,7 +29,7 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
     return (
         <AdminLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Data Lapangan
                 </h2>
             }
@@ -26,61 +39,51 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
             <FlashMessage />
 
             <div className="mb-4">
-                <Link href="/formlapangan">
-                    <Button>Tambah Lapangan</Button>
+                <Link href="/formlapangan" className={buttonVariants()}>
+                    <Plus />
+                    Tambah Lapangan
                 </Link>
             </div>
 
-            <div className="overflow-hidden rounded-lg bg-white shadow-sm">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th className="px-4 py-3">Nama</th>
-                            <th className="px-4 py-3">Jenis</th>
-                            <th className="px-4 py-3">Tarif/Jam</th>
-                            <th className="px-4 py-3">Status</th>
-                            <th className="px-4 py-3 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
+            <Card className="gap-0 overflow-hidden py-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nama</TableHead>
+                            <TableHead>Jenis</TableHead>
+                            <TableHead>Tarif/Jam</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Aksi</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {datalapangan.map((row) => (
-                            <tr key={row.idLapangan}>
-                                <td className="px-4 py-3">{row.namaLapangan}</td>
-                                <td className="px-4 py-3">{row.jenisLapangan}</td>
-                                <td className="px-4 py-3">
-                                    Rp{row.tarifPerJam.toLocaleString('id-ID')}
-                                </td>
-                                <td className="px-4 py-3">{row.status}</td>
-                                <td className="px-4 py-3 text-right">
+                            <TableRow key={row.idLapangan}>
+                                <TableCell>{row.namaLapangan}</TableCell>
+                                <TableCell>{row.jenisLapangan}</TableCell>
+                                <TableCell>{formatRupiah(row.tarifPerJam)}</TableCell>
+                                <TableCell><CourtStatusBadge status={row.status} /></TableCell>
+                                <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
-                                        <Link href={`/editlapangan/${row.idLapangan}`}>
-                                            <Button variant="outline" size="sm">
-                                                Edit
-                                            </Button>
-                                        </Link>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() =>
-                                                confirmDelete(`/deletelapangan/${row.idLapangan}`)
-                                            }
+                                        <Link
+                                            href={`/editlapangan/${row.idLapangan}`}
+                                            className={buttonVariants({
+                                                variant: 'outline',
+                                                size: 'sm',
+                                            })}
                                         >
-                                            Hapus
-                                        </Button>
+                                            <Pencil />
+                                            Edit
+                                        </Link>
+                                        <DeleteButton href={`/deletelapangan/${row.idLapangan}`} />
                                     </div>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ))}
-                        {datalapangan.length === 0 && (
-                            <tr>
-                                <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
-                                    Belum ada data.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                        {datalapangan.length === 0 && <TableEmpty colSpan={5} />}
+                    </TableBody>
+                </Table>
+            </Card>
         </AdminLayout>
     );
 }

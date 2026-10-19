@@ -1,13 +1,16 @@
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
+import { Eye, EyeOff } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 export default function LoginPengelola() {
     const [role, setRole] = useState<'admin' | 'manager'>('admin');
+    const [showPassword, setShowPassword] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         role: 'admin',
@@ -32,42 +35,32 @@ export default function LoginPengelola() {
         <GuestLayout>
             <Head title="Login Pengelola" />
 
-            <div className="mb-6 flex gap-2">
-                <button
-                    type="button"
-                    onClick={() => switchRole('admin')}
-                    className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition ${
-                        role === 'admin'
-                            ? 'bg-gray-800 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                    Login sebagai Admin
-                </button>
-                <button
-                    type="button"
-                    onClick={() => switchRole('manager')}
-                    className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition ${
-                        role === 'manager'
-                            ? 'bg-gray-800 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                    Login sebagai Manager
-                </button>
-            </div>
+            <Tabs
+                value={role}
+                onValueChange={(v) => switchRole(v as 'admin' | 'manager')}
+                className="mb-6"
+            >
+                <TabsList className="w-full">
+                    <TabsTrigger value="admin" className="flex-1">
+                        Login sebagai Admin
+                    </TabsTrigger>
+                    <TabsTrigger value="manager" className="flex-1">
+                        Login sebagai Manager
+                    </TabsTrigger>
+                </TabsList>
+            </Tabs>
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="username" value="Username" />
+                    <Label htmlFor="username">Username</Label>
 
-                    <TextInput
+                    <Input
                         id="username"
                         name="username"
                         value={data.username}
-                        className="mt-1 block w-full"
+                        className="mt-1"
                         autoComplete="username"
-                        isFocused={true}
+                        autoFocus
                         onChange={(e) => setData('username', e.target.value)}
                         required
                     />
@@ -76,26 +69,41 @@ export default function LoginPengelola() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
+                    <Label htmlFor="password">Password</Label>
 
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="current-password"
-                        onChange={(e) => setData('password', e.target.value)}
-                        required
-                    />
+                    <div className="relative mt-1">
+                        <Input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            value={data.password}
+                            className="pr-10"
+                            autoComplete="current-password"
+                            onChange={(e) => setData('password', e.target.value)}
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                        >
+                            {showPassword ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                        </button>
+                    </div>
 
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
                 <div className="mt-4 flex flex-col gap-3">
-                    <PrimaryButton className="w-full" disabled={processing}>
+                    <Button
+                        type="submit"
+                        size="lg"
+                        className="w-full"
+                        disabled={processing}
+                    >
                         Log in sebagai {role === 'admin' ? 'Admin' : 'Manager'}
-                    </PrimaryButton>
+                    </Button>
                 </div>
             </form>
         </GuestLayout>

@@ -5,12 +5,19 @@ export interface User {
     email: string;
 }
 
+export interface Pengelola {
+    role: 'admin' | 'manager';
+    nama: string;
+    username: string;
+}
+
 export type PageProps<
     T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
     auth: {
         user: User;
     };
+    pengelola: Pengelola | null;
     flash: {
         error?: string;
         success?: string;

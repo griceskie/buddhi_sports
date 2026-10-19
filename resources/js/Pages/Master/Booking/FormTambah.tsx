@@ -1,6 +1,9 @@
 import FlashMessage from '@/Components/FlashMessage';
+import FormSelect from '@/Components/FormSelect';
 import InputError from '@/Components/InputError';
 import { Button } from '@/Components/ui/button';
+import { Card, CardContent } from '@/Components/ui/card';
+import { CurrencyInput } from '@/Components/ui/currency-input';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import AdminLayout from '@/Layouts/AdminLayout';
@@ -10,9 +13,6 @@ import { FormEventHandler } from 'react';
 type Penyewa = { idPenyewa: number; namaPenyewa: string };
 type Lapangan = { idLapangan: number; namaLapangan: string };
 type Admin = { idAdmin: number; namaAdmin: string };
-
-const selectClass =
-    'mt-1 flex h-10 w-full rounded-lg border border-gray-200 bg-background px-4 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50';
 
 export default function FormTambah({
     datapenyewa,
@@ -42,7 +42,7 @@ export default function FormTambah({
     return (
         <AdminLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Tambah Booking
                 </h2>
             }
@@ -51,132 +51,132 @@ export default function FormTambah({
 
             <FlashMessage />
 
-            <form
-                onSubmit={submit}
-                className="max-w-md space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
-            >
-                <div>
-                    <Label htmlFor="txtpenyewa">Penyewa</Label>
-                    <select
-                        id="txtpenyewa"
-                        className={selectClass}
-                        value={data.txtpenyewa}
-                        onChange={(e) => setData('txtpenyewa', e.target.value)}
-                    >
-                        <option value="">Pilih Penyewa</option>
-                        {datapenyewa.map((p) => (
-                            <option key={p.idPenyewa} value={p.idPenyewa}>
-                                {p.namaPenyewa}
-                            </option>
-                        ))}
-                    </select>
-                    <InputError message={errors.txtpenyewa} className="mt-1" />
-                </div>
+            <Card className="max-w-md">
+                <CardContent>
+                    <form onSubmit={submit} className="space-y-4">
+                        <div>
+                            <Label htmlFor="txtpenyewa">Penyewa</Label>
+                            <FormSelect
+                                id="txtpenyewa"
+                                className="mt-1"
+                                value={data.txtpenyewa}
+                                onChange={(v) => setData('txtpenyewa', v)}
+                                placeholder="Pilih Penyewa"
+                                options={[
+                                    ...datapenyewa.map((p) => ({
+                                        value: String(p.idPenyewa),
+                                        label: p.namaPenyewa,
+                                    })),
+                                ]}
+                            />
+                            <InputError message={errors.txtpenyewa} className="mt-1" />
+                        </div>
 
-                <div>
-                    <Label htmlFor="txtlapangan">Lapangan</Label>
-                    <select
-                        id="txtlapangan"
-                        className={selectClass}
-                        value={data.txtlapangan}
-                        onChange={(e) => setData('txtlapangan', e.target.value)}
-                    >
-                        <option value="">Pilih Lapangan</option>
-                        {datalapangan.map((l) => (
-                            <option key={l.idLapangan} value={l.idLapangan}>
-                                {l.namaLapangan}
-                            </option>
-                        ))}
-                    </select>
-                    <InputError message={errors.txtlapangan} className="mt-1" />
-                </div>
+                        <div>
+                            <Label htmlFor="txtlapangan">Lapangan</Label>
+                            <FormSelect
+                                id="txtlapangan"
+                                className="mt-1"
+                                value={data.txtlapangan}
+                                onChange={(v) => setData('txtlapangan', v)}
+                                placeholder="Pilih Lapangan"
+                                options={[
+                                    ...datalapangan.map((l) => ({
+                                        value: String(l.idLapangan),
+                                        label: l.namaLapangan,
+                                    })),
+                                ]}
+                            />
+                            <InputError message={errors.txtlapangan} className="mt-1" />
+                        </div>
 
-                <div>
-                    <Label htmlFor="txtadmin">Admin (opsional)</Label>
-                    <select
-                        id="txtadmin"
-                        className={selectClass}
-                        value={data.txtadmin}
-                        onChange={(e) => setData('txtadmin', e.target.value)}
-                    >
-                        <option value="">-</option>
-                        {dataadmin.map((a) => (
-                            <option key={a.idAdmin} value={a.idAdmin}>
-                                {a.namaAdmin}
-                            </option>
-                        ))}
-                    </select>
-                    <InputError message={errors.txtadmin} className="mt-1" />
-                </div>
+                        <div>
+                            <Label htmlFor="txtadmin">Admin (opsional)</Label>
+                            <FormSelect
+                                id="txtadmin"
+                                className="mt-1"
+                                value={data.txtadmin}
+                                onChange={(v) => setData('txtadmin', v)}
+                                options={[
+                                    { value: '', label: '-' },
+                                    ...dataadmin.map((a) => ({
+                                        value: String(a.idAdmin),
+                                        label: a.namaAdmin,
+                                    })),
+                                ]}
+                            />
+                            <InputError message={errors.txtadmin} className="mt-1" />
+                        </div>
 
-                <div>
-                    <Label htmlFor="txttanggal">Tanggal</Label>
-                    <Input
-                        id="txttanggal"
-                        type="date"
-                        className="mt-1"
-                        value={data.txttanggal}
-                        onChange={(e) => setData('txttanggal', e.target.value)}
-                    />
-                    <InputError message={errors.txttanggal} className="mt-1" />
-                </div>
+                        <div>
+                            <Label htmlFor="txttanggal">Tanggal</Label>
+                            <Input
+                                id="txttanggal"
+                                type="date"
+                                className="mt-1"
+                                value={data.txttanggal}
+                                onChange={(e) => setData('txttanggal', e.target.value)}
+                            />
+                            <InputError message={errors.txttanggal} className="mt-1" />
+                        </div>
 
-                <div className="flex gap-4">
-                    <div className="flex-1">
-                        <Label htmlFor="txtjammulai">Jam Mulai</Label>
-                        <Input
-                            id="txtjammulai"
-                            type="time"
-                            className="mt-1"
-                            value={data.txtjammulai}
-                            onChange={(e) => setData('txtjammulai', e.target.value)}
-                        />
-                        <InputError message={errors.txtjammulai} className="mt-1" />
-                    </div>
+                        <div className="flex gap-4">
+                            <div className="flex-1">
+                                <Label htmlFor="txtjammulai">Jam Mulai</Label>
+                                <Input
+                                    id="txtjammulai"
+                                    type="time"
+                                    className="mt-1"
+                                    value={data.txtjammulai}
+                                    onChange={(e) => setData('txtjammulai', e.target.value)}
+                                />
+                                <InputError message={errors.txtjammulai} className="mt-1" />
+                            </div>
 
-                    <div className="flex-1">
-                        <Label htmlFor="txtjamselesai">Jam Selesai</Label>
-                        <Input
-                            id="txtjamselesai"
-                            type="time"
-                            className="mt-1"
-                            value={data.txtjamselesai}
-                            onChange={(e) => setData('txtjamselesai', e.target.value)}
-                        />
-                        <InputError message={errors.txtjamselesai} className="mt-1" />
-                    </div>
-                </div>
+                            <div className="flex-1">
+                                <Label htmlFor="txtjamselesai">Jam Selesai</Label>
+                                <Input
+                                    id="txtjamselesai"
+                                    type="time"
+                                    className="mt-1"
+                                    value={data.txtjamselesai}
+                                    onChange={(e) => setData('txtjamselesai', e.target.value)}
+                                />
+                                <InputError message={errors.txtjamselesai} className="mt-1" />
+                            </div>
+                        </div>
 
-                <div>
-                    <Label htmlFor="txttotal">Total Bayar (Rp)</Label>
-                    <Input
-                        id="txttotal"
-                        type="number"
-                        min={0}
-                        className="mt-1"
-                        value={data.txttotal}
-                        onChange={(e) => setData('txttotal', e.target.value)}
-                    />
-                    <InputError message={errors.txttotal} className="mt-1" />
-                </div>
+                        <div>
+                            <Label htmlFor="txttotal">Total Bayar (Rp)</Label>
+                            <CurrencyInput
+                                id="txttotal"
+                                className="mt-1"
+                                value={data.txttotal === '' ? null : Number(data.txttotal)}
+                                onValueChange={(v) => setData('txttotal', v == null ? '' : String(v))}
+                            />
+                            <InputError message={errors.txttotal} className="mt-1" />
+                        </div>
 
-                <div>
-                    <Label htmlFor="txtstatus">Status</Label>
-                    <select
-                        id="txtstatus"
-                        className={selectClass}
-                        value={data.txtstatus}
-                        onChange={(e) => setData('txtstatus', e.target.value)}
-                    >
-                        <option value="Dipesan">Dipesan</option>
-                        <option value="Dibayar">Dibayar</option>
-                        <option value="Dibatalkan">Dibatalkan</option>
-                    </select>
-                    <InputError message={errors.txtstatus} className="mt-1" />
-                </div>
+                        <div>
+                            <Label htmlFor="txtstatus">Status</Label>
+                            <FormSelect
+                                id="txtstatus"
+                                className="mt-1"
+                                value={data.txtstatus}
+                                onChange={(v) => setData('txtstatus', v)}
+                                options={[
+                                    { value: 'Dipesan', label: 'Dipesan' },
+                                    { value: 'Dibayar', label: 'Dibayar' },
+                                    { value: 'Dibatalkan', label: 'Dibatalkan' },
+                                ]}
+                            />
+                            <InputError message={errors.txtstatus} className="mt-1" />
+                        </div>
 
-                <Button className="w-full" disabled={processing}>Simpan</Button>
-            </form>
+                        <Button className="w-full" disabled={processing}>Simpan</Button>
+                    </form>
+                </CardContent>
+            </Card>
         </AdminLayout>
     );
 }

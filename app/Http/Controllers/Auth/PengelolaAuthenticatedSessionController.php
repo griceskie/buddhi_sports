@@ -37,7 +37,7 @@ class PengelolaAuthenticatedSessionController extends Controller
 
         if (! Auth::guard($guard)->attempt($request->only('username', 'password'))) {
             throw ValidationException::withMessages([
-                'username' => 'Username atau password salah.',
+                'password' => 'Username atau password salah.',
             ]);
         }
 

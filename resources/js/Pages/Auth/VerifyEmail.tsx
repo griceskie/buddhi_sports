@@ -1,4 +1,5 @@
-import PrimaryButton from '@/Components/PrimaryButton';
+import { Alert, AlertTitle } from '@/Components/ui/alert';
+import { Button } from '@/Components/ui/button';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -16,7 +17,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
         <GuestLayout>
             <Head title="Email Verification" />
 
-            <div className="mb-4 text-sm text-gray-600">
+            <div className="mb-4 text-sm text-muted-foreground">
                 Thanks for signing up! Before getting started, could you verify
                 your email address by clicking on the link we just emailed to
                 you? If you didn't receive the email, we will gladly send you
@@ -24,23 +25,30 @@ export default function VerifyEmail({ status }: { status?: string }) {
             </div>
 
             {status === 'verification-link-sent' && (
-                <div className="mb-4 text-sm font-medium text-green-600">
-                    A new verification link has been sent to the email address
-                    you provided during registration.
-                </div>
+                <Alert variant="success" className="mb-4">
+                    <AlertTitle>
+                        A new verification link has been sent to the email
+                        address you provided during registration.
+                    </AlertTitle>
+                </Alert>
             )}
 
             <form onSubmit={submit}>
                 <div className="mt-4 flex flex-col gap-3">
-                    <PrimaryButton className="w-full" disabled={processing}>
+                    <Button
+                        type="submit"
+                        size="lg"
+                        className="w-full"
+                        disabled={processing}
+                    >
                         Resend Verification Email
-                    </PrimaryButton>
+                    </Button>
 
                     <Link
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="rounded-md text-center text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="text-center text-sm text-muted-foreground underline hover:text-foreground"
                     >
                         Log Out
                     </Link>

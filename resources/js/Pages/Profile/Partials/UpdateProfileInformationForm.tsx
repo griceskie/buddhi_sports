@@ -1,7 +1,7 @@
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
 import { Transition } from '@headlessui/react';
 import { useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -31,26 +31,26 @@ export default function UpdateProfileInformation({
     return (
         <section className={className}>
             <header>
-                <h2 className="text-lg font-medium text-gray-900">
+                <h2 className="text-lg font-medium text-foreground">
                     Profile Information
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-1 text-sm text-muted-foreground">
                     Update your account's profile information and email address.
                 </p>
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
                 <div>
-                    <InputLabel htmlFor="namaPenyewa" value="Nama" />
+                    <Label htmlFor="namaPenyewa">Nama</Label>
 
-                    <TextInput
+                    <Input
                         id="namaPenyewa"
-                        className="mt-1 block w-full"
+                        className="mt-1"
                         value={data.namaPenyewa}
                         onChange={(e) => setData('namaPenyewa', e.target.value)}
                         required
-                        isFocused
+                        autoFocus
                         autoComplete="name"
                     />
 
@@ -58,11 +58,11 @@ export default function UpdateProfileInformation({
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="noHp" value="No HP" />
+                    <Label htmlFor="noHp">No HP</Label>
 
-                    <TextInput
+                    <Input
                         id="noHp"
-                        className="mt-1 block w-full"
+                        className="mt-1"
                         value={data.noHp}
                         onChange={(e) => setData('noHp', e.target.value)}
                         required
@@ -73,12 +73,12 @@ export default function UpdateProfileInformation({
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
+                    <Label htmlFor="email">Email</Label>
 
-                    <TextInput
+                    <Input
                         id="email"
                         type="email"
-                        className="mt-1 block w-full"
+                        className="mt-1"
                         value={data.email}
                         onChange={(e) => setData('email', e.target.value)}
                         required
@@ -89,7 +89,7 @@ export default function UpdateProfileInformation({
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                    <Button type="submit" disabled={processing}>Save</Button>
 
                     <Transition
                         show={recentlySuccessful}
@@ -98,7 +98,7 @@ export default function UpdateProfileInformation({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                             Saved.
                         </p>
                     </Transition>
