@@ -67,7 +67,7 @@ export default function ResetPassword({
                 </div>
 
                 <div className="mt-4">
-                    <Label htmlFor="password_confirmation">Confirm Password</Label>
+                    <Label htmlFor="password_confirmation">Konfirmasi Password</Label>
 
                     <Input
                         type="password"
@@ -92,7 +92,7 @@ export default function ResetPassword({
                         size="lg"
                         className="w-full"
                         disabled={processing}>
-                        Reset Password
+                        Simpan Password Baru
                     </Button>
                 </div>
             </form>

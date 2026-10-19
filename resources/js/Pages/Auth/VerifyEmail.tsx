@@ -15,20 +15,19 @@ export default function VerifyEmail({ status }: { status?: string }) {
 
     return (
         <GuestLayout>
-            <Head title="Email Verification" />
+            <Head title="Verifikasi Email" />
 
             <div className="mb-4 text-sm text-muted-foreground">
-                Thanks for signing up! Before getting started, could you verify
-                your email address by clicking on the link we just emailed to
-                you? If you didn't receive the email, we will gladly send you
-                another.
+                Terima kasih sudah mendaftar! Sebelum mulai, verifikasi email
+                Anda dengan mengklik link yang baru saja kami kirim. Jika email
+                belum masuk, kami bisa mengirimkannya lagi.
             </div>
 
             {status === 'verification-link-sent' && (
                 <Alert variant="success" className="mb-4">
                     <AlertTitle>
-                        A new verification link has been sent to the email
-                        address you provided during registration.
+                        Link verifikasi baru sudah dikirim ke email yang Anda
+                        daftarkan.
                     </AlertTitle>
                 </Alert>
             )}
@@ -41,7 +40,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                         className="w-full"
                         disabled={processing}
                     >
-                        Resend Verification Email
+                        Kirim Ulang Email Verifikasi
                     </Button>
 
                     <Link

@@ -25,7 +25,7 @@ export default function Register() {
 
     return (
         <GuestLayout>
-            <Head title="Register" />
+            <Head title="Daftar" />
 
             <form onSubmit={submit}>
                 <div>
@@ -96,7 +96,7 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <Label htmlFor="password_confirmation">Confirm Password</Label>
+                    <Label htmlFor="password_confirmation">Konfirmasi Password</Label>
 
                     <Input
                         id="password_confirmation"
@@ -124,14 +124,14 @@ export default function Register() {
                         className="w-full"
                         disabled={processing}
                     >
-                        Register
+                        Daftar
                     </Button>
 
                     <Link
                         href={route('login')}
                         className="text-center text-sm text-muted-foreground underline hover:text-foreground"
                     >
-                        Already registered?
+                        Sudah punya akun? Login
                     </Link>
                 </div>
             </form>
