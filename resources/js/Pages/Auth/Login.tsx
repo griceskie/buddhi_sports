@@ -31,7 +31,7 @@ export default function Login({
 
     return (
         <GuestLayout>
-            <Head title="Log in" />
+            <Head title="Login" />
 
             {status && (
                 <Alert variant="success" className="mb-4">
@@ -82,7 +82,7 @@ export default function Login({
                                 setData('remember', checked)
                             }
                         />
-                        Remember me
+                        Ingat saya
                     </Label>
                 </div>
 
@@ -93,7 +93,7 @@ export default function Login({
                         className="w-full"
                         disabled={processing}
                     >
-                        Log in
+                        Login
                     </Button>
 
                     {canResetPassword && (
@@ -101,7 +101,7 @@ export default function Login({
                             href={route('password.request')}
                             className="text-center text-sm text-muted-foreground underline hover:text-foreground"
                         >
-                            Forgot your password?
+                            Lupa password?
                         </Link>
                     )}
                 </div>
