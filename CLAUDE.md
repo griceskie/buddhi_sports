@@ -106,7 +106,9 @@ Details and open items: [implementation-plan.md](implementation-plan.md).
 - In progress: SMTP via Mailtrap sandbox for Penyewa password reset (`.env` still `MAIL_MAILER=log`; credentials must come from the user, never invented).
 - Done: Admin/Manager profile (`/profile-pengelola`, `PengelolaProfileController`, route group `auth:admin,manager`): edit nama/username + change password. `AdminLayout` shows a name dropdown (Profile, Log Out) from the shared `pengelola` prop; nav items default by role.
 - Done: unique validation for `admins.username`, `managers.username`, `penyewas.email` in master controllers (validation only, no DB constraint).
-- Open: booking end time not validated after start time.
+- Done (2026-10-20): Penyewa booking backend for the Home draft. `BookingPenyewaController` (`/dashboard` props: `lapangan`, `terisi` for 30 days, `belumDibayar`, `aturan`; `POST /booking` → `booking.store`). Rules live in `App\Support\JadwalBooking`: open 08:00–22:00, whole hours, up to 30 days ahead, no max duration, total computed server-side, row lock on the lapangan. Only `Dipesan`/`Dibayar`/`Dikonfirmasi` hold a slot; a `Dipesan` booking without a pembayaran row is released after 2 hours and `booking:batalkan-kedaluwarsa` (scheduled every minute; `schedule:work` added to `composer dev`) sets it to `Dibatalkan`. `bookings.created_at` added (null for admin-entered bookings, which never expire). App timezone is `Asia/Jakarta`. `LapanganSeeder` seeds the 4 courts. Admin booking form uses the same overlap check and ignores `txttotal`.
+- Open: Home page UI (`Dashboard.tsx`) still shows the placeholder; it now receives the props above.
+- Open: Lapangan `status` (`Kosong`/`Terbooking`) is kept as stored by decision and does not block booking.
 - Open (deferred by user): booking status values `Dipesan`/`Dibayar`/`Dibatalkan` don't match the design system's `BookingStatusBadge` (`dipesan`/`dikonfirmasi`/`selesai`/`dibatalkan`); `Dibayar` renders as a neutral outline badge. Lapangan `Kosong`/`Terbooking` are mapped by `CourtStatusBadge`.
 
 # Failing tests (8 of 25, `php artisan test`)

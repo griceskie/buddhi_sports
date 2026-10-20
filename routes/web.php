@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\PengelolaAuthenticatedSessionController;
 use App\Http\Controllers\Auth\PengelolaProfileController;
+use App\Http\Controllers\BookingPenyewaController;
 use App\Http\Controllers\MasterAdminController;
 use App\Http\Controllers\MasterBookingController;
 use App\Http\Controllers\MasterLapanganController;
@@ -27,12 +28,11 @@ Route::get('/', function () {
 Route::get('/test', function () {
     return Inertia::render('Test');
 });
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [BookingPenyewaController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 Route::get('/booking', function () {
     return Inertia::render('Booking');
 })->middleware(['auth', 'verified'])->name('booking');
+Route::post('/booking', [BookingPenyewaController::class, 'store'])->middleware(['auth', 'verified'])->name('booking.store');
 
 // Penyewa (mahasiswa / masyarakat umum)
 Route::middleware('auth')->group(function () {

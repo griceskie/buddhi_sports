@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Support\JadwalBooking;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,19 +36,11 @@ class MasterBookingController extends Controller
         ]);
     }
 
-    // lapangan yang sama tidak boleh dibooking di jam yang tumpang tindih pada tanggal yang sama
-    private function isLapanganTerbooking($idLapangan, $tanggal, $jamMulai, $jamSelesai, $idBookingKecuali = null){
-        $query = DB::table('bookings')
-            ->where('idLapangan', $idLapangan)
-            ->where('tanggal', $tanggal)
-            ->where('jamMulai', '<', $jamSelesai)
-            ->where('jamSelesai', '>', $jamMulai);
+    // total dihitung dari tarif lapangan, bukan dari isian form
+    private function hitungTotal($idLapangan, $jamMulai, $jamSelesai){
+        $tarif = DB::table('lapangans')->where('idLapangan', $idLapangan)->value('tarifPerJam');
 
-        if ($idBookingKecuali) {
-            $query->where('idBooking', '!=', $idBookingKecuali);
-        }
-
-        return $query->exists();
+        return JadwalBooking::hitungTotal((int) $tarif, $jamMulai, $jamSelesai);
     }
 
     public function insertData(Request $request){
@@ -57,12 +50,13 @@ class MasterBookingController extends Controller
             'txtadmin' => 'nullable|integer',
             'txttanggal' => 'required|date',
             'txtjammulai' => 'required',
-            'txtjamselesai' => 'required',
-            'txttotal' => 'required|integer|min:0',
+            'txtjamselesai' => 'required|after:txtjammulai',
+            'txttotal' => 'nullable|integer|min:0',
             'txtstatus' => 'required|string|max:255',
         ]);
 
-        if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai)) {
+        $menahanSlot = in_array($request->txtstatus, JadwalBooking::STATUS_MENAHAN_SLOT);
+        if ($menahanSlot && JadwalBooking::isTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai)) {
             return redirect('/formbooking')->with('error', 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.');
         }
 
@@ -71,9 +65,9 @@ class MasterBookingController extends Controller
             'idLapangan' => $request->txtlapangan,
             'idAdmin' => $request->txtadmin,
             'tanggal' => $request->txttanggal,
-            'jamMulai' => $request->txtjammulai,
-            'jamSelesai' => $request->txtjamselesai,
-            'totalBayar' => $request->txttotal,
+            'jamMulai' => JadwalBooking::jam($request->txtjammulai),
+            'jamSelesai' => JadwalBooking::jam($request->txtjamselesai),
+            'totalBayar' => $this->hitungTotal($request->txtlapangan, $request->txtjammulai, $request->txtjamselesai),
             'status' => $request->txtstatus,
         ]);
 
@@ -88,12 +82,13 @@ class MasterBookingController extends Controller
             'txtadmin' => 'nullable|integer',
             'txttanggal' => 'required|date',
             'txtjammulai' => 'required',
-            'txtjamselesai' => 'required',
-            'txttotal' => 'required|integer|min:0',
+            'txtjamselesai' => 'required|after:txtjammulai',
+            'txttotal' => 'nullable|integer|min:0',
             'txtstatus' => 'required|string|max:255',
         ]);
 
-        if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, $request->txtid)) {
+        $menahanSlot = in_array($request->txtstatus, JadwalBooking::STATUS_MENAHAN_SLOT);
+        if ($menahanSlot && JadwalBooking::isTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, $request->txtid)) {
             return redirect('/editbooking/'.$request->txtid)->with('error', 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.');
         }
 
@@ -104,9 +99,9 @@ class MasterBookingController extends Controller
             'idLapangan' => $request->txtlapangan,
             'idAdmin' => $request->txtadmin,
             'tanggal' => $request->txttanggal,
-            'jamMulai' => $request->txtjammulai,
-            'jamSelesai' => $request->txtjamselesai,
-            'totalBayar' => $request->txttotal,
+            'jamMulai' => JadwalBooking::jam($request->txtjammulai),
+            'jamSelesai' => JadwalBooking::jam($request->txtjamselesai),
+            'totalBayar' => $this->hitungTotal($request->txtlapangan, $request->txtjammulai, $request->txtjamselesai),
             'status' => $request->txtstatus,
         ]);
 
