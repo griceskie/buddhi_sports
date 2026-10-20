@@ -47,7 +47,7 @@ class RegisteredUserController extends Controller
 
         event(new Registered($penyewa));
 
-        Auth::login($penyewa);
+        Auth::login($penyewa, $request->boolean('remember'));
 
         return redirect(route('dashboard', absolute: false));
     }

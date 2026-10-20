@@ -2,6 +2,7 @@ import InputError from '@/Components/InputError';
 import { Alert, AlertTitle } from '@/Components/ui/alert';
 import { Button } from '@/Components/ui/button';
 import { Checkbox } from '@/Components/ui/checkbox';
+import PasswordInput from '@/Components/PasswordInput';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -41,14 +42,16 @@ export default function Login({
 
             <form onSubmit={submit}>
                 <div>
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className="text-muted-foreground">
+                        Email
+                    </Label>
 
                     <Input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1"
+                        className="mt-2"
                         autoComplete="username"
                         autoFocus
                         onChange={(e) => setData('email', e.target.value)}
@@ -58,14 +61,15 @@ export default function Login({
                 </div>
 
                 <div className="mt-4">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password" className="text-muted-foreground">
+                        Password
+                    </Label>
 
-                    <Input
+                    <PasswordInput
                         id="password"
-                        type="password"
                         name="password"
                         value={data.password}
-                        className="mt-1"
+                        className="mt-2"
                         autoComplete="current-password"
                         onChange={(e) => setData('password', e.target.value)}
                     />
@@ -73,10 +77,11 @@ export default function Login({
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
-                <div className="mt-4">
-                    <Label className="font-normal text-muted-foreground">
+                <div className="mt-4 flex items-center justify-between gap-3">
+                    <Label className="font-normal text-foreground">
                         <Checkbox
                             name="remember"
+                            className="rounded-[4px]"
                             checked={data.remember}
                             onCheckedChange={(checked) =>
                                 setData('remember', checked)
@@ -84,27 +89,35 @@ export default function Login({
                         />
                         Remember me
                     </Label>
-                </div>
-
-                <div className="mt-4 flex flex-col gap-3">
-                    <Button
-                        type="submit"
-                        size="lg"
-                        className="w-full"
-                        disabled={processing}
-                    >
-                        Log in
-                    </Button>
 
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="text-center text-sm text-muted-foreground underline hover:text-foreground"
+                            className="text-sm text-primary hover:underline"
                         >
                             Forgot your password?
                         </Link>
                     )}
                 </div>
+
+                <Button
+                    type="submit"
+                    size="lg"
+                    className="mt-6 w-full"
+                    disabled={processing}
+                >
+                    Continue
+                </Button>
+
+                <p className="mt-4 text-center text-sm text-muted-foreground">
+                    Don&apos;t have an account?{' '}
+                    <Link
+                        href={route('register')}
+                        className="text-primary hover:underline"
+                    >
+                        Register
+                    </Link>
+                </p>
             </form>
         </GuestLayout>
     );

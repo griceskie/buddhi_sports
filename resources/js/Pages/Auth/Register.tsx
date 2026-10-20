@@ -1,5 +1,6 @@
 import InputError from '@/Components/InputError';
 import { Button } from '@/Components/ui/button';
+import { Checkbox } from '@/Components/ui/checkbox';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import GuestLayout from '@/Layouts/GuestLayout';
@@ -13,6 +14,7 @@ export default function Register() {
         email: '',
         password: '',
         password_confirmation: '',
+        remember: false as boolean,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -29,13 +31,15 @@ export default function Register() {
 
             <form onSubmit={submit}>
                 <div>
-                    <Label htmlFor="namaPenyewa">Nama</Label>
+                    <Label htmlFor="namaPenyewa" className="text-muted-foreground">
+                        Nama
+                    </Label>
 
                     <Input
                         id="namaPenyewa"
                         name="namaPenyewa"
                         value={data.namaPenyewa}
-                        className="mt-1"
+                        className="mt-2"
                         autoComplete="name"
                         autoFocus
                         onChange={(e) => setData('namaPenyewa', e.target.value)}
@@ -46,13 +50,15 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <Label htmlFor="noHp">No HP</Label>
+                    <Label htmlFor="noHp" className="text-muted-foreground">
+                        No HP
+                    </Label>
 
                     <Input
                         id="noHp"
                         name="noHp"
                         value={data.noHp}
-                        className="mt-1"
+                        className="mt-2"
                         autoComplete="tel"
                         onChange={(e) => setData('noHp', e.target.value)}
                         required
@@ -62,14 +68,16 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email" className="text-muted-foreground">
+                        Email
+                    </Label>
 
                     <Input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1"
+                        className="mt-2"
                         autoComplete="username"
                         onChange={(e) => setData('email', e.target.value)}
                         required
@@ -79,14 +87,16 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password" className="text-muted-foreground">
+                        Password
+                    </Label>
 
                     <Input
                         id="password"
                         type="password"
                         name="password"
                         value={data.password}
-                        className="mt-1"
+                        className="mt-2"
                         autoComplete="new-password"
                         onChange={(e) => setData('password', e.target.value)}
                         required
@@ -96,14 +106,19 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <Label htmlFor="password_confirmation">Confirm Password</Label>
+                    <Label
+                        htmlFor="password_confirmation"
+                        className="text-muted-foreground"
+                    >
+                        Confirm Password
+                    </Label>
 
                     <Input
                         id="password_confirmation"
                         type="password"
                         name="password_confirmation"
                         value={data.password_confirmation}
-                        className="mt-1"
+                        className="mt-2"
                         autoComplete="new-password"
                         onChange={(e) =>
                             setData('password_confirmation', e.target.value)
@@ -117,23 +132,38 @@ export default function Register() {
                     />
                 </div>
 
-                <div className="mt-4 flex flex-col gap-3">
-                    <Button
-                        type="submit"
-                        size="lg"
-                        className="w-full"
-                        disabled={processing}
-                    >
-                        Register
-                    </Button>
+                <div className="mt-4">
+                    <Label className="font-normal text-foreground">
+                        <Checkbox
+                            name="remember"
+                            className="rounded-[4px]"
+                            checked={data.remember}
+                            onCheckedChange={(checked) =>
+                                setData('remember', checked)
+                            }
+                        />
+                        Remember me
+                    </Label>
+                </div>
 
+                <Button
+                    type="submit"
+                    size="lg"
+                    className="mt-6 w-full"
+                    disabled={processing}
+                >
+                    Register
+                </Button>
+
+                <p className="mt-4 text-center text-sm text-muted-foreground">
+                    Already have an account?{' '}
                     <Link
                         href={route('login')}
-                        className="text-center text-sm text-muted-foreground underline hover:text-foreground"
+                        className="text-primary hover:underline"
                     >
-                        Already registered?
+                        Log in
                     </Link>
-                </div>
+                </p>
             </form>
         </GuestLayout>
     );

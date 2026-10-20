@@ -9,11 +9,11 @@ export default function Guest({
 }: PropsWithChildren<{ title?: ReactNode; description?: ReactNode }>) {
     return (
         <div className="flex min-h-screen flex-col items-center bg-backgrounds-grouped-primary px-4 pt-6 sm:justify-center sm:pt-0">
-            <Link href="/">
-                <Wordmark className="text-xl" />
-            </Link>
+            <div className="w-full rounded-lg border bg-card p-6 text-card-foreground shadow-sm sm:max-w-md">
+                <Link href="/" className="mb-6 inline-block">
+                    <Wordmark className="text-xl" />
+                </Link>
 
-            <div className="mt-6 w-full rounded-lg border bg-card p-6 text-card-foreground shadow-sm sm:max-w-md">
                 {(title || description) && (
                     <div className="mb-6 space-y-1.5">
                         {title && (

@@ -1,16 +1,15 @@
 import InputError from '@/Components/InputError';
+import PasswordInput from '@/Components/PasswordInput';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { Eye, EyeOff } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 export default function LoginPengelola() {
     const [role, setRole] = useState<'admin' | 'manager'>('admin');
-    const [showPassword, setShowPassword] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         role: 'admin',
@@ -71,26 +70,15 @@ export default function LoginPengelola() {
                 <div className="mt-4">
                     <Label htmlFor="password">Password</Label>
 
-                    <div className="relative mt-1">
-                        <Input
-                            id="password"
-                            type={showPassword ? 'text' : 'password'}
-                            name="password"
-                            value={data.password}
-                            className="pr-10"
-                            autoComplete="current-password"
-                            onChange={(e) => setData('password', e.target.value)}
-                            required
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword((v) => !v)}
-                            aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
-                        >
-                            {showPassword ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-                        </button>
-                    </div>
+                    <PasswordInput
+                        id="password"
+                        name="password"
+                        value={data.password}
+                        className="mt-1"
+                        autoComplete="current-password"
+                        onChange={(e) => setData('password', e.target.value)}
+                        required
+                    />
 
                     <InputError message={errors.password} className="mt-2" />
                 </div>
