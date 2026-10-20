@@ -19,12 +19,11 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
     return (
         <GuestLayout>
-            <Head title="Forgot Password" />
+            <Head title="Lupa Password" />
 
             <div className="mb-4 text-sm text-muted-foreground">
-                Forgot your password? No problem. Just let us know your email
-                address and we will email you a password reset link that will
-                allow you to choose a new one.
+                Lupa password? Tidak masalah. Masukkan email Anda, dan kami
+                akan mengirimkan link untuk membuat password baru.
             </div>
 
             {status && (
@@ -53,7 +52,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                         className="w-full"
                         disabled={processing}
                     >
-                        Email Password Reset Link
+                        Kirim Link Reset Password
                     </Button>
                 </div>
             </form>

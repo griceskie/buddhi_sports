@@ -90,7 +90,7 @@ export default function LoginPengelola() {
                         className="w-full"
                         disabled={processing}
                     >
-                        Log in sebagai {role === 'admin' ? 'Admin' : 'Manager'}
+                        Login sebagai {role === 'admin' ? 'Admin' : 'Manager'}
                     </Button>
                 </div>
             </form>

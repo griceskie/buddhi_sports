@@ -32,7 +32,7 @@ export default function Login({
 
     return (
         <GuestLayout>
-            <Head title="Log in" />
+            <Head title="Login" />
 
             {status && (
                 <Alert variant="success" className="mb-4">
@@ -87,7 +87,7 @@ export default function Login({
                                 setData('remember', checked)
                             }
                         />
-                        Remember me
+                        Ingat saya
                     </Label>
 
                     {canResetPassword && (
@@ -95,7 +95,7 @@ export default function Login({
                             href={route('password.request')}
                             className="text-sm text-primary hover:underline"
                         >
-                            Forgot your password?
+                            Lupa password?
                         </Link>
                     )}
                 </div>
