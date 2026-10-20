@@ -10,13 +10,8 @@ import Wordmark from '@/Components/Wordmark';
 import { navLinkClass } from '@/Layouts/AdminLayout';
 import { Link, usePage } from '@inertiajs/react';
 import { cn } from 'cn';
-import { ChevronDown, LogOut, Menu, User, X } from 'lucide-react';
+import { CalendarDays, ChevronDown, LogOut, Menu, User, X } from 'lucide-react';
 import { PropsWithChildren, ReactNode, useState } from 'react';
-
-const navItems = [
-    { route: 'dashboard', label: 'Home' },
-    { route: 'booking', label: 'Booking' },
-];
 
 export default function PenyewaLayout({
     header,
@@ -33,23 +28,9 @@ export default function PenyewaLayout({
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 items-center justify-between">
                         <div className="flex items-center gap-6">
-                            <Link href="/">
+                            <Link href={route('dashboard')}>
                                 <Wordmark />
                             </Link>
-
-                            <div className="hidden items-center gap-1 sm:flex">
-                                {navItems.map((item) => (
-                                    <Link
-                                        key={item.route}
-                                        href={route(item.route)}
-                                        className={navLinkClass(
-                                            route().current(item.route),
-                                        )}
-                                    >
-                                        {item.label}
-                                    </Link>
-                                ))}
-                            </div>
                         </div>
 
                         <div className="hidden sm:block">
@@ -64,6 +45,13 @@ export default function PenyewaLayout({
                                     <DropdownMenuLabel className="border-b px-3 py-2">
                                         {user.email}
                                     </DropdownMenuLabel>
+                                    <DropdownMenuItem
+                                        className="rounded-none px-3 py-2"
+                                        render={<Link href={route('booking')} />}
+                                    >
+                                        <CalendarDays />
+                                        Booking saya
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem
                                         className="rounded-none px-3 py-2"
                                         render={<Link href={route('profile.edit')} />}
@@ -112,22 +100,7 @@ export default function PenyewaLayout({
 
                 {showingNavigationDropdown && (
                     <div className="border-t sm:hidden">
-                        <div className="space-y-1 p-2">
-                            {navItems.map((item) => (
-                                <Link
-                                    key={item.route}
-                                    href={route(item.route)}
-                                    className={cn(
-                                        navLinkClass(route().current(item.route)),
-                                        'block text-base',
-                                    )}
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </div>
-
-                        <div className="border-t p-2">
+                        <div className="p-2">
                             <div className="px-2.5 py-2">
                                 <div className="text-base font-medium">
                                     {user.namaPenyewa}
@@ -136,6 +109,12 @@ export default function PenyewaLayout({
                                     {user.email}
                                 </div>
                             </div>
+                            <Link
+                                href={route('booking')}
+                                className={cn(navLinkClass(false), 'block text-base')}
+                            >
+                                Booking saya
+                            </Link>
                             <Link
                                 href={route('profile.edit')}
                                 className={cn(navLinkClass(false), 'block text-base')}

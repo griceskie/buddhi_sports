@@ -3,6 +3,9 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
+/* dark: ikut class .dark, sama seperti token warna; tanpa ini Tailwind memakai mode gelap OS dan menimpa warna terang. */
+@custom-variant dark (&:is(.dark, .dark *));
+
 @source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
 @source "../../storage/framework/views/*.php";
 @source "../views/**/*.blade.php";

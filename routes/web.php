@@ -12,6 +12,7 @@ use App\Http\Controllers\MasterPenyewaController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -28,7 +29,7 @@ Route::get('/test', function () {
     return Inertia::render('Test');
 });
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    return Inertia::render('Dashboard', ['lapangan' => DB::table('lapangans')->get()]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 Route::get('/booking', function () {
     return Inertia::render('Booking');
