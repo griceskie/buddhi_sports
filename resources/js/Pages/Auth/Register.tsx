@@ -110,7 +110,7 @@ export default function Register() {
                         htmlFor="password_confirmation"
                         className="text-muted-foreground"
                     >
-                        Confirm Password
+                        Konfirmasi Password
                     </Label>
 
                     <Input
@@ -142,7 +142,7 @@ export default function Register() {
                                 setData('remember', checked)
                             }
                         />
-                        Remember me
+                        Ingat saya
                     </Label>
                 </div>
 
@@ -152,16 +152,16 @@ export default function Register() {
                     className="mt-6 w-full"
                     disabled={processing}
                 >
-                    Register
+                    Daftar
                 </Button>
 
                 <p className="mt-4 text-center text-sm text-muted-foreground">
-                    Already have an account?{' '}
+                    Sudah punya akun?{' '}
                     <Link
                         href={route('login')}
                         className="text-primary hover:underline"
                     >
-                        Log in
+                        Login
                     </Link>
                 </p>
             </form>

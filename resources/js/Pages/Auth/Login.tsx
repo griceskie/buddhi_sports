@@ -106,16 +106,16 @@ export default function Login({
                     className="mt-6 w-full"
                     disabled={processing}
                 >
-                    Continue
+                    Lanjut
                 </Button>
 
                 <p className="mt-4 text-center text-sm text-muted-foreground">
-                    Don&apos;t have an account?{' '}
+                    Belum punya akun?{' '}
                     <Link
                         href={route('register')}
                         className="text-primary hover:underline"
                     >
-                        Register
+                        Daftar
                     </Link>
                 </p>
             </form>
