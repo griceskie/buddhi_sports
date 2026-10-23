@@ -23,7 +23,7 @@ export default function PenyewaLayout({
         useState(false);
 
     return (
-        <div className="min-h-screen bg-backgrounds-grouped-primary">
+        <div className="min-h-screen bg-canvas">
             <nav className="border-b bg-background">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 items-center justify-between">

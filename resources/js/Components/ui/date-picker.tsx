@@ -14,6 +14,17 @@ type DatePickerProps = {
   placeholder?: string
   /** Dates that can't be picked, e.g. `{ before: new Date() }` for past days. */
   disabled?: React.ComponentProps<typeof Calendar>["disabled"]
+  /** Replaces the date text on the trigger, e.g. a short caption. */
+  label?: React.ReactNode
+  /** Where the popover sits relative to the trigger; use "end" for a trigger at the right edge. */
+  align?: "start" | "center" | "end"
+  /** Extra Calendar options, e.g. two months or day markers. */
+  calendarProps?: Pick<
+    React.ComponentProps<typeof Calendar>,
+    "numberOfMonths" | "startMonth" | "endMonth" | "modifiers" | "modifiersClassNames"
+  >
+  /** Content under the calendar. `pick` selects a date and closes the popover. */
+  footer?: (pick: (date: Date | undefined) => void) => React.ReactNode
   defaultOpen?: boolean
   id?: string
   name?: string
@@ -27,6 +38,10 @@ function DatePicker({
   onChange,
   placeholder = "Pilih tanggal",
   disabled,
+  label,
+  align = "start",
+  calendarProps,
+  footer,
   defaultOpen,
   id,
   name,
@@ -55,11 +70,19 @@ function DatePicker({
         )}
       >
         <CalendarIcon className="text-muted-foreground" />
-        {date ? format(date, "EEEE, d MMMM yyyy", { locale: localeId }) : placeholder}
+        {label ?? (date ? format(date, "EEEE, d MMMM yyyy", { locale: localeId }) : placeholder)}
       </PopoverTrigger>
       {name && <input type="hidden" name={name} value={date ? format(date, "yyyy-MM-dd") : ""} />}
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar mode="single" selected={date} onSelect={pick} disabled={disabled} defaultMonth={date} />
+      <PopoverContent className="w-auto p-0" align={align}>
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={pick}
+          disabled={disabled}
+          defaultMonth={date}
+          {...calendarProps}
+        />
+        {footer?.(pick)}
       </PopoverContent>
     </Popover>
   )

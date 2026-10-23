@@ -17,6 +17,8 @@ type SlotPickerProps = {
   value?: TimeRange | null
   defaultValue?: TimeRange | null
   onValueChange?: (value: TimeRange | null) => void
+  /** Slots that have already started (start "HH:MM"); shown disabled as "Lewat". */
+  isPast?: (start: string) => boolean
   /** Courts that are still free for the slot the renter tried, shown when they hit a booked hour. */
   alternatives?: { id: string | number; label: string }[]
   onPickAlternative?: (id: string | number) => void
@@ -34,6 +36,7 @@ function SlotPicker({
   value,
   defaultValue = null,
   onValueChange,
+  isPast,
   alternatives,
   onPickAlternative,
   disabled,
@@ -88,26 +91,28 @@ function SlotPicker({
         {slots.map((m) => {
           const taken = isBooked(m)
           const selected = isSelected(m)
+          const past = !taken && !!isPast?.(toTime(m))
           return (
             <button
               key={m}
               type="button"
-              disabled={disabled}
+              disabled={disabled || past}
               aria-pressed={selected}
               aria-disabled={taken || undefined}
-              data-state={taken ? "booked" : selected ? "selected" : "free"}
+              data-state={taken ? "booked" : past ? "past" : selected ? "selected" : "free"}
               onClick={() => pick(m)}
               className={cn(
                 "flex h-auto cursor-pointer flex-col items-center gap-0.5 rounded-md border px-2 py-2 text-sm tabular-nums transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
                 taken &&
-                  "cursor-not-allowed border-dashed bg-muted text-muted-foreground",
-                !taken && !selected && "border-input bg-background hover:bg-muted",
+                  "cursor-not-allowed border-dashed border-input bg-transparent text-muted-foreground",
+                !taken && !selected && !past && "border-transparent bg-canvas hover:bg-muted",
+                past && "border-transparent bg-canvas",
                 selected && "border-primary bg-primary text-primary-foreground"
               )}
             >
               <span className={cn("font-medium", taken && "line-through decoration-muted-foreground/60")}>{toTime(m)}</span>
               <span className={cn("text-[11px]", selected ? "text-primary-foreground/80" : "text-muted-foreground")}>
-                {taken ? "Terbooking" : `s/d ${toTime(m + 60)}`}
+                {taken ? "Terbooking" : past ? "Lewat" : `s/d ${toTime(m + 60)}`}
               </span>
             </button>
           )
@@ -116,9 +121,9 @@ function SlotPicker({
 
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border border-input bg-background" />Kosong</span>
+          <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-canvas ring-1 ring-border/60" />Kosong</span>
           <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-primary" />Dipilih</span>
-          <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border border-dashed bg-muted" />Terbooking</span>
+          <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm border border-dashed border-input" />Terbooking</span>
         </div>
         <span aria-live="polite" className="font-medium text-foreground">
           {range ? `${range.start}–${range.end} · ${hours} jam` : "Klik jam mulai, lalu jam terakhir"}

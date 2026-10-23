@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Admin;
 use App\Models\Manager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -41,7 +42,12 @@ class HandleInertiaRequests extends Middleware
                 $user = $request->user();
 
                 if ($user instanceof Admin) {
-                    return ['role' => 'admin', 'nama' => $user->namaAdmin, 'username' => $user->username];
+                    return [
+                        'role' => 'admin',
+                        'nama' => $user->namaAdmin,
+                        'username' => $user->username,
+                        'menungguVerifikasi' => DB::table('pembayarans')->where('status', 'Menunggu Verifikasi')->count(),
+                    ];
                 }
 
                 if ($user instanceof Manager) {

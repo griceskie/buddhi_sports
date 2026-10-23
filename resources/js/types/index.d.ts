@@ -9,6 +9,8 @@ export interface Pengelola {
     role: 'admin' | 'manager';
     nama: string;
     username: string;
+    /** Admin saja: jumlah pembayaran yang menunggu verifikasi (badge sidebar). */
+    menungguVerifikasi?: number;
 }
 
 export type PageProps<

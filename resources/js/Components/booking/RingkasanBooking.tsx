@@ -1,10 +1,8 @@
-import { Alert, AlertTitle } from '@/Components/ui/alert';
 import { BookingSummary } from '@/Components/ui/booking-summary';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { bookingTotal, formatRupiah, formatTanggal } from '@/Components/ui/format';
 import { Stepper } from '@/Components/ui/stepper';
-import { Info } from 'lucide-react';
 import { jam, Lapangan, Pilihan } from './jadwal';
 
 const LANGKAH = ['Pilih jadwal', 'Transfer', 'Unggah bukti'];
@@ -14,15 +12,16 @@ type Props = {
     pilihan: Pilihan | null;
     tanggal: Date;
     onBook: () => void;
+    memproses?: boolean;
 };
 
 export default function RingkasanBooking({
     lapangan,
     pilihan,
     tanggal,
-    catatan,
     onBook,
-}: Props & { catatan: boolean }) {
+    memproses,
+}: Props) {
     return (
         <div className="grid gap-3 lg:sticky lg:top-4">
             <Stepper steps={LANGKAH} current={0} />
@@ -36,15 +35,9 @@ export default function RingkasanBooking({
                     end={jam(pilihan.end)}
                     rate={lapangan.tarifPerJam}
                 >
-                    <Button size="lg" className="w-full" onClick={onBook}>
-                        Booking sekarang
+                    <Button size="lg" className="w-full" disabled={memproses} onClick={onBook}>
+                        {memproses ? 'Menyimpan…' : 'Booking sekarang'}
                     </Button>
-                    {catatan && (
-                        <Alert>
-                            <Info />
-                            <AlertTitle>Penyimpanan booking belum tersedia.</AlertTitle>
-                        </Alert>
-                    )}
                     <p className="text-center text-xs text-muted-foreground">
                         Ketuk jam lain di lapangan yang sama untuk menambah durasi.
                     </p>
@@ -66,7 +59,7 @@ export default function RingkasanBooking({
     );
 }
 
-export function BarBookingMobile({ lapangan, pilihan, tanggal, onBook }: Props) {
+export function BarBookingMobile({ lapangan, pilihan, tanggal, onBook, memproses }: Props) {
     const total =
         lapangan && pilihan
             ? bookingTotal(jam(pilihan.start), jam(pilihan.end), lapangan.tarifPerJam)
@@ -84,8 +77,8 @@ export function BarBookingMobile({ lapangan, pilihan, tanggal, onBook }: Props) 
                         : 'Ketuk jam yang kosong'}
                 </div>
             </div>
-            <Button size="lg" disabled={!pilihan} onClick={onBook}>
-                Booking sekarang
+            <Button size="lg" disabled={!pilihan || memproses} onClick={onBook}>
+                {memproses ? 'Menyimpan…' : 'Booking sekarang'}
             </Button>
         </div>
     );

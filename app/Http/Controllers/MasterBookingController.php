@@ -14,20 +14,7 @@ class MasterBookingController extends Controller
     public function tampilData(){
 
         $varbooking = DB::table('bookings')->get();
-        return Inertia::render('Master/Booking/TampilData', ['databooking' => $varbooking]);
-    }
-
-    public function tampilFormTambah(){
-        return Inertia::render('Master/Booking/FormTambah', [
-            'datapenyewa' => DB::table('penyewas')->get(),
-            'datalapangan' => DB::table('lapangans')->get(),
-            'dataadmin' => DB::table('admins')->get(),
-        ]);
-    }
-
-    public function tampilFormEdit($idedit){
-        $varbooking = DB::table('bookings')->where('idBooking', $idedit)->first();
-        return Inertia::render('Master/Booking/FormEdit', [
+        return Inertia::render('Master/Booking/TampilData', [
             'databooking' => $varbooking,
             'datapenyewa' => DB::table('penyewas')->get(),
             'datalapangan' => DB::table('lapangans')->get(),
@@ -63,7 +50,7 @@ class MasterBookingController extends Controller
         ]);
 
         if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai)) {
-            return redirect('/formbooking')->with('error', 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.');
+            return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
         }
 
         DB::table('bookings') -> insert ([
@@ -94,7 +81,7 @@ class MasterBookingController extends Controller
         ]);
 
         if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, $request->txtid)) {
-            return redirect('/editbooking/'.$request->txtid)->with('error', 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.');
+            return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
         }
 
         DB::table('bookings')

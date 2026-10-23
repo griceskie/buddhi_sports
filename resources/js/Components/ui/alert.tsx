@@ -11,6 +11,7 @@ const alertVariants = cva(
         // The colour goes on the border, tint and icon; text stays `foreground` so it keeps full contrast.
         success: "border-success/40 bg-success/5 text-foreground [&>svg]:text-success",
         destructive: "border-destructive/40 bg-destructive/5 text-foreground [&>svg]:text-destructive",
+        warning: "border-accessible-orange/40 bg-accessible-orange/10 text-foreground [&>svg]:text-accessible-orange",
       },
     },
     defaultVariants: { variant: "default" },

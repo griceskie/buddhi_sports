@@ -80,8 +80,19 @@
      - **Laporan Pembayaran**
        - Admin membuat laporan pembayaran berdasarkan data pembayaran yang telah terverifikasi, direkap per bulan/tahun.
        - Laporan pembayaran dapat dilihat oleh Manajer Lapangan.
+     - **Dashboard Manajer Lapangan** (direncanakan, mulai 24 Oktober 2026)
+       - Bersifat hanya-baca: Manajer mengawasi pemasukan dan laporan, tidak memverifikasi pembayaran atau mengelola booking.
+       - Wajib:
+         - Daftar laporan pembayaran (nama laporan, periode, total pemasukan, tanggal laporan, pembuat) dengan tombol Buka PDF.
+         - Kartu laporan terbaru dan status bulan berjalan (sudah dibuat atau belum dibuat Admin).
+         - Kartu ringkasan: pemasukan bulan ini (hanya pembayaran terverifikasi) dibanding bulan lalu, total pemasukan tahun ini, jumlah booking terkonfirmasi bulan ini.
+         - Grafik pemasukan per bulan selama 12 bulan terakhir.
+       - Berguna untuk pengawasan (tahap berikutnya): pemasukan per lapangan, tingkat keterisian per lapangan/jam.
+       - Opsional: jumlah pembayaran yang masih menunggu verifikasi (angka saja), pemilih periode untuk semua angka.
+       - Tata letak: sidebar yang sama dengan Admin; header "Halo, {nama}", tiga kartu ringkasan, grafik 12 bulan di samping kartu laporan terbaru, lalu tabel laporan.
      - **Pengelolaan Data Master**
-       - Admin dapat mengelola data Admin dan Manajer Lapangan (sesuai kebutuhan hak akses sistem).
+       - Admin mengelola data Penyewa, Lapangan, Booking, Pembayaran, dan Laporan Pembayaran.
+       - Admin tidak dapat mengelola data Admin dan Manajer Lapangan, agar seorang Admin tidak bisa menghapus Admin lain. Pengelola akun Admin/Manajer belum diputuskan (usulan: dipindah ke Manajer Lapangan).
 
 ---
 

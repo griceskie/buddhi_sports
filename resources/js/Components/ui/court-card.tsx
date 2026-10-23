@@ -20,6 +20,8 @@ type CourtCardProps = {
   /** Makes the card a toggle button for picking a court. */
   selected?: boolean
   onSelect?: () => void
+  /** Right-hand column (stacks under the body on phones), e.g. the price. Replaces the small rate line. Ignored when `onSelect` is set. */
+  aside?: React.ReactNode
   /** Footer content, e.g. a Booking button. Ignored when `onSelect` is set. */
   action?: React.ReactNode
   className?: string
@@ -35,6 +37,7 @@ function CourtCard({
   selected,
   onSelect,
   action,
+  aside,
   className,
 }: CourtCardProps) {
   const unavailable = String(status).toLowerCase() === "perbaikan"
@@ -47,10 +50,12 @@ function CourtCard({
         </div>
         <CourtStatusBadge status={status}>{statusLabel}</CourtStatusBadge>
       </div>
-      <p className="text-sm">
-        <span className="font-semibold tabular-nums">{formatRupiah(rate)}</span>
-        <span className="text-muted-foreground"> / jam</span>
-      </p>
+      {!aside && (
+        <p className="text-sm">
+          <span className="font-semibold tabular-nums">{formatRupiah(rate)}</span>
+          <span className="text-muted-foreground"> / jam</span>
+        </p>
+      )}
       {description && <p className="text-xs text-muted-foreground">{description}</p>}
     </>
   )
@@ -82,10 +87,35 @@ function CourtCard({
     )
   }
 
+  const footer = action && <div className="mt-1 flex gap-2">{action}</div>
+
+  if (aside) {
+    return (
+      <div
+        data-slot="court-card"
+        className={cn(
+          "grid overflow-hidden rounded-lg border bg-card text-left text-card-foreground shadow-sm sm:grid-cols-[minmax(0,1fr)_150px]",
+          className
+        )}
+      >
+        <div className="flex min-w-0 flex-col gap-3 p-4">
+          {body}
+          {footer}
+        </div>
+        <div
+          data-slot="court-card-aside"
+          className="flex items-baseline justify-between gap-2 border-t px-4 py-3 sm:flex-col sm:items-center sm:justify-center sm:border-t-0 sm:border-l sm:p-4 sm:text-center"
+        >
+          {aside}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div data-slot="court-card" className={cn(base, className)}>
       {body}
-      {action && <div className="mt-1 flex gap-2">{action}</div>}
+      {footer}
     </div>
   )
 }

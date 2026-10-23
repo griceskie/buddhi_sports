@@ -17,21 +17,12 @@ class MasterLapanganController extends Controller
         return Inertia::render('Master/Lapangan/TampilData', ['datalapangan' => $varlapangan]);
     }
 
-    public function tampilFormTambah(){
-        return Inertia::render('Master/Lapangan/FormTambah');
-    }
-
-    public function tampilFormEdit($idedit){
-        $varlapangan = DB::table('lapangans')->where('idLapangan', $idedit)->first();
-        return Inertia::render('Master/Lapangan/FormEdit', ['datalapangan' => $varlapangan]);
-    }
-
     public function insertData(Request $request){
         $request->validate([
             'txtnama' => 'required|string|max:255',
             'txtjenis' => 'required|string|max:255',
             'txttarif' => 'required|integer|min:0',
-            'txtstatus' => 'required|string|max:255',
+            'txtstatus' => 'required|in:Tersedia,Perbaikan',
         ]);
 
         DB::table('lapangans') -> insert ([
@@ -50,7 +41,7 @@ class MasterLapanganController extends Controller
             'txtnama' => 'required|string|max:255',
             'txtjenis' => 'required|string|max:255',
             'txttarif' => 'required|integer|min:0',
-            'txtstatus' => 'required|string|max:255',
+            'txtstatus' => 'required|in:Tersedia,Perbaikan',
         ]);
 
         DB::table('lapangans')

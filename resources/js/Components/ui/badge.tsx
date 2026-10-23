@@ -74,7 +74,7 @@ function PaymentStatusBadge({
 
 /* -------------------------------------------------------------------------- */
 /*  BookingStatusBadge – bookings.status                                      */
-/*  Dipesan, Dibayar and Dikonfirmasi hold the slot; Dibatalkan frees it.     */
+/*  Only Dibayar and Dikonfirmasi hold the slot (app/Support/Pemesanan.php).  */
 /* -------------------------------------------------------------------------- */
 
 type BookingStatus = "dipesan" | "dibayar" | "dikonfirmasi" | "selesai" | "dibatalkan"
@@ -89,7 +89,7 @@ const bookingStatus: Record<BookingStatus, { variant: BadgeVariant; Icon: typeof
 }
 
 /** Booking states that still block the slot in the double-booking check. */
-const SLOT_HOLDING_STATUSES: BookingStatus[] = ["dipesan", "dibayar", "dikonfirmasi"]
+const SLOT_HOLDING_STATUSES: BookingStatus[] = ["dibayar", "dikonfirmasi"]
 
 function BookingStatusBadge({ status, className }: { status: BookingStatus | string; className?: string }) {
   const key = String(status).toLowerCase() as BookingStatus
@@ -112,7 +112,7 @@ type CourtStatus = "tersedia" | "dipesan" | "perbaikan"
 const courtStatus: Record<CourtStatus, { variant: BadgeVariant; Icon: typeof Clock; label: string }> = {
   tersedia: { variant: "success", Icon: CircleCheck, label: "Tersedia" },
   dipesan: { variant: "outline", Icon: CalendarClock, label: "Dipesan" },
-  perbaikan: { variant: "secondary", Icon: Wrench, label: "Perbaikan" },
+  perbaikan: { variant: "secondary", Icon: Wrench, label: "Dalam perbaikan" },
 }
 
 function CourtStatusBadge({
@@ -126,7 +126,7 @@ function CourtStatusBadge({
   className?: string
 }) {
   const raw = String(status).toLowerCase()
-  // The repo's Lapangan form still stores "Kosong" / "Terbooking"; read them as the new states.
+  // Old rows may still hold "Kosong" / "Terbooking" (migrated to Tersedia); read them as the new states.
   const key = (({ kosong: "tersedia", terbooking: "dipesan" }) as Record<string, CourtStatus>)[raw] ?? (raw as CourtStatus)
   const s = courtStatus[key] ?? { variant: "outline" as const, Icon: CircleCheck, label: String(status) }
   return (

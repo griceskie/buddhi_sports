@@ -4,8 +4,8 @@ export const JAM_BUKA = 8;
 export const JAM_TUTUP = 22;
 export const HARI_KE_DEPAN = 30;
 export const HAMPIR_PENUH = 12;
-// Sementara false supaya semua jam hari ini bisa dipilih saat mengisi data uji; ubah ke true untuk memblokir jam yang sudah lewat.
-export const BLOKIR_JAM_LEWAT = false;
+// true: jam hari ini yang sudah mulai tidak bisa dipilih. Ubah ke false bila perlu semua jam terbuka untuk mengisi data uji.
+export const BLOKIR_JAM_LEWAT = true;
 
 export type Lapangan = {
     idLapangan: number;
@@ -42,6 +42,9 @@ export const awalHari = (d: Date) =>
 export const sedangPerbaikan = (l: Lapangan) =>
     l.status.toLowerCase() === 'perbaikan';
 
+export const jamSudahLewat = (h: number, tanggal: Date, sekarang: Date) =>
+    BLOKIR_JAM_LEWAT && isoTanggal(tanggal) === isoTanggal(sekarang) && h <= sekarang.getHours();
+
 export function statusJam(
     terisi: Terisi[],
     idLapangan: number,
@@ -58,7 +61,7 @@ export function statusJam(
             (h + 1) * 60 > toMinutes(t.jamMulai),
     );
     if (dipakai) return 'taken';
-    if (BLOKIR_JAM_LEWAT && ds === isoTanggal(sekarang) && h <= sekarang.getHours()) return 'past';
+    if (jamSudahLewat(h, tanggal, sekarang)) return 'past';
     return 'free';
 }
 
@@ -74,32 +77,4 @@ export function jamKosong(
         if (statusJam(terisi, l.idLapangan, h, tanggal, sekarang) === 'free') n++;
     }
     return n;
-}
-
-// Ketuk jam: mulai baru, perpanjang ke depan/belakang bila jam di antaranya kosong, atau batalkan.
-export function pilihJam(
-    sel: Pilihan | null,
-    idLapangan: number,
-    h: number,
-    kosong: (jam: number) => boolean,
-): { sel: Pilihan | null; bentrok: boolean } {
-    const baru: Pilihan = { court: idLapangan, start: h, end: h + 1 };
-    const semuaKosong = (a: number, b: number) => {
-        for (let x = a; x < b; x++) if (!kosong(x)) return false;
-        return true;
-    };
-
-    if (!sel || sel.court !== idLapangan) return { sel: baru, bentrok: false };
-    if (h === sel.start && sel.end - sel.start === 1) return { sel: null, bentrok: false };
-    if (h >= sel.end) {
-        return semuaKosong(sel.end, h + 1)
-            ? { sel: { ...sel, end: h + 1 }, bentrok: false }
-            : { sel: baru, bentrok: true };
-    }
-    if (h < sel.start) {
-        return semuaKosong(h, sel.start)
-            ? { sel: { ...sel, start: h }, bentrok: false }
-            : { sel: baru, bentrok: true };
-    }
-    return { sel: baru, bentrok: false };
 }

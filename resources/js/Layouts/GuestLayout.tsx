@@ -8,7 +8,7 @@ export default function Guest({
     children,
 }: PropsWithChildren<{ title?: ReactNode; description?: ReactNode }>) {
     return (
-        <div className="flex min-h-screen flex-col items-center bg-backgrounds-grouped-primary px-4 pt-6 sm:justify-center sm:pt-0">
+        <div className="flex min-h-screen flex-col items-center bg-canvas px-4 pt-6 sm:justify-center sm:pt-0">
             <div className="w-full rounded-lg border bg-card p-6 text-card-foreground shadow-sm sm:max-w-md">
                 <Link href="/" className="mb-6 inline-block">
                     <Wordmark className="text-xl" />

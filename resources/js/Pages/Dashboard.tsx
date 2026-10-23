@@ -5,20 +5,30 @@ import {
     HAMPIR_PENUH,
     HARI_KE_DEPAN,
     isoTanggal,
+    jam,
     jamKosong,
+    jamSudahLewat,
     Lapangan,
     Pilihan,
-    pilihJam,
     sedangPerbaikan,
-    statusJam,
     tambahHari,
     Terisi,
 } from '@/Components/booking/jadwal';
 import RingkasanBooking, { BarBookingMobile } from '@/Components/booking/RingkasanBooking';
-import { formatTanggal } from '@/Components/ui/format';
+import { Alert, AlertTitle } from '@/Components/ui/alert';
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from '@/Components/ui/empty';
+import { formatTanggal, toMinutes } from '@/Components/ui/format';
+import { TimeRange } from '@/Components/ui/slot-picker';
 import { ToggleGroup, ToggleGroupItem } from '@/Components/ui/toggle-group';
 import PenyewaLayout from '@/Layouts/PenyewaLayout';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { CalendarX, CircleAlert } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Dashboard({
@@ -35,8 +45,8 @@ export default function Dashboard({
     const [jenis, setJenis] = useState(jenisList[0] ?? '');
     const [tanggal, setTanggal] = useState(hariIni);
     const [sel, setSel] = useState<Pilihan | null>(null);
-    const [bentrok, setBentrok] = useState<number | null>(null);
-    const [catatan, setCatatan] = useState(false);
+    const [galat, setGalat] = useState<string | null>(null);
+    const [memproses, setMemproses] = useState(false);
 
     const tampil = lapangan.filter((l) => l.jenisLapangan === jenis);
     const lapPilihan = sel ? (lapangan.find((l) => l.idLapangan === sel.court) ?? null) : null;
@@ -60,32 +70,52 @@ export default function Dashboard({
     const ubahTanggal = (d: Date) => {
         if (isoTanggal(d) !== isoTanggal(tanggal)) {
             setSel(null);
-            setBentrok(null);
-            setCatatan(false);
+            setGalat(null);
         }
         setTanggal(d);
     };
 
     const ubahJenis = (j: string) => {
         if (!lapPilihan || lapPilihan.jenisLapangan !== j) setSel(null);
-        setBentrok(null);
-        setCatatan(false);
+        setGalat(null);
         setJenis(j);
     };
 
-    const klikJam = (l: Lapangan, h: number) => {
-        const hasil = pilihJam(
-            sel,
-            l.idLapangan,
-            h,
-            (x) => statusJam(terisi, l.idLapangan, x, tanggal, sekarang) === 'free',
+    const ubahPilihan = (l: Lapangan, r: TimeRange | null) => {
+        setSel(
+            r
+                ? { court: l.idLapangan, start: toMinutes(r.start) / 60, end: toMinutes(r.end) / 60 }
+                : null,
         );
-        setSel(hasil.sel);
-        setBentrok(hasil.bentrok ? l.idLapangan : null);
-        setCatatan(false);
+        setGalat(null);
     };
 
-    const book = () => setCatatan(true);
+    const terisiHariIni = (l: Lapangan): TimeRange[] =>
+        terisi
+            .filter((t) => t.idLapangan === l.idLapangan && t.tanggal === isoTanggal(tanggal))
+            .map((t) => ({ start: t.jamMulai.slice(0, 5), end: t.jamSelesai.slice(0, 5) }));
+
+    const book = () => {
+        if (!sel || !lapPilihan) return;
+        router.post(
+            route('booking.store'),
+            {
+                idLapangan: lapPilihan.idLapangan,
+                tanggal: isoTanggal(tanggal),
+                jamMulai: jam(sel.start),
+                jamSelesai: jam(sel.end),
+            },
+            {
+                preserveScroll: true,
+                onStart: () => {
+                    setMemproses(true);
+                    setGalat(null);
+                },
+                onFinish: () => setMemproses(false),
+                onError: (e) => setGalat(Object.values(e)[0] ?? 'Booking gagal disimpan.'),
+            },
+        );
+    };
 
     return (
         <PenyewaLayout>
@@ -121,6 +151,13 @@ export default function Dashboard({
                         )}
                     </div>
 
+                    {galat && (
+                        <Alert variant="destructive" className="mb-4">
+                            <CircleAlert />
+                            <AlertTitle>{galat}</AlertTitle>
+                        </Alert>
+                    )}
+
                     <DateStrip
                         hari={hari}
                         terpilih={tanggal}
@@ -129,29 +166,21 @@ export default function Dashboard({
                         onSelect={ubahTanggal}
                     />
 
-                    <div className="mt-2.5 mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
-                        <span className="font-semibold">{formatTanggal(tanggal)}</span>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1.5">
-                                <i className="size-3.5 rounded-[4px] border bg-background" />
-                                Kosong
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <i className="size-3.5 rounded-[4px] bg-primary" />
-                                Dipilih
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <i className="size-3.5 rounded-[4px] bg-fills-tertiary" />
-                                Sudah dipesan
-                            </span>
-                        </div>
-                    </div>
+                    <p className="mt-2.5 mb-4 font-semibold">{formatTanggal(tanggal)}</p>
 
                     <div className="grid gap-3">
                         {tampil.length === 0 && (
-                            <p className="rounded-lg border bg-card p-4 text-muted-foreground">
-                                Belum ada lapangan yang tersedia.
-                            </p>
+                            <Empty>
+                                <EmptyHeader>
+                                    <EmptyMedia>
+                                        <CalendarX aria-hidden="true" />
+                                    </EmptyMedia>
+                                    <EmptyTitle>Belum ada lapangan</EmptyTitle>
+                                    <EmptyDescription>
+                                        Lapangan akan tampil di sini setelah ditambahkan oleh pengelola.
+                                    </EmptyDescription>
+                                </EmptyHeader>
+                            </Empty>
                         )}
                         {tampil.map((l) => (
                             <CourtSlotCard
@@ -159,12 +188,17 @@ export default function Dashboard({
                                 lapangan={l}
                                 perbaikan={sedangPerbaikan(l)}
                                 jamKosong={jamKosong(terisi, l, tanggal, sekarang)}
-                                statusJam={(h) =>
-                                    statusJam(terisi, l.idLapangan, h, tanggal, sekarang)
+                                booked={terisiHariIni(l)}
+                                isPast={(start) =>
+                                    jamSudahLewat(toMinutes(start) / 60, tanggal, sekarang)
                                 }
-                                pilihan={sel && sel.court === l.idLapangan ? sel : null}
-                                bentrok={bentrok === l.idLapangan}
-                                onPick={(h) => klikJam(l, h)}
+                                value={
+                                    sel && sel.court === l.idLapangan
+                                        ? { start: jam(sel.start), end: jam(sel.end) }
+                                        : null
+                                }
+                                onValueChange={(r) => ubahPilihan(l, r)}
+                                resetKey={`${isoTanggal(tanggal)}-${sel && sel.court !== l.idLapangan ? 'lain' : 'sendiri'}`}
                             />
                         ))}
                     </div>
@@ -175,7 +209,7 @@ export default function Dashboard({
                         lapangan={lapPilihan}
                         pilihan={sel}
                         tanggal={tanggal}
-                        catatan={catatan}
+                        memproses={memproses}
                         onBook={book}
                     />
                 </aside>
@@ -186,6 +220,7 @@ export default function Dashboard({
                 pilihan={sel}
                 tanggal={tanggal}
                 onBook={book}
+                memproses={memproses}
             />
         </PenyewaLayout>
     );

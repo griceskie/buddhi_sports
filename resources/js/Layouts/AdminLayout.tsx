@@ -17,8 +17,6 @@ type NavItem = { href: string; label: string };
 
 const adminNav: NavItem[] = [
     { href: '/tampilpenyewa', label: 'Penyewa' },
-    { href: '/tampiladmin', label: 'Admin' },
-    { href: '/tampilmanager', label: 'Manager' },
     { href: '/tampillapangan', label: 'Lapangan' },
     { href: '/tampilbooking', label: 'Booking' },
     { href: '/tampilpembayaran', label: 'Pembayaran' },
@@ -45,7 +43,7 @@ export default function AdminLayout({
         pengelola?.role === 'manager' ? 'dashboard.manager' : 'dashboard.admin';
 
     return (
-        <div className="min-h-screen bg-backgrounds-grouped-primary">
+        <div className="min-h-screen bg-canvas">
             <nav className="border-b bg-background">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 items-center justify-between gap-4">

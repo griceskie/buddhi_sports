@@ -1,125 +1,68 @@
-import { Badge } from '@/Components/ui/badge';
-import { Card } from '@/Components/ui/card';
-import { formatRupiah } from '@/Components/ui/format';
+import { CourtCard } from '@/Components/ui/court-card';
+import { durationHours, formatRupiah } from '@/Components/ui/format';
+import { SlotPicker, TimeRange } from '@/Components/ui/slot-picker';
 import { cn } from 'cn';
-import { CalendarX, CircleAlert, CircleCheck, Wrench } from 'lucide-react';
-import { jam, JAM_BUKA, JAM_TUTUP, Lapangan, StatusJam } from './jadwal';
-
-const LABEL: Record<StatusJam, string> = {
-    free: 'kosong',
-    taken: 'sudah dipesan',
-    past: 'sudah lewat',
-};
-
-const JAM_LIST = Array.from({ length: JAM_TUTUP - JAM_BUKA }, (_, i) => JAM_BUKA + i);
+import { JAM_BUKA, JAM_TUTUP, jam, Lapangan } from './jadwal';
 
 export default function CourtSlotCard({
     lapangan,
     perbaikan,
     jamKosong,
-    statusJam,
-    pilihan,
-    bentrok,
-    onPick,
+    booked,
+    isPast,
+    value,
+    onValueChange,
+    resetKey,
 }: {
     lapangan: Lapangan;
     perbaikan: boolean;
     jamKosong: number;
-    statusJam: (h: number) => StatusJam;
-    pilihan: { start: number; end: number } | null;
-    bentrok: boolean;
-    onPick: (h: number) => void;
+    booked: TimeRange[];
+    isPast: (start: string) => boolean;
+    value: TimeRange | null;
+    onValueChange: (value: TimeRange | null) => void;
+    // SlotPicker menyimpan jam awal di dalam dirinya; ganti key supaya ia mulai bersih saat pilihan pindah lapangan atau tanggal.
+    resetKey: string;
 }) {
-    const durasi = pilihan ? pilihan.end - pilihan.start : 0;
+    const durasi = value ? durationHours(value.start, value.end) : 0;
+    const status = perbaikan ? 'perbaikan' : jamKosong === 0 ? 'dipesan' : 'tersedia';
 
     return (
-        <Card
-            className={cn(
-                'grid gap-0 overflow-hidden py-0 sm:grid-cols-[minmax(0,1fr)_150px]',
-                perbaikan && 'opacity-75',
-            )}
-        >
-            <div className="min-w-0 p-4">
-                <div className="mb-3 flex items-start justify-between gap-3">
-                    <h3 className="text-[15px] font-semibold">{lapangan.namaLapangan}</h3>
-                    {perbaikan ? (
-                        <Badge variant="secondary">
-                            <Wrench aria-hidden="true" />
-                            Perbaikan
-                        </Badge>
-                    ) : jamKosong === 0 ? (
-                        <Badge variant="secondary">
-                            <CalendarX aria-hidden="true" />
-                            Penuh
-                        </Badge>
-                    ) : (
-                        <Badge variant="success">
-                            <CircleCheck aria-hidden="true" />
-                            {jamKosong} jam kosong
-                        </Badge>
-                    )}
-                </div>
-
-                {perbaikan ? (
-                    <p className="rounded-md bg-muted p-3 text-muted-foreground">
-                        Lapangan sedang diperbaiki dan belum bisa dipesan.
-                    </p>
-                ) : (
-                    <div className="grid grid-cols-4 gap-1.5 min-[480px]:grid-cols-7">
-                        {JAM_LIST.map((h) => {
-                            const status = statusJam(h);
-                            const dipilih = !!pilihan && h >= pilihan.start && h < pilihan.end;
-                            const label = dipilih ? 'dipilih' : LABEL[status];
-                            return (
-                                <button
-                                    key={h}
-                                    type="button"
-                                    disabled={status !== 'free'}
-                                    aria-pressed={dipilih}
-                                    aria-label={`${jam(h)}–${jam(h + 1)}, ${label}`}
-                                    title={label}
-                                    onClick={() => onPick(h)}
-                                    className={cn(
-                                        'h-9 cursor-pointer rounded-md border border-border bg-background text-sm font-medium tabular-nums transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
-                                        dipilih &&
-                                            'border-primary bg-primary text-primary-foreground hover:bg-primary',
-                                        status === 'taken' &&
-                                            'cursor-not-allowed border-transparent bg-fills-tertiary text-labels-tertiary line-through hover:bg-fills-tertiary',
-                                        status === 'past' &&
-                                            'cursor-not-allowed opacity-45 hover:bg-background',
-                                    )}
-                                >
-                                    {jam(h)}
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-
-                {bentrok && (
-                    <p className="mt-2.5 flex items-center gap-1.5 text-xs text-destructive">
-                        <CircleAlert className="size-4 shrink-0" aria-hidden="true" />
-                        Ada jam terisi di antaranya, jadi pilihan dimulai ulang.
-                    </p>
-                )}
-            </div>
-
-            <div
-                className={cn(
-                    'flex items-baseline justify-between gap-2 border-t px-4 py-3 sm:flex-col sm:items-center sm:justify-center sm:border-t-0 sm:border-l sm:p-4 sm:text-center',
-                    pilihan && 'text-primary',
-                )}
-            >
-                <span className="text-xs text-muted-foreground">
-                    {pilihan ? `${durasi} jam dipilih` : ''}
-                </span>
-                <span className="text-[22px] leading-[30px] font-semibold tabular-nums">
-                    {formatRupiah(lapangan.tarifPerJam * (pilihan ? durasi : 1))}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                    {pilihan ? `${jam(pilihan.start)}–${jam(pilihan.end)}` : 'per jam'}
-                </span>
-            </div>
-        </Card>
+        <CourtCard
+            name={lapangan.namaLapangan}
+            type={lapangan.jenisLapangan}
+            rate={lapangan.tarifPerJam}
+            status={status}
+            statusLabel={
+                perbaikan ? undefined : jamKosong === 0 ? 'Penuh' : `${jamKosong} jam kosong`
+            }
+            description={perbaikan ? 'Lapangan sedang diperbaiki dan belum bisa dipesan.' : undefined}
+            aside={
+                <>
+                    <span className="text-xs text-muted-foreground">{value ? `${durasi} jam dipilih` : ''}</span>
+                    <span className={cn('text-[22px] leading-[30px] font-semibold tabular-nums', value && 'text-primary')}>
+                        {formatRupiah(lapangan.tarifPerJam * (value ? durasi : 1))}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                        {value ? `${value.start}–${value.end}` : 'per jam'}
+                    </span>
+                </>
+            }
+            className={perbaikan ? 'opacity-75' : undefined}
+            action={
+                perbaikan ? undefined : (
+                    <SlotPicker
+                        key={resetKey}
+                        className="min-w-0 flex-1"
+                        open={jam(JAM_BUKA)}
+                        close={jam(JAM_TUTUP)}
+                        booked={booked}
+                        isPast={isPast}
+                        value={value}
+                        onValueChange={onValueChange}
+                    />
+                )
+            }
+        />
     );
 }

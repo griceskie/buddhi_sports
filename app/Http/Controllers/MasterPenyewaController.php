@@ -19,15 +19,6 @@ class MasterPenyewaController extends Controller
         return Inertia::render('Master/Penyewa/TampilData', ['datapenyewa' => $varpenyewa]);
     }
 
-    public function tampilFormTambah(){
-        return Inertia::render('Master/Penyewa/FormTambah');
-    }
-
-    public function tampilFormEdit($idedit){
-        $varpenyewa = DB::table('penyewas')->where('idPenyewa', $idedit)->first();
-        return Inertia::render('Master/Penyewa/FormEdit', ['datapenyewa' => $varpenyewa]);
-    }
-
     public function insertData(Request $request){
         $request->validate([
             'txtnama' => 'required|string|max:255',

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class MasterLaporanPembayaranController extends Controller
@@ -14,20 +15,7 @@ class MasterLaporanPembayaranController extends Controller
     public function tampilData(){
 
         $varlaporan = DB::table('laporan_pembayarans')->get();
-        return Inertia::render('Master/LaporanPembayaran/TampilData', ['datalaporan' => $varlaporan]);
-    }
-
-    public function tampilFormTambah(){
-        return Inertia::render('Master/LaporanPembayaran/FormTambah', [
-            'dataadmin' => DB::table('admins')->get(),
-            'datamanager' => DB::table('managers')->get(),
-            'datapembayaran' => DB::table('pembayarans')->get(),
-        ]);
-    }
-
-    public function tampilFormEdit($idedit){
-        $varlaporan = DB::table('laporan_pembayarans')->where('idLaporan', $idedit)->first();
-        return Inertia::render('Master/LaporanPembayaran/FormEdit', [
+        return Inertia::render('Master/LaporanPembayaran/TampilData', [
             'datalaporan' => $varlaporan,
             'dataadmin' => DB::table('admins')->get(),
             'datamanager' => DB::table('managers')->get(),
@@ -87,10 +75,14 @@ class MasterLaporanPembayaranController extends Controller
     }
 
     public function deleteDataLaporanPembayaran($idhapus){
+        $pdf = DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->value('filePdf');
         try {
             DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->delete();
         } catch (QueryException $e) {
             return redirect('/tampillaporanpembayaran')->with('error', 'Laporan tidak bisa dihapus.');
+        }
+        if ($pdf) {
+            Storage::disk('local')->delete($pdf);
         }
 
         return redirect('/tampillaporanpembayaran');

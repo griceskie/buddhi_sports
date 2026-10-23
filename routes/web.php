@@ -1,18 +1,18 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\Auth\PengelolaAuthenticatedSessionController;
 use App\Http\Controllers\Auth\PengelolaProfileController;
-use App\Http\Controllers\MasterAdminController;
+use App\Http\Controllers\BookingPenyewaController;
+use App\Http\Controllers\LaporanPembayaranController;
 use App\Http\Controllers\MasterBookingController;
 use App\Http\Controllers\MasterLapanganController;
 use App\Http\Controllers\MasterLaporanPembayaranController;
-use App\Http\Controllers\MasterManagerController;
 use App\Http\Controllers\MasterPembayaranController;
 use App\Http\Controllers\MasterPenyewaController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -28,12 +28,14 @@ Route::get('/', function () {
 Route::get('/test', function () {
     return Inertia::render('Test');
 });
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard', ['lapangan' => DB::table('lapangans')->get()]);
-})->middleware(['auth', 'verified'])->name('dashboard');
-Route::get('/booking', function () {
-    return Inertia::render('Booking');
-})->middleware(['auth', 'verified'])->name('booking');
+// Penyewa: pesan lapangan, bayar, dan Booking saya
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [BookingPenyewaController::class, 'home'])->name('dashboard');
+    Route::get('/booking', [BookingPenyewaController::class, 'daftar'])->name('booking');
+    Route::post('/booking', [BookingPenyewaController::class, 'store'])->name('booking.store');
+    Route::get('/booking/{idBooking}/bayar', [BookingPenyewaController::class, 'bayar'])->whereNumber('idBooking')->name('booking.bayar');
+    Route::post('/booking/{idBooking}/bukti', [BookingPenyewaController::class, 'unggahBukti'])->whereNumber('idBooking')->name('booking.bukti');
+});
 
 // Penyewa (mahasiswa / masyarakat umum)
 Route::middleware('auth')->group(function () {
@@ -54,65 +56,44 @@ Route::middleware('auth:admin,manager')->group(function () {
     Route::get('/profile-pengelola', [PengelolaProfileController::class, 'edit'])->name('profile.pengelola');
     Route::patch('/profile-pengelola', [PengelolaProfileController::class, 'update'])->name('profile.pengelola.update');
     Route::put('/profile-pengelola/password', [PengelolaProfileController::class, 'updatePassword'])->name('profile.pengelola.password');
+    // PDF laporan disimpan privat; Admin yang membuat dan Manager yang dituju sama-sama bisa membukanya
+    Route::get('/laporanpembayaran/{idLaporan}/pdf', [LaporanPembayaranController::class, 'unduh'])->whereNumber('idLaporan')->name('laporan.pdf');
 });
 
 // Panel Admin: dashboard + semua data master
 Route::middleware('auth:admin')->group(function () {
-    Route::get('/dashboard-admin', function () {
-        return Inertia::render('Dashboard/Admin', ['admin' => Auth::guard('admin')->user()]);
-    })->name('dashboard.admin');
+    Route::get('/dashboard-admin', [AdminDashboardController::class, 'index'])->name('dashboard.admin');
+    Route::post('/verifikasi/{idPembayaran}/terima', [AdminDashboardController::class, 'terima'])->whereNumber('idPembayaran')->name('verifikasi.terima');
+    Route::post('/verifikasi/{idPembayaran}/tolak', [AdminDashboardController::class, 'tolak'])->whereNumber('idPembayaran')->name('verifikasi.tolak');
+    Route::post('/laporanpembayaran/buat', [LaporanPembayaranController::class, 'buat'])->name('laporan.buat');
 
     Route::get('/tampilpenyewa', [MasterPenyewaController::class, 'tampilData']);
-    Route::get('/formpenyewa', [MasterPenyewaController::class, 'tampilFormTambah']);
-    Route::get('/editpenyewa/{idedit}', [MasterPenyewaController::class, 'tampilFormEdit']);
     Route::get('/deletepenyewa/{idhapus}', [MasterPenyewaController::class, 'deleteDataPenyewa']);
 
     Route::post('/insertpenyewa', [MasterPenyewaController::class, 'insertData']);
     Route::post('/updatepenyewa', [MasterPenyewaController::class, 'updateData']);
 
-    Route::get('/tampiladmin', [MasterAdminController::class, 'tampilData']);
-    Route::get('/formadmin', [MasterAdminController::class, 'tampilFormTambah']);
-    Route::get('/editadmin/{idedit}', [MasterAdminController::class, 'tampilFormEdit']);
-    Route::get('/deleteadmin/{idhapus}', [MasterAdminController::class, 'deleteDataAdmin']);
-
-    Route::post('/insertadmin', [MasterAdminController::class, 'insertData']);
-    Route::post('/updateadmin', [MasterAdminController::class, 'updateData']);
-
-    Route::get('/tampilmanager', [MasterManagerController::class, 'tampilData']);
-    Route::get('/formmanager', [MasterManagerController::class, 'tampilFormTambah']);
-    Route::get('/editmanager/{idedit}', [MasterManagerController::class, 'tampilFormEdit']);
-    Route::get('/deletemanager/{idhapus}', [MasterManagerController::class, 'deleteDataManager']);
-
-    Route::post('/insertmanager', [MasterManagerController::class, 'insertData']);
-    Route::post('/updatemanager', [MasterManagerController::class, 'updateData']);
+    // Data Admin dan Manager sengaja tidak tersedia untuk Admin: Admin tidak boleh mengubah/menghapus akun Admin lain atau Manager.
 
     Route::get('/tampillapangan', [MasterLapanganController::class, 'tampilData']);
-    Route::get('/formlapangan', [MasterLapanganController::class, 'tampilFormTambah']);
-    Route::get('/editlapangan/{idedit}', [MasterLapanganController::class, 'tampilFormEdit']);
     Route::get('/deletelapangan/{idhapus}', [MasterLapanganController::class, 'deleteDataLapangan']);
 
     Route::post('/insertlapangan', [MasterLapanganController::class, 'insertData']);
     Route::post('/updatelapangan', [MasterLapanganController::class, 'updateData']);
 
     Route::get('/tampilbooking', [MasterBookingController::class, 'tampilData']);
-    Route::get('/formbooking', [MasterBookingController::class, 'tampilFormTambah']);
-    Route::get('/editbooking/{idedit}', [MasterBookingController::class, 'tampilFormEdit']);
     Route::get('/deletebooking/{idhapus}', [MasterBookingController::class, 'deleteDataBooking']);
 
     Route::post('/insertbooking', [MasterBookingController::class, 'insertData']);
     Route::post('/updatebooking', [MasterBookingController::class, 'updateData']);
 
     Route::get('/tampilpembayaran', [MasterPembayaranController::class, 'tampilData']);
-    Route::get('/formpembayaran', [MasterPembayaranController::class, 'tampilFormTambah']);
-    Route::get('/editpembayaran/{idedit}', [MasterPembayaranController::class, 'tampilFormEdit']);
     Route::get('/deletepembayaran/{idhapus}', [MasterPembayaranController::class, 'deleteDataPembayaran']);
 
     Route::post('/insertpembayaran', [MasterPembayaranController::class, 'insertData']);
     Route::post('/updatepembayaran', [MasterPembayaranController::class, 'updateData']);
 
     Route::get('/tampillaporanpembayaran', [MasterLaporanPembayaranController::class, 'tampilData']);
-    Route::get('/formlaporanpembayaran', [MasterLaporanPembayaranController::class, 'tampilFormTambah']);
-    Route::get('/editlaporanpembayaran/{idedit}', [MasterLaporanPembayaranController::class, 'tampilFormEdit']);
     Route::get('/deletelaporanpembayaran/{idhapus}', [MasterLaporanPembayaranController::class, 'deleteDataLaporanPembayaran']);
 
     Route::post('/insertlaporanpembayaran', [MasterLaporanPembayaranController::class, 'insertData']);

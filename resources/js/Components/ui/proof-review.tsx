@@ -49,10 +49,44 @@ function AmountCheck({ paid, due }: { paid: number; due: number }) {
   )
 }
 
+/** The uploaded proof (image, or a PDF placeholder) with a link to open it full size. */
+function ProofPreview({ src }: { src: string | null }) {
+  const isPdf = !!src && /\.pdf($|\?)/i.test(src)
+  return (
+    <div className="grid gap-2">
+      <div className="overflow-hidden rounded-lg border bg-muted">
+        {!src ? (
+          <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 text-sm text-muted-foreground [&_svg]:size-6">
+            <ImageOff aria-hidden="true" />
+            Belum ada bukti pembayaran
+          </div>
+        ) : isPdf ? (
+          <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 text-sm [&_svg]:size-6">
+            <FileText aria-hidden="true" className="text-muted-foreground" />
+            Bukti berupa PDF
+          </div>
+        ) : (
+          <img src={src} alt="Bukti pembayaran" className="max-h-80 w-full object-contain" />
+        )}
+      </div>
+      {src && (
+        <a
+          href={src}
+          target="_blank"
+          rel="noreferrer"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-fit")}
+        >
+          <ExternalLink />
+          Buka ukuran penuh
+        </a>
+      )}
+    </div>
+  )
+}
+
 /** Admin verification panel: the proof next to the amounts, then Terima / Tolak (PRD §4 Pembayaran, §9 risks). */
 function ProofReview({ open, defaultOpen, onOpenChange, payment, onApprove, onReject, processing }: ProofReviewProps) {
   const p = payment
-  const isPdf = !!p.buktiBayar && /\.pdf($|\?)/i.test(p.buktiBayar)
   const decided = p.status.toLowerCase() !== "menunggu verifikasi"
   const row = (label: string, value: React.ReactNode) => (
     <div className="flex items-baseline justify-between gap-4">
@@ -74,32 +108,7 @@ function ProofReview({ open, defaultOpen, onOpenChange, payment, onApprove, onRe
         </SheetHeader>
 
         <SheetBody className="grid content-start gap-5">
-          <div className="overflow-hidden rounded-lg border bg-muted">
-            {!p.buktiBayar ? (
-              <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 text-sm text-muted-foreground [&_svg]:size-6">
-                <ImageOff aria-hidden="true" />
-                Belum ada bukti pembayaran
-              </div>
-            ) : isPdf ? (
-              <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 text-sm [&_svg]:size-6">
-                <FileText aria-hidden="true" className="text-muted-foreground" />
-                Bukti berupa PDF
-              </div>
-            ) : (
-              <img src={p.buktiBayar} alt="Bukti pembayaran" className="max-h-80 w-full object-contain" />
-            )}
-          </div>
-          {p.buktiBayar && (
-            <a
-              href={p.buktiBayar}
-              target="_blank"
-              rel="noreferrer"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "-mt-3 w-fit")}
-            >
-              <ExternalLink />
-              Buka ukuran penuh
-            </a>
-          )}
+          <ProofPreview src={p.buktiBayar} />
 
           <dl className="grid gap-2 text-sm">
             {row("Status", <PaymentStatusBadge status={p.status} />)}
@@ -123,5 +132,5 @@ function ProofReview({ open, defaultOpen, onOpenChange, payment, onApprove, onRe
   )
 }
 
-export { ProofReview }
+export { ProofReview, ProofPreview }
 export type { ProofReviewProps, ProofReviewPayment }

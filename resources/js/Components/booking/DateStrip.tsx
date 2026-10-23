@@ -1,9 +1,8 @@
-import { Button, buttonVariants } from '@/Components/ui/button';
-import { Calendar } from '@/Components/ui/calendar';
+import { Button } from '@/Components/ui/button';
+import { DatePicker } from '@/Components/ui/date-picker';
 import { formatTanggal } from '@/Components/ui/format';
-import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import { cn } from 'cn';
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { isoTanggal } from './jadwal';
 
@@ -13,7 +12,10 @@ export type HariItem = { tanggal: Date; kosong: number };
 const PANAH =
     'hidden self-center rounded-full border-border bg-grays-white text-foreground hover:bg-muted disabled:border-transparent disabled:bg-fills-tertiary disabled:text-labels-tertiary disabled:opacity-100 sm:inline-flex';
 
-const NAMA_HARI =['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+const TOMBOL_KALENDER =
+    'h-auto w-[84px] shrink-0 flex-col justify-center gap-1 rounded-lg bg-grays-white px-0 text-center text-xs text-muted-foreground hover:bg-grays-white aria-expanded:bg-grays-white [&>svg]:size-5! [&>svg]:text-foreground';
+
+const NAMA_HARI = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 const NAMA_BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
 export default function DateStrip({
@@ -31,7 +33,6 @@ export default function DateStrip({
 }) {
     const stripRef = useRef<HTMLDivElement>(null);
     const [tepi, setTepi] = useState<'awal' | 'tengah' | 'akhir'>('awal');
-    const [kalenderBuka, setKalenderBuka] = useState(false);
     const pertama = hari[0].tanggal;
     const terakhir = hari[hari.length - 1].tanggal;
 
@@ -63,11 +64,6 @@ export default function DateStrip({
 
     const geser = (arah: number) =>
         stripRef.current?.scrollBy({ left: arah * stripRef.current.clientWidth, behavior: 'smooth' });
-
-    const pilih = (d: Date) => {
-        onSelect(d);
-        setKalenderBuka(false);
-    };
 
     return (
         <div className="flex items-stretch gap-2">
@@ -134,44 +130,36 @@ export default function DateStrip({
                 <ChevronRight />
             </Button>
 
-            <Popover open={kalenderBuka} onOpenChange={setKalenderBuka}>
-                <PopoverTrigger
-                    className={cn(
-                        buttonVariants({ variant: 'outline' }),
-                        'h-auto w-[84px] shrink-0 flex-col gap-1 rounded-lg bg-grays-white text-xs text-muted-foreground hover:bg-grays-white aria-expanded:bg-grays-white',
-                    )}
-                >
-                    <CalendarDays className="size-5 text-foreground" aria-hidden="true" />
-                    Pilih tanggal
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-auto p-0">
-                    <Calendar
-                        mode="single"
-                        numberOfMonths={2}
-                        selected={terpilih}
-                        defaultMonth={terpilih}
-                        startMonth={pertama}
-                        endMonth={terakhir}
-                        onSelect={(d) => d && pilih(d)}
-                        disabled={[{ before: pertama }, { after: terakhir }, penuh]}
-                        modifiers={{ hampirPenuh, penuh }}
-                        modifiersClassNames={{
-                            hampirPenuh:
-                                'relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-accents-orange',
-                            penuh: 'line-through',
-                        }}
-                    />
+            <DatePicker
+                value={terpilih}
+                onChange={(d) => d && onSelect(d)}
+                label="Pilih tanggal"
+                align="end"
+                disabled={[{ before: pertama }, { after: terakhir }, penuh]}
+                calendarProps={{
+                    numberOfMonths: 2,
+                    startMonth: pertama,
+                    endMonth: terakhir,
+                    modifiers: { hampirPenuh, penuh },
+                    modifiersClassNames: {
+                        hampirPenuh:
+                            'relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-accents-orange',
+                        penuh: 'line-through',
+                    },
+                }}
+                footer={(pick) => (
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t px-4 py-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1.5">
                             <i className="size-1.5 rounded-full bg-accents-orange" />
                             Hampir penuh · Penuh dicoret
                         </span>
-                        <Button variant="link" size="sm" onClick={() => pilih(pertama)}>
+                        <Button variant="link" size="sm" onClick={() => pick(pertama)}>
                             Hari ini
                         </Button>
                     </div>
-                </PopoverContent>
-            </Popover>
+                )}
+                className={TOMBOL_KALENDER}
+            />
         </div>
     );
 }
