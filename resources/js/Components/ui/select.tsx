@@ -87,11 +87,11 @@ function SelectContent({
 }: SelectPrimitive.Popup.Props) {
   return (
     <SelectPrimitive.Portal>
-      <SelectPrimitive.Positioner>
+      <SelectPrimitive.Positioner className="z-50">
         <SelectPrimitive.Popup
           data-slot="select-content"
           className={cn(
-            "z-50 max-h-[min(var(--available-height),20rem)] min-w-[max(var(--anchor-width),8rem)] overflow-y-auto overflow-x-hidden rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none",
+            "max-h-[min(var(--available-height),20rem)] min-w-[max(var(--anchor-width),8rem)] overflow-y-auto overflow-x-hidden rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none",
             "data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 transition-opacity",
             className
           )}

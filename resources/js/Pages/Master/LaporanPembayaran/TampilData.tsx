@@ -17,7 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/Components/ui/table';
-import AdminLayout from '@/Layouts/AdminLayout';
+import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { FileText, Pencil, Plus } from 'lucide-react';
 import { FormEventHandler } from 'react';
@@ -43,7 +43,7 @@ export default function TampilData({ datalaporan, ...pilihan }: { datalaporan: L
     const sheet = useFormSheet<Laporan>();
 
     return (
-        <AdminLayout
+        <AdminSidebarLayout
             header={
                 <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Data Laporan Pembayaran
@@ -109,7 +109,7 @@ export default function TampilData({ datalaporan, ...pilihan }: { datalaporan: L
             <FormSheet open={sheet.open} onClose={sheet.tutup}>
                 <FormLaporan key={sheet.versi} row={sheet.row} onDone={sheet.tutup} {...pilihan} />
             </FormSheet>
-        </AdminLayout>
+        </AdminSidebarLayout>
     );
 }
 

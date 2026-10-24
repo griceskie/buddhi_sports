@@ -14,7 +14,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/Components/ui/table';
-import AdminLayout from '@/Layouts/AdminLayout';
+import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
 import { FormEventHandler } from 'react';
@@ -30,7 +30,7 @@ export default function TampilData({ datapenyewa }: { datapenyewa: Penyewa[] }) 
     const sheet = useFormSheet<Penyewa>();
 
     return (
-        <AdminLayout
+        <AdminSidebarLayout
             header={
                 <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Data Penyewa
@@ -81,7 +81,7 @@ export default function TampilData({ datapenyewa }: { datapenyewa: Penyewa[] }) 
             <FormSheet open={sheet.open} onClose={sheet.tutup}>
                 <FormPenyewa key={sheet.versi} row={sheet.row} onDone={sheet.tutup} />
             </FormSheet>
-        </AdminLayout>
+        </AdminSidebarLayout>
     );
 }
 

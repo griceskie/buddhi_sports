@@ -71,7 +71,7 @@ export function SheetForm({
                 {description && <SheetDescription>{description}</SheetDescription>}
             </SheetHeader>
 
-            <SheetBody className="space-y-4 pb-4">{children}</SheetBody>
+            <SheetBody className="space-y-4 py-4">{children}</SheetBody>
 
             <SheetFooter>
                 <SheetClose className={buttonVariants({ variant: 'outline' })}>Batal</SheetClose>

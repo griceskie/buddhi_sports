@@ -59,7 +59,7 @@ class MasterDataSheetTest extends TestCase
         $b = DB::table('bookings')->first();
         $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', [
             'txtpenyewa' => $b->idPenyewa, 'txtlapangan' => $b->idLapangan, 'txttanggal' => '2026-10-24',
-            'txtjammulai' => '19:00', 'txtjamselesai' => '21:00', 'txttotal' => 100000, 'txtstatus' => 'Dikonfirmasi',
+            'txtadmin' => $this->admin->idAdmin, 'txtjammulai' => '19:00', 'txtjamselesai' => '21:00', 'txttotal' => 100000, 'txtstatus' => 'Dikonfirmasi',
         ])->assertRedirect('/tampilbooking')->assertSessionHasErrors('txtlapangan');
     }
 
@@ -83,5 +83,48 @@ class MasterDataSheetTest extends TestCase
         $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran')->post('/insertpembayaran', $data + ['txtalasan' => 'Foto buram'])
             ->assertSessionHasNoErrors();
         $this->assertDatabaseHas('pembayarans', ['idBooking' => $this->booking, 'status' => 'Ditolak', 'alasanTolak' => 'Foto buram']);
+    }
+
+    public function test_pesan_validasi_berbahasa_indonesia_dengan_nama_kolom_yang_ramah(): void
+    {
+        $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', ['txtstatus' => 'Dipesan'])
+            ->assertSessionHasErrors([
+                'txtpenyewa' => 'Penyewa wajib diisi.',
+                'txtadmin' => 'Admin wajib diisi.',
+                'txtlapangan' => 'Lapangan wajib diisi.',
+                'txtjammulai' => 'Jam mulai wajib diisi.',
+                'txttotal' => 'Total bayar wajib diisi.',
+            ]);
+
+        $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', ['txttotal' => 'abc'])
+            ->assertSessionHasErrors(['txttotal' => 'Total bayar harus berupa bilangan bulat.']);
+    }
+
+    public function test_jam_booking_harus_bulat_dalam_jam_operasional_dan_selesai_setelah_mulai(): void
+    {
+        $b = DB::table('bookings')->first();
+        $kirim = fn (string $mulai, string $selesai) => $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', [
+            'txtpenyewa' => $b->idPenyewa, 'txtlapangan' => $b->idLapangan, 'txtadmin' => $this->admin->idAdmin, 'txttanggal' => '2026-10-30',
+            'txtjammulai' => $mulai, 'txtjamselesai' => $selesai, 'txttotal' => 50000, 'txtstatus' => 'Dipesan',
+        ]);
+
+        $kirim('08:00', '08:00')->assertSessionHasErrors(['txtjamselesai' => 'Jam selesai harus setelah jam mulai.']);
+        $kirim('12:00', '11:00')->assertSessionHasErrors(['txtjamselesai' => 'Jam selesai harus setelah jam mulai.']);
+        $kirim('08:30', '09:30')->assertSessionHasErrors(['txtjammulai', 'txtjamselesai']);
+        $kirim('07:00', '08:00')->assertSessionHasErrors('txtjammulai');
+        $kirim('21:00', '23:00')->assertSessionHasErrors('txtjamselesai');
+        $this->assertDatabaseCount('bookings', 1);
+
+        $kirim('08:00', '09:00')->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('bookings', ['tanggal' => '2026-10-30', 'idAdmin' => $this->admin->idAdmin]);
+    }
+
+    public function test_admin_wajib_dan_form_tambah_mendapat_admin_yang_login(): void
+    {
+        $this->actingAs($this->admin, 'admin')->get('/tampilbooking')
+            ->assertInertia(fn (Assert $p) => $p->where('idAdminLogin', $this->admin->idAdmin));
+
+        $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', ['txtadmin' => 9999])
+            ->assertSessionHasErrors(['txtadmin' => 'Admin yang dipilih tidak valid.']);
     }
 }

@@ -3,7 +3,7 @@ import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import AdminLayout from '@/Layouts/AdminLayout';
+import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { PageProps } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -149,7 +149,7 @@ function UpdatePasswordForm() {
 
 export default function Profile() {
     return (
-        <AdminLayout
+        <AdminSidebarLayout
             header={
                 <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Profile
@@ -171,6 +171,6 @@ export default function Profile() {
                     </CardContent>
                 </Card>
             </div>
-        </AdminLayout>
+        </AdminSidebarLayout>
     );
 }

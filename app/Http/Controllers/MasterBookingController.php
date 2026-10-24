@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Support\Pemesanan;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class MasterBookingController extends Controller
@@ -16,9 +19,37 @@ class MasterBookingController extends Controller
         $varbooking = DB::table('bookings')->get();
         return Inertia::render('Master/Booking/TampilData', [
             'databooking' => $varbooking,
-            'datapenyewa' => DB::table('penyewas')->get(),
+            // hanya kolom yang dipakai form; jangan kirim hash password ke browser
+            'datapenyewa' => DB::table('penyewas')->orderBy('namaPenyewa')->get(['idPenyewa', 'namaPenyewa', 'email']),
             'datalapangan' => DB::table('lapangans')->get(),
-            'dataadmin' => DB::table('admins')->get(),
+            'dataadmin' => DB::table('admins')->get(['idAdmin', 'namaAdmin']),
+            // form Tambah langsung memilih Admin yang sedang bertugas
+            'idAdminLogin' => Auth::guard('admin')->id(),
+        ]);
+    }
+
+    // aturan bersama Tambah dan Edit booking
+    private function validasiBooking(Request $request, array $tambahan = []): void
+    {
+        $jam = fn (int $dari, int $sampai) => array_map(fn ($h) => sprintf('%02d:00', $h), range($dari, $sampai));
+        $buka = sprintf('%02d:00', Pemesanan::JAM_BUKA);
+        $tutup = sprintf('%02d:00', Pemesanan::JAM_TUTUP);
+
+        $request->validate($tambahan + [
+            'txtpenyewa' => 'required|integer',
+            'txtlapangan' => 'required|integer',
+            // booking manual diisi di lokasi, jadi Admin yang bertugas wajib tercatat
+            'txtadmin' => 'required|integer|exists:admins,idAdmin',
+            'txttanggal' => 'required|date',
+            // jam bulat dalam jam operasional; jam selesai harus setelah jam mulai
+            'txtjammulai' => ['required', Rule::in($jam(Pemesanan::JAM_BUKA, Pemesanan::JAM_TUTUP - 1))],
+            'txtjamselesai' => ['required', Rule::in($jam(Pemesanan::JAM_BUKA + 1, Pemesanan::JAM_TUTUP)), 'after:txtjammulai'],
+            'txttotal' => 'required|integer|min:0',
+            'txtstatus' => 'required|string|max:255',
+        ], [
+            'txtjammulai.in' => "Pilih jam mulai antara {$buka} dan ".sprintf('%02d:00', Pemesanan::JAM_TUTUP - 1).'.',
+            'txtjamselesai.in' => 'Pilih jam selesai antara '.sprintf('%02d:00', Pemesanan::JAM_BUKA + 1)." dan {$tutup}.",
+            'txtjamselesai.after' => 'Jam selesai harus setelah jam mulai.',
         ]);
     }
 
@@ -38,16 +69,7 @@ class MasterBookingController extends Controller
     }
 
     public function insertData(Request $request){
-        $request->validate([
-            'txtpenyewa' => 'required|integer',
-            'txtlapangan' => 'required|integer',
-            'txtadmin' => 'nullable|integer',
-            'txttanggal' => 'required|date',
-            'txtjammulai' => 'required',
-            'txtjamselesai' => 'required',
-            'txttotal' => 'required|integer|min:0',
-            'txtstatus' => 'required|string|max:255',
-        ]);
+        $this->validasiBooking($request);
 
         if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai)) {
             return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
@@ -68,17 +90,7 @@ class MasterBookingController extends Controller
     }
 
     public function updateData(Request $request){
-        $request->validate([
-            'txtid' => 'required|integer',
-            'txtpenyewa' => 'required|integer',
-            'txtlapangan' => 'required|integer',
-            'txtadmin' => 'nullable|integer',
-            'txttanggal' => 'required|date',
-            'txtjammulai' => 'required',
-            'txtjamselesai' => 'required',
-            'txttotal' => 'required|integer|min:0',
-            'txtstatus' => 'required|string|max:255',
-        ]);
+        $this->validasiBooking($request, ['txtid' => 'required|integer']);
 
         if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, $request->txtid)) {
             return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);

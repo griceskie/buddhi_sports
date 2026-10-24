@@ -1,10 +1,10 @@
 import AdminSidebar from '@/Components/AdminSidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/Components/ui/sidebar';
 import Wordmark from '@/Components/Wordmark';
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, ReactNode } from 'react';
 
-/** Panel Admin atau Manager (menu mengikuti peran) dengan sidebar yang bisa diciutkan. Di desktop tombol ciutkan ada di sidebar; di HP di header. */
-export default function AdminSidebarLayout({ children }: PropsWithChildren) {
+/** Panel Admin atau Manager (menu mengikuti peran) dengan sidebar yang bisa diciutkan. `header` adalah judul halaman (opsional). Di desktop tombol ciutkan ada di sidebar; di HP di header. */
+export default function AdminSidebarLayout({ header, children }: PropsWithChildren<{ header?: ReactNode }>) {
     return (
         <SidebarProvider>
             <AdminSidebar />
@@ -13,7 +13,10 @@ export default function AdminSidebarLayout({ children }: PropsWithChildren) {
                     <SidebarTrigger className="-ml-1" />
                     <Wordmark />
                 </header>
-                <main className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">{children}</main>
+                <main className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
+                    {header && <div className="mb-6">{header}</div>}
+                    {children}
+                </main>
             </SidebarInset>
         </SidebarProvider>
     );

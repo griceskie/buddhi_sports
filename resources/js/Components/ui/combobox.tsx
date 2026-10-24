@@ -18,13 +18,13 @@ function ComboboxInput({
     <ComboboxPrimitive.InputGroup
       data-slot="combobox-input-group"
       className={cn(
-        "group/combobox relative flex h-8 w-full items-center rounded-lg border border-input bg-background transition-colors has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50 has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 has-disabled:pointer-events-none has-disabled:opacity-50",
+        "group/combobox relative flex h-10 w-full items-center rounded-lg border border-input bg-background transition-colors has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50 has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 has-disabled:pointer-events-none has-disabled:opacity-50",
         className
       )}
     >
       <ComboboxPrimitive.Input
         data-slot="combobox-input"
-        className="h-full min-w-0 flex-1 bg-transparent ps-3 text-sm outline-none placeholder:text-muted-foreground"
+        className="h-full min-w-0 flex-1 bg-transparent ps-4 text-base outline-none placeholder:text-muted-foreground"
         {...props}
       />
       <div className="flex items-center pe-1 text-muted-foreground [&_svg]:size-4">
@@ -75,12 +75,12 @@ function ComboboxItem({ className, children, ...props }: ComboboxPrimitive.Item.
     <ComboboxPrimitive.Item
       data-slot="combobox-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-2 rounded-md py-1.5 ps-8 pe-2 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
+        "relative flex w-full cursor-default items-center gap-2 rounded-md py-1.5 ps-2 pe-8 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
         className
       )}
       {...props}
     >
-      <ComboboxPrimitive.ItemIndicator className="absolute left-2 flex size-3.5 items-center justify-center">
+      <ComboboxPrimitive.ItemIndicator className="absolute right-2 flex size-3.5 items-center justify-center">
         <Check className="size-4" />
       </ComboboxPrimitive.ItemIndicator>
       {children}

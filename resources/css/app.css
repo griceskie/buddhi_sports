@@ -373,4 +373,31 @@
   html {
     @apply font-sans;
   }
+
+  /* Corner smoothing ala iOS (squircle) untuk semua sudut membulat. Browser yang belum mendukung
+     corner-shape mengabaikan blok ini dan tetap memakai border-radius biasa. */
+  @supports (corner-shape: squircle) {
+    :root {
+      /* ---- UBAH DUA ANGKA INI ----
+         --corner-smoothing: kehalusan sudut (superellipse).
+           1   = bulat biasa (sama seperti tanpa smoothing)
+           1.5 = sedikit halus
+           2   = squircle, mirip iOS (kira-kira 50-60% di Figma)
+           3+  = makin kotak, lengkung hanya di ujung
+         --radius: besar sudut. Squircle terlihat lebih kecil dari bulat biasa, jadi sedikit lebih besar dari 0.625rem. */
+      --corner-smoothing: 1.5;
+      --radius: 0.75rem;
+    }
+
+    *,
+    ::before,
+    ::after {
+      corner-shape: superellipse(var(--corner-smoothing));
+    }
+
+    /* yang memang bulat (titik status, avatar, toggle) tetap lingkaran */
+    .rounded-full {
+      corner-shape: round;
+    }
+  }
 }

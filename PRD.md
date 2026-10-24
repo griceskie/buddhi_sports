@@ -194,3 +194,8 @@
      - **Booking:** Proses pemesanan lapangan pada tanggal dan jam tertentu.
    - **References:**
      - Brief proyek yang diberikan oleh Universitas Buddhi Dharma (lisan/internal), 18 Oktober 2026.
+   - **Akun Pengelola (pengembangan dan pengujian):**
+     - Admin: nama Budi, username `Admin1`, password `Admin123`. Login di `/login-pengelola`, tab "Login sebagai Admin".
+     - Manajer Lapangan: nama Jarwo, username `Manager1`, password `Manager123`. Login di `/login-pengelola`, tab "Login sebagai Manager".
+     - Akun ini ada di database lokal pengembangan. Ganti password sebelum aplikasi dipakai sungguhan.
+     - Akun Admin baru dibuat oleh Manajer lewat menu Pengguna > Admin; akun Manajer ditambah langsung di database.

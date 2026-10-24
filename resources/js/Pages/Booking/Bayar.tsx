@@ -130,7 +130,7 @@ export default function Bayar({ booking, rekening }: { booking: BookingPenyewa; 
                                 <AlertDescription>
                                     {sisa.habis
                                         ? 'Batas bayar sudah lewat.'
-                                        : `Sisa ${sisa.sisa}. Booking dibatalkan otomatis jika bukti belum diunggah dalam 2 jam.`}
+                                        : `Sisa ${sisa.sisa}. Booking dibatalkan otomatis jika bukti belum diunggah dalam 1 jam.`}
                                 </AlertDescription>
                             </Alert>
 

@@ -18,7 +18,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/Components/ui/table';
-import AdminLayout from '@/Layouts/AdminLayout';
+import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
 import { FormEventHandler } from 'react';
@@ -35,7 +35,7 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
     const sheet = useFormSheet<Lapangan>();
 
     return (
-        <AdminLayout
+        <AdminSidebarLayout
             header={
                 <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Data Lapangan
@@ -88,7 +88,7 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
             <FormSheet open={sheet.open} onClose={sheet.tutup}>
                 <FormLapangan key={sheet.versi} row={sheet.row} onDone={sheet.tutup} />
             </FormSheet>
-        </AdminLayout>
+        </AdminSidebarLayout>
     );
 }
 

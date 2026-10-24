@@ -33,7 +33,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/Components/ui/table';
-import AdminLayout from '@/Layouts/AdminLayout';
+import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { FileText, Pencil, Plus } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
@@ -91,7 +91,7 @@ export default function TampilData({
         );
 
     return (
-        <AdminLayout
+        <AdminSidebarLayout
             header={
                 <h2 className="text-xl leading-tight font-semibold text-foreground">
                     Data Pembayaran
@@ -193,7 +193,7 @@ export default function TampilData({
                 ringkasan={ringkasan}
                 datamanager={datamanager}
             />
-        </AdminLayout>
+        </AdminSidebarLayout>
     );
 }
 
