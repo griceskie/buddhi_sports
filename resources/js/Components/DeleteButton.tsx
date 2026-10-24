@@ -17,9 +17,12 @@ import { Trash2 } from 'lucide-react';
 export default function DeleteButton({
     href,
     message = 'Yakin ingin menghapus data ini? Tindakan ini tidak bisa dibatalkan.',
+    method = 'get',
 }: {
     href: string;
     message?: string;
+    /** The master-data routes delete with GET; newer routes use DELETE. */
+    method?: 'get' | 'delete';
 }) {
     return (
         <AlertDialog>
@@ -38,7 +41,7 @@ export default function DeleteButton({
                     <AlertDialogCancel>Batal</AlertDialogCancel>
                     <AlertDialogAction
                         variant="destructive"
-                        onClick={() => router.get(href)}
+                        onClick={() => router.visit(href, { method, preserveScroll: true })}
                     >
                         Hapus
                     </AlertDialogAction>

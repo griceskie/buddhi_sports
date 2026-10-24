@@ -2,8 +2,10 @@ import { buttonVariants } from '@/Components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
 import Wordmark from '@/Components/Wordmark';
@@ -41,38 +43,27 @@ export default function PenyewaLayout({
                                     {user.namaPenyewa}
                                     <ChevronDown className="text-muted-foreground" />
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56 p-0">
-                                    <DropdownMenuLabel className="border-b px-3 py-2">
-                                        {user.email}
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuItem
-                                        className="rounded-none px-3 py-2"
-                                        render={<Link href={route('booking')} />}
-                                    >
-                                        <CalendarDays />
-                                        Booking saya
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        className="rounded-none px-3 py-2"
-                                        render={<Link href={route('profile.edit')} />}
-                                    >
-                                        <User />
-                                        Profile
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        variant="destructive"
-                                        className="rounded-none px-3 py-2"
-                                        render={
-                                            <Link
-                                                href={route('logout')}
-                                                method="post"
-                                                as="button"
-                                            />
-                                        }
-                                    >
-                                        <LogOut className="text-destructive" />
-                                        Log Out
-                                    </DropdownMenuItem>
+                                <DropdownMenuContent className="w-56">
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                                        <DropdownMenuItem render={<Link href={route('booking')} />}>
+                                            <CalendarDays />
+                                            Booking saya
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem render={<Link href={route('profile.edit')} />}>
+                                            <User />
+                                            Profile
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem
+                                            render={<Link href={route('logout')} method="post" as="button" />}
+                                        >
+                                            <LogOut />
+                                            Log Out
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
@@ -127,7 +118,7 @@ export default function PenyewaLayout({
                                 as="button"
                                 className={cn(
                                     navLinkClass(false),
-                                    'block w-full text-start text-base text-destructive hover:text-destructive',
+                                    'mt-2 block w-full border-t text-start text-base',
                                 )}
                             >
                                 Log Out

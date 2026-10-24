@@ -3,7 +3,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/Components/ui/s
 import Wordmark from '@/Components/Wordmark';
 import { PropsWithChildren } from 'react';
 
-/** Panel Admin dengan sidebar yang bisa diciutkan. Di desktop tombol ciutkan ada di sidebar; di HP di header. */
+/** Panel Admin atau Manager (menu mengikuti peran) dengan sidebar yang bisa diciutkan. Di desktop tombol ciutkan ada di sidebar; di HP di header. */
 export default function AdminSidebarLayout({ children }: PropsWithChildren) {
     return (
         <SidebarProvider>

@@ -4,7 +4,9 @@ import { CircleAlert, CircleCheck, ExternalLink, FileText, ImageOff } from "luci
 import { Button, buttonVariants } from "./button"
 import { PaymentStatusBadge } from "./badge"
 import { formatRupiah, formatTanggal } from "./format"
+import { Label } from "./label"
 import { Sheet, SheetBody, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "./sheet"
+import { Textarea } from "./textarea"
 
 type ProofReviewPayment = {
   idPembayaran: number
@@ -13,6 +15,8 @@ type ProofReviewPayment = {
   jumlahBayar: number
   /** URL of the uploaded proof (image or PDF), or null when nothing was uploaded. */
   buktiBayar: string | null
+  /** Set when the URL has no file extension, e.g. a route that streams a private file. */
+  buktiPdf?: boolean
   status: string
   /** From the joined booking / penyewa / lapangan rows, when the controller provides them. */
   namaPenyewa?: string
@@ -27,7 +31,10 @@ type ProofReviewProps = {
   onOpenChange?: (open: boolean) => void
   payment: ProofReviewPayment
   onApprove?: () => void
-  onReject?: () => void
+  /** Called with the reason the renter will see; rejecting without a reason is not possible. */
+  onReject?: (reason: string) => void
+  /** Server validation message for the reason, e.g. Inertia `errors.alasan`. */
+  rejectError?: string
   /** Disables both buttons while the request runs (Inertia `processing`). */
   processing?: boolean
 }
@@ -50,8 +57,8 @@ function AmountCheck({ paid, due }: { paid: number; due: number }) {
 }
 
 /** The uploaded proof (image, or a PDF placeholder) with a link to open it full size. */
-function ProofPreview({ src }: { src: string | null }) {
-  const isPdf = !!src && /\.pdf($|\?)/i.test(src)
+function ProofPreview({ src, pdf }: { src: string | null; pdf?: boolean }) {
+  const isPdf = !!src && (pdf ?? /\.pdf($|\?)/i.test(src))
   return (
     <div className="grid gap-2">
       <div className="overflow-hidden rounded-lg border bg-muted">
@@ -85,8 +92,11 @@ function ProofPreview({ src }: { src: string | null }) {
 }
 
 /** Admin verification panel: the proof next to the amounts, then Terima / Tolak (PRD §4 Pembayaran, §9 risks). */
-function ProofReview({ open, defaultOpen, onOpenChange, payment, onApprove, onReject, processing }: ProofReviewProps) {
+function ProofReview({ open, defaultOpen, onOpenChange, payment, onApprove, onReject, rejectError, processing }: ProofReviewProps) {
   const p = payment
+  // "Tolak" first asks for the reason; only the second button sends it
+  const [rejecting, setRejecting] = React.useState(false)
+  const [reason, setReason] = React.useState("")
   const decided = p.status.toLowerCase() !== "menunggu verifikasi"
   const row = (label: string, value: React.ReactNode) => (
     <div className="flex items-baseline justify-between gap-4">
@@ -108,7 +118,7 @@ function ProofReview({ open, defaultOpen, onOpenChange, payment, onApprove, onRe
         </SheetHeader>
 
         <SheetBody className="grid content-start gap-5">
-          <ProofPreview src={p.buktiBayar} />
+          <ProofPreview src={p.buktiBayar} pdf={p.buktiPdf} />
 
           <dl className="grid gap-2 text-sm">
             {row("Status", <PaymentStatusBadge status={p.status} />)}
@@ -117,15 +127,49 @@ function ProofReview({ open, defaultOpen, onOpenChange, payment, onApprove, onRe
             {row("Jumlah dibayar", formatRupiah(p.jumlahBayar))}
           </dl>
           <AmountCheck paid={p.jumlahBayar} due={p.totalBayar} />
+
+          {rejecting && (
+            <div className="grid gap-1.5 pb-4">
+              <Label htmlFor="alasan-tolak">Alasan penolakan</Label>
+              <Textarea
+                id="alasan-tolak"
+                autoFocus
+                rows={3}
+                maxLength={500}
+                placeholder="Contoh: nominal transfer kurang Rp50.000, atau foto bukti tidak terbaca."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                aria-invalid={!!rejectError}
+              />
+              {rejectError ? (
+                <p className="text-sm text-destructive">{rejectError}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Ditampilkan ke penyewa agar bisa mengunggah ulang bukti yang benar.</p>
+              )}
+            </div>
+          )}
         </SheetBody>
 
         <SheetFooter>
-          <Button variant="destructive" disabled={processing || decided || !p.buktiBayar} onClick={onReject}>
-            Tolak
-          </Button>
-          <Button disabled={processing || decided || !p.buktiBayar} onClick={onApprove}>
-            Terima pembayaran
-          </Button>
+          {rejecting ? (
+            <>
+              <Button variant="outline" disabled={processing} onClick={() => setRejecting(false)}>
+                Batal
+              </Button>
+              <Button variant="destructive" disabled={processing || !reason.trim()} onClick={() => onReject?.(reason.trim())}>
+                Tolak pembayaran
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="destructive" disabled={processing || decided || !p.buktiBayar} onClick={() => setRejecting(true)}>
+                Tolak
+              </Button>
+              <Button disabled={processing || decided || !p.buktiBayar} onClick={onApprove}>
+                Terima pembayaran
+              </Button>
+            </>
+          )}
         </SheetFooter>
       </SheetContent>
     </Sheet>

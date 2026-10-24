@@ -1,8 +1,8 @@
 import { isoTanggal } from '@/Components/booking/jadwal';
 import DeleteButton from '@/Components/DeleteButton';
-import FlashMessage from '@/Components/FlashMessage';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
+import RingkasanPembayaran, { Ringkasan } from '@/Components/RingkasanPembayaran';
 import InputError from '@/Components/InputError';
 import { PaymentStatusBadge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -20,10 +20,10 @@ import {
 import { formatRupiah, formatTanggal } from '@/Components/ui/format';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import { Period, PeriodPicker } from '@/Components/ui/period-picker';
 import { ProofPreview } from '@/Components/ui/proof-review';
 import { SignaturePad } from '@/Components/ui/signature-pad';
-import { StatCard } from '@/Components/ui/stat-card';
 import {
     Table,
     TableBody,
@@ -35,7 +35,7 @@ import {
 } from '@/Components/ui/table';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router, useForm } from '@inertiajs/react';
-import { FileText, Pencil, Plus, Wallet } from 'lucide-react';
+import { FileText, Pencil, Plus } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 type Pembayaran = {
@@ -46,10 +46,9 @@ type Pembayaran = {
     jumlahBayar: number;
     buktiBayar: string | null;
     status: string;
+    alasanTolak: string | null;
 };
 
-type PerStatus = { jumlah: number; total: number };
-type Ringkasan = { terverifikasi: PerStatus; menunggu: PerStatus; ditolak: PerStatus };
 type Laporan = { idLaporan: number; namaLaporan: string | null; tglLaporan: string; filePdf: string | null };
 type Manager = { idManager: number; namaManager: string };
 type Booking = { idBooking: number; tanggal: string };
@@ -101,8 +100,6 @@ export default function TampilData({
         >
             <Head title="Data Pembayaran" />
 
-            <FlashMessage />
-
             <Card className="mb-4">
                 <CardContent className="grid gap-4">
                     <div className="flex flex-wrap items-end justify-between gap-3">
@@ -116,15 +113,7 @@ export default function TampilData({
                         </Button>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <StatCard
-                            label="Total pemasukan"
-                            value={formatRupiah(ringkasan.terverifikasi.total)}
-                            description={`dari ${ringkasan.terverifikasi.jumlah} pembayaran terverifikasi, masuk laporan`}
-                            icon={<Wallet className="text-success" />}
-                        />
-                        <StatusPembayaran ringkasan={ringkasan} />
-                    </div>
+                    <RingkasanPembayaran ringkasan={ringkasan} />
 
                     {laporan?.filePdf && (
                         <p className="text-sm text-muted-foreground">
@@ -208,49 +197,6 @@ export default function TampilData({
     );
 }
 
-const STATUS_PEMBAYARAN = [
-    { key: 'terverifikasi', label: 'Terverifikasi', warna: 'bg-success' },
-    { key: 'menunggu', label: 'Menunggu verifikasi', warna: 'bg-accessible-orange' },
-    { key: 'ditolak', label: 'Ditolak', warna: 'bg-destructive' },
-] as const;
-
-function StatusPembayaran({ ringkasan }: { ringkasan: Ringkasan }) {
-    const semua = STATUS_PEMBAYARAN.reduce((n, s) => n + ringkasan[s.key].jumlah, 0);
-
-    return (
-        <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
-            <div className="flex items-baseline justify-between gap-2">
-                <p className="text-sm font-medium text-muted-foreground">Status pembayaran</p>
-                <p className="text-sm text-muted-foreground tabular-nums">{semua} pembayaran</p>
-            </div>
-
-            <div className="flex h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                {semua > 0 &&
-                    STATUS_PEMBAYARAN.map((s) => (
-                        <div
-                            key={s.key}
-                            className={s.warna}
-                            style={{ width: `${(ringkasan[s.key].jumlah / semua) * 100}%` }}
-                        />
-                    ))}
-            </div>
-
-            <ul className="grid gap-1.5 text-sm">
-                {STATUS_PEMBAYARAN.map((s) => (
-                    <li key={s.key} className="flex items-center gap-2">
-                        <span className={`size-2 shrink-0 rounded-full ${s.warna}`} aria-hidden="true" />
-                        <span className="flex-1">{s.label}</span>
-                        <span className="font-medium tabular-nums">{ringkasan[s.key].jumlah}</span>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
-}
-
-// buktiBayar tersimpan sebagai path di disk public ("bukti/x.jpg")
-const urlBukti = (path: string | null) => (!path ? null : /^https?:\/\//.test(path) ? path : `/storage/${path}`);
-
 function FormPembayaran({
     row,
     onDone,
@@ -270,6 +216,7 @@ function FormPembayaran({
         txtjumlah: row ? String(row.jumlahBayar) : '',
         txtbukti: row?.buktiBayar ?? '',
         txtstatus: row?.status ?? 'Menunggu Verifikasi',
+        txtalasan: row?.alasanTolak ?? '',
     });
 
     const submit: FormEventHandler = (e) => {
@@ -289,7 +236,12 @@ function FormPembayaran({
             processing={processing}
             submitLabel={row ? 'Simpan Perubahan' : 'Simpan'}
         >
-            {row && <ProofPreview src={urlBukti(row.buktiBayar)} />}
+            {row && (
+                <ProofPreview
+                    src={row.buktiBayar ? route('pembayaran.bukti', row.idPembayaran) : null}
+                    pdf={row.buktiBayar?.toLowerCase().endsWith('.pdf')}
+                />
+            )}
 
             <div>
                 <Label htmlFor="txtbooking">Booking</Label>
@@ -374,6 +326,22 @@ function FormPembayaran({
                 />
                 <InputError message={errors.txtstatus} className="mt-1" />
             </div>
+
+            {data.txtstatus === 'Ditolak' && (
+                <div>
+                    <Label htmlFor="txtalasan">Alasan penolakan</Label>
+                    <Textarea
+                        id="txtalasan"
+                        className="mt-1"
+                        rows={3}
+                        maxLength={500}
+                        placeholder="Ditampilkan ke penyewa, misalnya: nominal transfer kurang."
+                        value={data.txtalasan}
+                        onChange={(e) => setData('txtalasan', e.target.value)}
+                    />
+                    <InputError message={errors.txtalasan} className="mt-1" />
+                </div>
+            )}
         </SheetForm>
     );
 }

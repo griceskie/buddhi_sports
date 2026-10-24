@@ -28,20 +28,23 @@ class AdminDashboardController extends Controller
 
         $lapangan = DB::table('lapangans')->orderBy('idLapangan')->get(['idLapangan', 'namaLapangan', 'jenisLapangan']);
 
-        $jadwalPada = fn (Carbon $tgl) => DB::table('bookings')
+        $jadwalAntara = fn (Carbon $dari, Carbon $sampai) => DB::table('bookings')
             ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
             ->leftJoin('pembayarans', 'pembayarans.idBooking', '=', 'bookings.idBooking')
-            ->where('bookings.tanggal', $tgl->toDateString())
+            ->whereBetween('bookings.tanggal', [$dari->toDateString(), $sampai->toDateString()])
             // yang belum bayar tidak ditampilkan: tidak menahan jam dan bisa banyak yang bertumpuk di jam yang sama
             ->where(fn ($q) => $q->whereIn('bookings.status', Pemesanan::STATUS_MENAHAN_JAM)
                 ->orWhere(fn ($q) => $q->where('bookings.status', 'Dipesan')->where('pembayarans.status', 'Menunggu Verifikasi')))
-            ->orderBy('bookings.jamMulai')
+            ->orderBy('bookings.tanggal')->orderBy('bookings.jamMulai')
             ->get([
-                'bookings.idBooking', 'bookings.idLapangan', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.status',
+                'bookings.idBooking', 'bookings.idLapangan', 'bookings.tanggal', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.status',
                 'penyewas.namaPenyewa', 'pembayarans.idPembayaran', 'pembayarans.status as statusPembayaran',
             ]);
-        $jadwalHariIni = $jadwalPada($hariIni);
-        $jadwal = $tanggalJadwal->isSameDay($hariIni) ? $jadwalHariIni : $jadwalPada($tanggalJadwal);
+        $jadwalHariIni = $jadwalAntara($hariIni, $hariIni);
+        // kartu Jadwal menerima beberapa minggu sekaligus agar pindah hari di browser tanpa request
+        $jadwalDari = $tanggalJadwal->copy()->subDays(7);
+        $jadwalSampai = $tanggalJadwal->copy()->addDays(Pemesanan::HARI_KE_DEPAN);
+        $jadwal = $jadwalAntara($jadwalDari, $jadwalSampai);
 
         $pendapatan = fn ($awal, $akhir) => (int) DB::table('pembayarans')
             ->where('status', 'Terverifikasi')
@@ -59,9 +62,12 @@ class AdminDashboardController extends Controller
             ],
             'lapangan' => $lapangan,
             'tanggalJadwal' => $tanggalJadwal->toDateString(),
+            'jadwalDari' => $jadwalDari->toDateString(),
+            'jadwalSampai' => $jadwalSampai->toDateString(),
             'jadwal' => $jadwal->map(fn ($b) => [
                 'idBooking' => $b->idBooking,
                 'idLapangan' => $b->idLapangan,
+                'tanggal' => $b->tanggal,
                 'jamMulai' => substr($b->jamMulai, 0, 5),
                 'jamSelesai' => substr($b->jamSelesai, 0, 5),
                 'namaPenyewa' => $b->namaPenyewa,
@@ -92,7 +98,8 @@ class AdminDashboardController extends Controller
                     'tglBayar' => $p->tglBayar,
                     'jumlahBayar' => (int) $p->jumlahBayar,
                     'totalBayar' => (int) $p->totalBayar,
-                    'buktiBayar' => $p->buktiBayar ? asset('storage/'.$p->buktiBayar) : null,
+                    'buktiBayar' => $p->buktiBayar ? route('pembayaran.bukti', $p->idPembayaran) : null,
+                    'buktiPdf' => str_ends_with(strtolower((string) $p->buktiBayar), '.pdf'),
                     'status' => $p->status,
                 ]),
             'terbaru' => DB::table('bookings')
@@ -143,7 +150,7 @@ class AdminDashboardController extends Controller
             }
 
             DB::table('pembayarans')->where('idPembayaran', $idPembayaran)
-                ->update(['status' => 'Terverifikasi', 'idAdmin' => Auth::guard('admin')->id()]);
+                ->update(['status' => 'Terverifikasi', 'alasanTolak' => null, 'idAdmin' => Auth::guard('admin')->id()]);
             DB::table('bookings')->where('idBooking', $p->idBooking)
                 ->update(['status' => 'Dikonfirmasi', 'idAdmin' => Auth::guard('admin')->id()]);
 
@@ -153,15 +160,20 @@ class AdminDashboardController extends Controller
         return back()->with($hasil);
     }
 
-    public function tolak(int $idPembayaran): RedirectResponse
+    public function tolak(Request $request, int $idPembayaran): RedirectResponse
     {
+        // penyewa perlu tahu apa yang salah sebelum mengunggah ulang
+        $request->validate(
+            ['alasan' => 'required|string|max:500'],
+            ['alasan.required' => 'Tulis alasan penolakan untuk penyewa.', 'alasan.max' => 'Alasan maksimal 500 karakter.'],
+        );
         $p = $this->pembayaran($idPembayaran);
         if ($pesan = $this->belumBisaDiputuskan($p)) {
             return back()->with('error', $pesan);
         }
 
         DB::table('pembayarans')->where('idPembayaran', $idPembayaran)
-            ->update(['status' => 'Ditolak', 'idAdmin' => Auth::guard('admin')->id()]);
+            ->update(['status' => 'Ditolak', 'alasanTolak' => trim($request->alasan), 'idAdmin' => Auth::guard('admin')->id()]);
 
         return back()->with('error', 'Bukti '.Pemesanan::kode($p->idBooking).' ('.$p->namaPenyewa.') ditolak. Booking tetap Dipesan, penyewa bisa mengunggah ulang.');
     }

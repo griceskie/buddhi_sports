@@ -106,11 +106,16 @@ class LaporanPembayaranController extends Controller
         return back()->with('success', $nama.' berhasil dibuat dan tersimpan di Laporan Pembayaran.');
     }
 
-    public function unduh(int $idLaporan): StreamedResponse
+    /** Dibuka di tab browser; dengan ?unduh=1 langsung tersimpan sebagai file .pdf. */
+    public function unduh(Request $request, int $idLaporan): StreamedResponse
     {
         $laporan = DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->first(['namaLaporan', 'filePdf']);
         abort_if(! $laporan?->filePdf || ! Storage::disk('local')->exists($laporan->filePdf), 404);
 
-        return Storage::disk('local')->response($laporan->filePdf, $laporan->namaLaporan.'.pdf');
+        $nama = $laporan->namaLaporan.'.pdf';
+
+        return $request->boolean('unduh')
+            ? Storage::disk('local')->download($laporan->filePdf, $nama)
+            : Storage::disk('local')->response($laporan->filePdf, $nama);
     }
 }

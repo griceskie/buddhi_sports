@@ -1,5 +1,4 @@
 import DeleteButton from '@/Components/DeleteButton';
-import FlashMessage from '@/Components/FlashMessage';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
 import { Button } from '@/Components/ui/button';
@@ -39,8 +38,6 @@ export default function TampilData({ datapenyewa }: { datapenyewa: Penyewa[] }) 
             }
         >
             <Head title="Data Penyewa" />
-
-            <FlashMessage />
 
             <div className="mb-4">
                 <Button onClick={() => sheet.buka()}>

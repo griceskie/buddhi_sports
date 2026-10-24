@@ -159,7 +159,9 @@ export default function Bayar({ booking, rekening }: { booking: BookingPenyewa; 
                                                 <CircleX />
                                                 <AlertTitle>Bukti sebelumnya ditolak admin</AlertTitle>
                                                 <AlertDescription>
-                                                    Periksa jumlah dan rekening tujuan, lalu unggah ulang bukti yang benar.
+                                                    {booking.alasanTolak
+                                                        ? `Alasan: ${booking.alasanTolak}. Perbaiki lalu unggah ulang bukti yang benar.`
+                                                        : 'Periksa jumlah dan rekening tujuan, lalu unggah ulang bukti yang benar.'}
                                                 </AlertDescription>
                                             </Alert>
                                         )}

@@ -70,33 +70,48 @@ class AdminDashboardTest extends TestCase
             ->where('stat.jamTerisi', 2)
             ->where('stat.jamTotal', 28)
             ->has('lapangan', 2)
-            ->has('jadwal', 2)
+            ->has('jadwal', 3) // dua hari ini + 20 Okt (masih dalam 7 hari ke belakang); yang belum bayar tidak ikut
             ->has('antrean', 1)
             ->where('antrean.0.idPembayaran', $idP)
             ->where('antrean.0.kode', 'BK-'.str_pad((string) $menunggu, 4, '0', STR_PAD_LEFT))
-            ->where('antrean.0.buktiBayar', fn ($url) => str_ends_with($url, '/storage/bukti/a.jpg'))
+            ->where('antrean.0.buktiBayar', fn ($url) => str_ends_with($url, "/pembayaran/$idP/bukti"))
             ->has('terbaru', 6)
             ->where('pengelola.menungguVerifikasi', 1));
     }
 
-    public function test_jadwal_bisa_dilihat_untuk_tanggal_lain_tanpa_mengubah_statistik(): void
+    public function test_jadwal_dikirim_untuk_rentang_tanggal_tanpa_mengubah_statistik(): void
     {
-        $this->booking('Dikonfirmasi', '2026-10-23', '10:00:00', '12:00:00');
+        $hariIni = $this->booking('Dikonfirmasi', '2026-10-23', '10:00:00', '12:00:00');
         $besok = $this->booking('Dikonfirmasi', '2026-10-24', '08:00:00', '09:00:00', $this->lap2);
         $this->booking('Dikonfirmasi', '2026-10-24', '16:00:00', '18:00:00');
+        $jauh = $this->booking('Dikonfirmasi', '2026-12-01', '08:00:00', '10:00:00');
 
-        $this->actingAs($this->admin, 'admin')->get('/dashboard-admin?tanggal=2026-10-24')->assertInertia(fn (Assert $p) => $p
-            ->where('tanggalJadwal', '2026-10-24')
-            ->has('jadwal', 2)
-            ->where('jadwal.0.idBooking', $besok)
+        // bawaan: 7 hari ke belakang sampai 30 hari ke depan dari hari ini, urut tanggal lalu jam
+        $this->actingAs($this->admin, 'admin')->get('/dashboard-admin')->assertInertia(fn (Assert $p) => $p
+            ->where('tanggalJadwal', '2026-10-23')
+            ->where('jadwalDari', '2026-10-16')
+            ->where('jadwalSampai', '2026-11-22')
+            ->has('jadwal', 3)
+            ->where('jadwal.0.idBooking', $hariIni)
+            ->where('jadwal.1.idBooking', $besok)
+            ->where('jadwal.1.tanggal', '2026-10-24'));
+
+        // tanggal di luar rentang: rentang baru di sekitar tanggal itu, statistik tetap hari ini
+        $this->actingAs($this->admin, 'admin')->get('/dashboard-admin?tanggal=2026-11-25')->assertInertia(fn (Assert $p) => $p
+            ->where('tanggalJadwal', '2026-11-25')
+            ->where('jadwalDari', '2026-11-18')
+            ->where('jadwalSampai', '2026-12-25')
+            ->has('jadwal', 1)
+            ->where('jadwal.0.idBooking', $jauh)
             ->where('stat.bookingHariIni', 1)
             ->where('stat.jamTerisi', 2));
 
         foreach (['2026-02-30', 'besok', ''] as $salah) {
             $this->actingAs($this->admin, 'admin')->get('/dashboard-admin?tanggal='.$salah)
-                ->assertInertia(fn (Assert $p) => $p->where('tanggalJadwal', '2026-10-23')->has('jadwal', 1));
+                ->assertInertia(fn (Assert $p) => $p->where('tanggalJadwal', '2026-10-23')->has('jadwal', 3));
         }
     }
+
 
     public function test_terima_mengonfirmasi_booking_dan_menahan_jam(): void
     {
@@ -129,14 +144,20 @@ class AdminDashboardTest extends TestCase
 
     public function test_tolak_lalu_penyewa_bisa_unggah_ulang(): void
     {
-        Storage::fake('public');
-        Storage::disk('public')->put('bukti/lama.jpg', 'x');
+        Storage::fake('local');
+        Storage::disk('local')->put('bukti/lama.jpg', 'x');
         $b = $this->booking('Dipesan', '2026-10-24', '18:00:00', '20:00:00');
         $p = $this->bayar($b, 'Menunggu Verifikasi', bukti: 'bukti/lama.jpg');
 
-        $this->actingAs($this->admin, 'admin')->post("/verifikasi/$p/tolak")
+        // alasan wajib: tanpa alasan pembayaran tidak berubah
+        $this->actingAs($this->admin, 'admin')->post("/verifikasi/$p/tolak", ['alasan' => '  '])->assertSessionHasErrors('alasan');
+        $this->assertSame('Menunggu Verifikasi', DB::table('pembayarans')->where('idPembayaran', $p)->value('status'));
+
+        $this->actingAs($this->admin, 'admin')->post("/verifikasi/$p/tolak", ['alasan' => 'Nominal kurang Rp50.000'])
             ->assertSessionHas('error', fn ($pesan) => str_contains($pesan, 'ditolak'));
         $this->assertSame('Ditolak', DB::table('pembayarans')->where('idPembayaran', $p)->value('status'));
+        $this->actingAs($this->penyewa)->get('/booking')->assertInertia(fn (Assert $page) => $page
+            ->where('bookings.0.alasanTolak', 'Nominal kurang Rp50.000'));
         $this->assertSame('Dipesan', DB::table('bookings')->where('idBooking', $b)->value('status'));
 
         $this->actingAs($this->penyewa)->post("/booking/$b/bukti", ['bukti' => UploadedFile::fake()->create('baru.jpg', 100, 'image/jpeg')])
@@ -145,8 +166,9 @@ class AdminDashboardTest extends TestCase
         $this->assertSame(1, DB::table('pembayarans')->where('idBooking', $b)->count());
         $this->assertSame('Menunggu Verifikasi', $row->status);
         $this->assertNull($row->idAdmin);
-        Storage::disk('public')->assertMissing('bukti/lama.jpg');
-        Storage::disk('public')->assertExists($row->buktiBayar);
+        $this->assertNull($row->alasanTolak, 'alasan lama hilang setelah unggah ulang');
+        Storage::disk('local')->assertMissing('bukti/lama.jpg');
+        Storage::disk('local')->assertExists($row->buktiBayar);
 
         $this->travel(3)->hours();
         $this->actingAs($this->penyewa)->get('/booking');

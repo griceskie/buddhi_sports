@@ -71,4 +71,17 @@ class MasterDataSheetTest extends TestCase
 
         $this->assertDatabaseHas('pembayarans', ['idBooking' => $this->booking, 'jumlahBayar' => 100000]);
     }
+
+    public function test_status_ditolak_lewat_form_wajib_ada_alasan(): void
+    {
+        $data = ['txtbooking' => $this->booking, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 100000, 'txtstatus' => 'Ditolak'];
+
+        $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran')->post('/insertpembayaran', $data)
+            ->assertSessionHasErrors('txtalasan');
+        $this->assertDatabaseCount('pembayarans', 0);
+
+        $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran')->post('/insertpembayaran', $data + ['txtalasan' => 'Foto buram'])
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('pembayarans', ['idBooking' => $this->booking, 'status' => 'Ditolak', 'alasanTolak' => 'Foto buram']);
+    }
 }

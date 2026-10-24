@@ -1,5 +1,4 @@
 import DeleteButton from '@/Components/DeleteButton';
-import FlashMessage from '@/Components/FlashMessage';
 import { buttonVariants } from '@/Components/ui/button';
 import { Card } from '@/Components/ui/card';
 import {
@@ -31,8 +30,6 @@ export default function TampilData({ dataadmin }: { dataadmin: Admin[] }) {
             }
         >
             <Head title="Data Admin" />
-
-            <FlashMessage />
 
             <div className="mb-4">
                 <Link href="/formadmin" className={buttonVariants()}>

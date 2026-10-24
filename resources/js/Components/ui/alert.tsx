@@ -18,7 +18,7 @@ const alertVariants = cva(
   }
 )
 
-/** A message that stays on the page (bank details, "menunggu verifikasi", "ditolak, upload ulang"). For one-off results use FlashMessage. */
+/** A message that stays on the page (bank details, "menunggu verifikasi", "ditolak, upload ulang"). For one-off results (flash success/error) use toast from ui/toast. */
 function Alert({
   className,
   variant,

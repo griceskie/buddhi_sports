@@ -2,9 +2,9 @@ import { isoTanggal } from '@/Components/booking/jadwal';
 import { BookingPenyewa, keadaan, Rekening, useSisaWaktu } from '@/Components/booking/pembayaran';
 import RekeningTransfer from '@/Components/booking/RekeningTransfer';
 import StatusBooking from '@/Components/booking/StatusBooking';
-import FlashMessage from '@/Components/FlashMessage';
 import InputError from '@/Components/InputError';
 import { Badge } from '@/Components/ui/badge';
+import { BookingSummary } from '@/Components/ui/booking-summary';
 import { Button, buttonVariants } from '@/Components/ui/button';
 import { Card } from '@/Components/ui/card';
 import {
@@ -24,7 +24,7 @@ import {
     EmptyTitle,
 } from '@/Components/ui/empty';
 import { FileUpload } from '@/Components/ui/file-upload';
-import { durationHours, formatRupiah, formatTanggal } from '@/Components/ui/format';
+import { formatRupiah, formatTanggal } from '@/Components/ui/format';
 import { ToggleGroup, ToggleGroupItem } from '@/Components/ui/toggle-group';
 import PenyewaLayout from '@/Layouts/PenyewaLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
@@ -98,8 +98,6 @@ function DaftarBooking({ bookings, rekening }: Props) {
                     </ToggleGroup>
                 </div>
 
-                <FlashMessage />
-
                 {tampil.length === 0 && (
                     <Card className="p-4 text-muted-foreground">Belum ada booking di tab ini.</Card>
                 )}
@@ -126,7 +124,7 @@ function DaftarBooking({ bookings, rekening }: Props) {
 function KartuBooking({ booking: b, onUnggah }: { booking: BookingPenyewa; onUnggah: () => void }) {
     const k = keadaan(b);
     const sisa = useSisaWaktu(k === 'belumBayar' ? b.batasBayar : null);
-    const durasi = durationHours(b.jamMulai, b.jamSelesai);
+    const [detail, setDetail] = useState(false);
 
     return (
         <Card className="grid gap-0 overflow-hidden py-0 sm:grid-cols-[minmax(0,1fr)_150px]">
@@ -141,9 +139,13 @@ function KartuBooking({ booking: b, onUnggah }: { booking: BookingPenyewa; onUng
                 <p className="font-medium tabular-nums">
                     {formatTanggal(b.tanggal, 'EEE, d MMM')} · {b.jamMulai}–{b.jamSelesai}
                 </p>
-                <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                    {b.kode} · {formatRupiah(b.tarifPerJam)} × {durasi} jam
-                </p>
+                <button
+                    type="button"
+                    onClick={() => setDetail(true)}
+                    className="mt-0.5 text-xs font-medium text-primary hover:underline"
+                >
+                    Detail booking
+                </button>
                 {sisa && !sisa.habis && (
                     <p className="mt-2.5 flex items-center gap-1.5 text-xs text-accessible-orange">
                         <Clock className="size-4 shrink-0" aria-hidden="true" />
@@ -151,7 +153,9 @@ function KartuBooking({ booking: b, onUnggah }: { booking: BookingPenyewa; onUng
                     </p>
                 )}
                 {k === 'ditolak' && (
-                    <p className="mt-0.5 text-xs text-destructive">Bukti ditolak admin, silakan unggah ulang.</p>
+                    <p className="mt-2.5 text-xs text-destructive">
+                        Bukti ditolak admin{b.alasanTolak ? `: ${b.alasanTolak}` : ''}. Silakan unggah ulang.
+                    </p>
                 )}
                 {k === 'menungguVerifikasi' && (
                     <p className="mt-0.5 text-xs text-muted-foreground">Bukti terkirim, menunggu pengecekan admin.</p>
@@ -172,6 +176,31 @@ function KartuBooking({ booking: b, onUnggah }: { booking: BookingPenyewa; onUng
                 {k === 'belumBayar' && sisa && !sisa.habis && <Button onClick={onUnggah}>Unggah bukti</Button>}
                 {k === 'ditolak' && <Button onClick={onUnggah}>Unggah ulang</Button>}
             </div>
+
+            <Dialog open={detail} onOpenChange={setDetail}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Booking {b.kode}</DialogTitle>
+                        <DialogDescription className="flex items-center gap-2">
+                            Status <StatusBooking booking={b} />
+                        </DialogDescription>
+                    </DialogHeader>
+                    <BookingSummary
+                        court={b.namaLapangan}
+                        type={b.jenisLapangan}
+                        date={b.tanggal}
+                        start={b.jamMulai}
+                        end={b.jamSelesai}
+                        rate={b.tarifPerJam}
+                    >
+                        {k === 'ditolak' && b.alasanTolak && (
+                            <p className="rounded-md bg-destructive/10 p-2.5 text-destructive">
+                                Alasan bukti ditolak: {b.alasanTolak}
+                            </p>
+                        )}
+                    </BookingSummary>
+                </DialogContent>
+            </Dialog>
         </Card>
     );
 }

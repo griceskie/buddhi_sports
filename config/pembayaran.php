@@ -8,6 +8,6 @@ return [
     'atas_nama' => env('BANK_ATAS_NAMA', 'Buddhi Sports'),
 
     // Booking yang belum mengunggah bukti dibatalkan setelah sekian menit sejak dipesan.
-    'batas_bayar_menit' => 120,
+    'batas_bayar_menit' => 60,
 
 ];

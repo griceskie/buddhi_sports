@@ -14,7 +14,9 @@
     table.data { width: 100%; border-collapse: collapse; }
     table.data th { text-align: left; font-weight: bold; background: #f5f5f5; border-bottom: 1px solid #c6c6c8; padding: 6px 5px; }
     table.data td { border-bottom: 1px solid #e5e5ea; padding: 5px; }
-    .r { text-align: right; }
+    /* lebih spesifik dari "table.data th" agar judul Jumlah ikut rata kanan, sejajar dengan angkanya */
+    table.data .nw { white-space: nowrap; }
+    table.data .r { text-align: right; white-space: nowrap; width: 90px; }
     .total td { font-weight: bold; border-top: 1px solid #111; border-bottom: none; }
     .kosong { padding: 16px 5px; text-align: center; color: #6c6c70; }
     .ttd { margin-top: 32px; width: 220px; float: right; text-align: center; }
@@ -36,7 +38,7 @@
         <thead>
             <tr>
                 <th>No</th>
-                <th>Kode</th>
+                <th class="nw">Kode</th>
                 <th>Penyewa</th>
                 <th>Lapangan</th>
                 <th>Jadwal main</th>
@@ -48,7 +50,7 @@
             @forelse ($pembayaran as $i => $p)
                 <tr>
                     <td>{{ $i + 1 }}</td>
-                    <td>{{ $p['kode'] }}</td>
+                    <td class="nw">{{ $p['kode'] }}</td>
                     <td>{{ $p['penyewa'] }}</td>
                     <td>{{ $p['lapangan'] }}</td>
                     <td>{{ $p['jadwal'] }}</td>

@@ -32,20 +32,22 @@ Tahap 1 (simpan booking + jam terisi) dan tahap 2 (halaman bayar + Booking saya 
 
 Sisa:
 3. ~~Verifikasi pembayaran di sisi Admin~~ — **selesai 2026-10-23** di dashboard Admin (Terima/Tolak, unggah ulang setelah ditolak). Lihat CLAUDE.md.
-4. **Dashboard Manager** (dikerjakan 2026-10-24). Rincian di [PRD.md](PRD.md) bagian 4 "Dashboard Manajer Lapangan". Urutan:
+4. ~~Dashboard Manager~~ — **selesai 2026-10-24** (lihat CLAUDE.md). Catatan rencana awal: Rincian di [PRD.md](PRD.md) bagian 4 "Dashboard Manajer Lapangan". Urutan:
    1. `ManagerDashboardController@index` (DB::table): ringkasan pemasukan bulan ini/bulan lalu/tahun ini (`pembayarans.status = Terverifikasi`), booking terkonfirmasi bulan ini, pemasukan 12 bulan, daftar `laporan_pembayarans` + laporan bulan berjalan. Tes feature.
    2. `Pages/Dashboard/Manager.tsx` di layout sidebar (perlu `ManagerSidebar` atau `AdminSidebar` dengan menu per peran): `StatCard` x3, grafik bar `ui/chart.tsx` (recharts), kartu laporan terbaru, tabel laporan dengan link `laporan.pdf`.
    3. Cek browser hanya-baca (Manager `Manager1` / `Manager123`).
-   - Belum diputuskan: siapa yang mengelola akun Admin/Manager (usulan: Manager).
+   - Wewenang dan sidebar Manager sudah diputuskan 2026-10-24 (PRD bagian 4): lihat Pembayaran dan Lapangan, kelola akun Admin (lihat, tambah, hapus dengan konfirmasi, reset password), unduh PDF laporan. Perlu route GET hanya-baca untuk Manager dan `AdminSidebar` dengan menu per peran.
+   - Belum diputuskan: Manager memverifikasi laporan bulanan (dan badge untuk laporan yang belum diperiksa).
 
 Sebelum dipakai sungguhan:
 - Ganti `BANK_NAMA`, `BANK_NO_REKENING`, `BANK_ATAS_NAMA` di `.env` dengan rekening asli (sekarang placeholder `0000000000`).
 - Pasang cron `* * * * * php artisan schedule:run` agar `booking:batalkan-kedaluwarsa` berjalan; tanpa cron, pembatalan tetap terjadi saat penyewa membuka halaman booking, tapi tidak otomatis di belakang layar.
-- Jalankan `php artisan migrate` dan `php artisan storage:link` di setiap mesin.
+- Jalankan `composer install`, `npm install`, `php artisan migrate`, dan `php artisan storage:link` di setiap mesin (migrasi memindahkan bukti bayar ke disk privat dan menambah kolom `alasanTolak`).
+- Batas waktu bayar (saat ini 60 menit) diubah di `config/pembayaran.php` (`batas_bayar_menit`); ubah hanya dengan sadar, karena berlaku juga untuk booking yang sudah ada.
 
 ## 3. Temuan review sebelum merge (belum diperbaiki)
 
-1. **Test suite gagal (8 dari 54)** — test bawaan Breeze di `tests/Feature/Auth/*` dan `tests/Feature/ProfileTest.php` masih memakai `User::factory()` dan field `name`. Perlu `PenyewaFactory` + update test ke field `namaPenyewa`/`noHp`. Daftar test: lihat [CLAUDE.md](CLAUDE.md).
+1. **Test suite gagal (8 dari 64)** — test bawaan Breeze di `tests/Feature/Auth/*` dan `tests/Feature/ProfileTest.php` masih memakai `User::factory()` dan field `name`. Perlu `PenyewaFactory` + update test ke field `namaPenyewa`/`noHp`. Daftar test: lihat [CLAUDE.md](CLAUDE.md).
 2. **Booking: jam selesai tidak divalidasi > jam mulai** — `txtjamselesai` perlu `after:txtjammulai`; tanpa itu cek bentrok jadwal bisa lolos.
 3. (Minor) ID relasi (`txtpenyewa`, `txtlapangan`, dst.) divalidasi `integer` saja, bukan `exists:`; ID tidak valid berujung error 500 dari FK, bukan pesan validasi.
 4. (Minor) `/logout-pengelola` meng-invalidate seluruh session, jadi Penyewa yang login di browser yang sama ikut logout.

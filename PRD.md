@@ -77,11 +77,21 @@
        - Setelah booking berhasil, penyewa melakukan pembayaran sesuai total biaya sewa.
        - Penyewa mengupload bukti pembayaran (foto/scan transfer) melalui sistem.
        - Admin memverifikasi status pembayaran (misalnya: menunggu verifikasi, terverifikasi, ditolak).
+       - Jika Admin menolak bukti, Admin wajib menulis alasan penolakan; alasan ditampilkan ke penyewa (Booking saya, halaman Bayar) agar bisa mengunggah ulang bukti yang benar.
+       - Bukti pembayaran disimpan privat dan hanya dapat dibuka oleh penyewa pemilik booking, Admin, dan Manajer.
+       - Booking yang belum mengunggah bukti dibatalkan otomatis setelah batas waktu bayar (saat ini 1 jam, diatur di config/pembayaran.php).
      - **Laporan Pembayaran**
        - Admin membuat laporan pembayaran berdasarkan data pembayaran yang telah terverifikasi, direkap per bulan/tahun.
        - Laporan pembayaran dapat dilihat oleh Manajer Lapangan.
-     - **Dashboard Manajer Lapangan** (direncanakan, mulai 24 Oktober 2026)
-       - Bersifat hanya-baca: Manajer mengawasi pemasukan dan laporan, tidak memverifikasi pembayaran atau mengelola booking.
+     - **Dashboard Manajer Lapangan** (bagian wajib selesai 24 Oktober 2026)
+       - Wewenang Manajer (diputuskan 24 Oktober 2026):
+         - Melihat data Pembayaran (termasuk bukti bayar) dan data Lapangan, tanpa tambah/edit/hapus dan tanpa verifikasi.
+         - Melihat, menambah, dan menghapus akun Admin, serta mereset password Admin. Tidak ada edit data Admin lainnya.
+         - Menghapus Admin yang masih tercatat di pembayaran atau laporan ditolak sistem; tombol Hapus tetap ada dengan konfirmasi dan pesan penolakan.
+         - Melihat dan mengunduh PDF laporan pembayaran.
+         - Akun Manajer tidak dikelola lewat aplikasi untuk saat ini (ditambah lewat database/seeder).
+       - Sidebar Manajer: Dashboard; Pemantauan: Pembayaran, Lapangan; Laporan: Laporan Pembayaran; Pengguna: Admin. Sama dengan sidebar Admin (bisa diciutkan, menu nama dengan Profile dan Log Out).
+       - Belum diputuskan: Manajer "memverifikasi" (menandai sudah diperiksa) laporan bulan berjalan; jika ya, badge di menu Laporan Pembayaran menandai laporan yang belum diperiksa.
        - Wajib:
          - Daftar laporan pembayaran (nama laporan, periode, total pemasukan, tanggal laporan, pembuat) dengan tombol Buka PDF.
          - Kartu laporan terbaru dan status bulan berjalan (sudah dibuat atau belum dibuat Admin).
@@ -92,7 +102,7 @@
        - Tata letak: sidebar yang sama dengan Admin; header "Halo, {nama}", tiga kartu ringkasan, grafik 12 bulan di samping kartu laporan terbaru, lalu tabel laporan.
      - **Pengelolaan Data Master**
        - Admin mengelola data Penyewa, Lapangan, Booking, Pembayaran, dan Laporan Pembayaran.
-       - Admin tidak dapat mengelola data Admin dan Manajer Lapangan, agar seorang Admin tidak bisa menghapus Admin lain. Pengelola akun Admin/Manajer belum diputuskan (usulan: dipindah ke Manajer Lapangan).
+       - Admin tidak dapat mengelola data Admin dan Manajer Lapangan, agar seorang Admin tidak bisa menghapus Admin lain. Akun Admin dikelola Manajer Lapangan (lihat Dashboard Manajer Lapangan).
 
 ---
 

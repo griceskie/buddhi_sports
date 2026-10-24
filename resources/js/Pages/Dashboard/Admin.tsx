@@ -1,7 +1,6 @@
 import JadwalHariIni, { JadwalBooking, JadwalLapangan } from '@/Components/admin/JadwalHariIni';
 import { awalHari, isoTanggal, tambahHari } from '@/Components/booking/jadwal';
 import StatusBooking from '@/Components/booking/StatusBooking';
-import FlashMessage from '@/Components/FlashMessage';
 import { Button, buttonVariants } from '@/Components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { DatePicker } from '@/Components/ui/date-picker';
@@ -21,7 +20,7 @@ import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { PageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, Trophy, Wallet } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Stat = {
     bookingHariIni: number;
@@ -45,6 +44,7 @@ type Antrean = {
     jumlahBayar: number;
     totalBayar: number;
     buktiBayar: string | null;
+    buktiPdf: boolean;
     status: string;
 };
 
@@ -86,13 +86,17 @@ export default function AdminDashboard({
     stat,
     lapangan,
     tanggalJadwal,
-    jadwal: jadwalHariIni,
+    jadwalDari,
+    jadwalSampai,
+    jadwal: daftarJadwal,
     antrean,
     terbaru,
 }: {
     stat: Stat;
     lapangan: JadwalLapangan[];
     tanggalJadwal: string;
+    jadwalDari: string;
+    jadwalSampai: string;
     jadwal: JadwalBooking[];
     antrean: Antrean[];
     terbaru: Terbaru[];
@@ -100,29 +104,49 @@ export default function AdminDashboard({
     const nama = usePage<PageProps>().props.pengelola?.nama;
     const [ditinjau, setDitinjau] = useState<Antrean | null>(null);
     const [memproses, setMemproses] = useState(false);
+    const [galatAlasan, setGalatAlasan] = useState<string>();
     const persenTerisi = stat.jamTotal ? Math.round((stat.jamTerisi / stat.jamTotal) * 100) : 0;
 
-    const tanggal = keTanggal(tanggalJadwal);
+    // Server mengirim jadwal jadwalDari..jadwalSampai; pindah hari di rentang itu tanpa request
+    const [tampil, setTampil] = useState(tanggalJadwal);
+    useEffect(() => setTampil(tanggalJadwal), [tanggalJadwal]);
+    const tanggal = keTanggal(tampil);
+    const jadwalTanggal = daftarJadwal.filter((b) => b.tanggal === tampil);
     const hariIni = awalHari(new Date());
-    const lihatTanggal = (d: Date) =>
+    const lihatTanggal = (d: Date) => {
+        const iso = isoTanggal(d);
+        if (iso >= jadwalDari && iso <= jadwalSampai) return setTampil(iso);
         router.get(
             route('dashboard.admin'),
-            d.getTime() === hariIni.getTime() ? {} : { tanggal: isoTanggal(d) },
-            { only: ['jadwal', 'tanggalJadwal'], preserveState: true, preserveScroll: true, replace: true },
+            d.getTime() === hariIni.getTime() ? {} : { tanggal: iso },
+            {
+                only: ['jadwal', 'tanggalJadwal', 'jadwalDari', 'jadwalSampai'],
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
         );
+    };
 
-    const tinjau = (idPembayaran: number) => setDitinjau(antrean.find((a) => a.idPembayaran === idPembayaran) ?? null);
+    const tinjau = (idPembayaran: number) => {
+        setGalatAlasan(undefined);
+        setDitinjau(antrean.find((a) => a.idPembayaran === idPembayaran) ?? null);
+    };
 
-    const putuskan = (aksi: 'terima' | 'tolak') => {
+    const putuskan = (aksi: 'terima' | 'tolak', alasan?: string) => {
         if (!ditinjau) return;
         router.post(
             route(`verifikasi.${aksi}`, ditinjau.idPembayaran),
-            {},
+            aksi === 'tolak' ? { alasan } : {},
             {
                 preserveScroll: true,
                 onStart: () => setMemproses(true),
                 onFinish: () => setMemproses(false),
-                onSuccess: () => setDitinjau(null),
+                onError: (e) => setGalatAlasan(e.alasan),
+                onSuccess: () => {
+                    setGalatAlasan(undefined);
+                    setDitinjau(null);
+                },
             },
         );
     };
@@ -143,8 +167,6 @@ export default function AdminDashboard({
                     </Link>
                 </div>
 
-                <FlashMessage />
-
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <StatCard
                         label="Booking hari ini"
@@ -163,16 +185,16 @@ export default function AdminDashboard({
                         }
                     />
                     <StatCard
-                        label="Pendapatan bulan ini"
-                        value={formatRupiah(stat.pendapatanBulanIni)}
-                        description={trenPendapatan(stat.pendapatanBulanIni, stat.pendapatanBulanLalu)}
-                        icon={<Wallet />}
-                    />
-                    <StatCard
                         label="Terisi hari ini"
                         value={`${persenTerisi}%`}
                         description={`${stat.jamTerisi} dari ${stat.jamTotal} jam sewa terkonfirmasi`}
                         icon={<Trophy />}
+                    />
+                    <StatCard
+                        label="Pendapatan bulan ini"
+                        value={formatRupiah(stat.pendapatanBulanIni)}
+                        description={trenPendapatan(stat.pendapatanBulanIni, stat.pendapatanBulanLalu)}
+                        icon={<Wallet />}
                     />
                 </div>
 
@@ -213,7 +235,7 @@ export default function AdminDashboard({
                             </CardAction>
                         </CardHeader>
                         <CardContent>
-                            <JadwalHariIni lapangan={lapangan} booking={jadwalHariIni} onTinjau={tinjau} />
+                            <JadwalHariIni lapangan={lapangan} booking={jadwalTanggal} onTinjau={tinjau} />
                         </CardContent>
                     </Card>
 
@@ -294,11 +316,13 @@ export default function AdminDashboard({
 
             {ditinjau && (
                 <ProofReview
+                    key={ditinjau.idPembayaran}
                     open
                     onOpenChange={(buka) => !buka && setDitinjau(null)}
                     payment={ditinjau}
                     onApprove={() => putuskan('terima')}
-                    onReject={() => putuskan('tolak')}
+                    onReject={(alasan) => putuskan('tolak', alasan)}
+                    rejectError={galatAlasan}
                     processing={memproses}
                 />
             )}

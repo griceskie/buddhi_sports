@@ -1,5 +1,4 @@
 import DeleteButton from '@/Components/DeleteButton';
-import FlashMessage from '@/Components/FlashMessage';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
@@ -52,8 +51,6 @@ export default function TampilData({ datalaporan, ...pilihan }: { datalaporan: L
             }
         >
             <Head title="Data Laporan Pembayaran" />
-
-            <FlashMessage />
 
             <div className="mb-4">
                 <Button onClick={() => sheet.buka()}>

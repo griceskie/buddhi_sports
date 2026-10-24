@@ -129,7 +129,7 @@ class BookingPenyewaTest extends TestCase
             ->where('booking.totalBayar', 100000)
             ->where('booking.jamMulai', '18:00')
             ->where('booking.statusPembayaran', null)
-            ->where('booking.batasBayar', Carbon::parse('2026-10-23 16:30:00')->toIso8601String())
+            ->where('booking.batasBayar', Carbon::parse('2026-10-23 14:30:00')->addMinutes(config('pembayaran.batas_bayar_menit'))->toIso8601String())
             ->where('rekening.nomor', config('pembayaran.nomor_rekening')));
 
         $this->actingAs($this->buatPenyewa('lain@example.com'))->get("/booking/$id/bayar")->assertNotFound();
@@ -138,7 +138,7 @@ class BookingPenyewaTest extends TestCase
 
     public function test_unggah_bukti_membuat_pembayaran_menunggu_verifikasi(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $this->pesan();
         $id = DB::table('bookings')->value('idBooking');
 
@@ -151,7 +151,7 @@ class BookingPenyewaTest extends TestCase
         $this->assertSame('Menunggu Verifikasi', $p->status);
         $this->assertSame(100000, (int) $p->jumlahBayar);
         $this->assertSame('2026-10-23', $p->tglBayar);
-        Storage::disk('public')->assertExists($p->buktiBayar);
+        Storage::disk('local')->assertExists($p->buktiBayar);
 
         $this->actingAs($this->penyewa)->post("/booking/$id/bukti", ['bukti' => UploadedFile::fake()->create('lagi.jpg', 100, 'image/jpeg')])
             ->assertSessionHasErrors(['bukti' => 'Bukti untuk booking ini sudah dikirim.']);
@@ -160,7 +160,7 @@ class BookingPenyewaTest extends TestCase
 
     public function test_file_bukti_divalidasi(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $this->pesan();
         $id = DB::table('bookings')->value('idBooking');
 
@@ -175,7 +175,7 @@ class BookingPenyewaTest extends TestCase
 
     public function test_booking_tanpa_bukti_batal_otomatis_setelah_2_jam(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $this->pesan(['jamMulai' => '18:00', 'jamSelesai' => '19:00']);
         $this->pesan(['jamMulai' => '19:00', 'jamSelesai' => '20:00']);
         [$tanpaBukti, $denganBukti] = DB::table('bookings')->orderBy('idBooking')->pluck('idBooking')->all();
@@ -185,7 +185,8 @@ class BookingPenyewaTest extends TestCase
             'jamMulai' => '08:00:00', 'jamSelesai' => '09:00:00', 'totalBayar' => 50000, 'status' => 'Dipesan',
         ]);
 
-        $this->travel(119)->minutes();
+        $batas = config('pembayaran.batas_bayar_menit');
+        $this->travel($batas - 1)->minutes();
         $this->artisan('booking:batalkan-kedaluwarsa')->expectsOutput('0 booking dibatalkan.');
 
         $this->travel(2)->minutes();
@@ -206,7 +207,7 @@ class BookingPenyewaTest extends TestCase
     public function test_perintah_terjadwal_membatalkan_yang_kedaluwarsa(): void
     {
         $this->pesan();
-        $this->travel(121)->minutes();
+        $this->travel(config('pembayaran.batas_bayar_menit') + 1)->minutes();
         $this->artisan('booking:batalkan-kedaluwarsa')->expectsOutput('1 booking dibatalkan.')->assertSuccessful();
         $this->assertSame('Dibatalkan', DB::table('bookings')->value('status'));
     }

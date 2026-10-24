@@ -15,6 +15,8 @@ export type BookingPenyewa = {
     totalBayar: number;
     status: string;
     statusPembayaran: string | null;
+    /** Diisi Admin saat menolak bukti; null lagi setelah bukti diunggah ulang. */
+    alasanTolak: string | null;
     batasBayar: string | null;
 };
 

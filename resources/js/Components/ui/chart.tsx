@@ -136,7 +136,7 @@ function IncomeChart({
   color = "var(--chart-1)",
   className,
 }: {
-  /** laporan_pembayarans rows, oldest first. */
+  /** One row per month, in the order shown left to right. */
   data: IncomeRow[]
   /** Defaults to chart-1 (HIG Blue). */
   color?: string

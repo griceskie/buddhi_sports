@@ -137,15 +137,16 @@ class BookingPenyewaController extends Controller
             'idAdmin' => null,
             'tglBayar' => today()->toDateString(),
             'jumlahBayar' => $booking->totalBayar,
-            'buktiBayar' => $request->file('bukti')->store('bukti', 'public'),
+            'buktiBayar' => $request->file('bukti')->store('bukti', 'local'),
             'status' => 'Menunggu Verifikasi',
+            'alasanTolak' => null,
         ];
 
         if ($booking->statusPembayaran === 'Ditolak') {
             // unggah ulang: ganti bukti lama pada baris pembayaran yang sama (idBooking unik)
             $lama = DB::table('pembayarans')->where('idBooking', $booking->idBooking)->value('buktiBayar');
             if ($lama) {
-                Storage::disk('public')->delete($lama);
+                Storage::disk('local')->delete($lama);
             }
             DB::table('pembayarans')->where('idBooking', $booking->idBooking)->update($data);
         } else {
@@ -185,6 +186,7 @@ class BookingPenyewaController extends Controller
                 'lapangans.jenisLapangan',
                 'lapangans.tarifPerJam',
                 'pembayarans.status as statusPembayaran',
+                'pembayarans.alasanTolak',
             );
     }
 
@@ -210,6 +212,7 @@ class BookingPenyewaController extends Controller
             'totalBayar' => (int) $b->totalBayar,
             'status' => $b->status,
             'statusPembayaran' => $b->statusPembayaran,
+            'alasanTolak' => $b->alasanTolak,
             'batasBayar' => Pemesanan::batasBayar($b->created_at)?->toIso8601String(),
         ];
     }

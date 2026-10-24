@@ -4,7 +4,9 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\Auth\PengelolaAuthenticatedSessionController;
 use App\Http\Controllers\Auth\PengelolaProfileController;
 use App\Http\Controllers\BookingPenyewaController;
+use App\Http\Controllers\BuktiBayarController;
 use App\Http\Controllers\LaporanPembayaranController;
+use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\MasterBookingController;
 use App\Http\Controllers\MasterLapanganController;
 use App\Http\Controllers\MasterLaporanPembayaranController;
@@ -12,7 +14,6 @@ use App\Http\Controllers\MasterPembayaranController;
 use App\Http\Controllers\MasterPenyewaController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -50,6 +51,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/login-pengelola', [PengelolaAuthenticatedSessionController::class, 'store']);
 });
 Route::post('/logout-pengelola', [PengelolaAuthenticatedSessionController::class, 'destroy'])->name('logout.pengelola');
+
+// bukti transfer privat: penyewa pemilik, Admin, atau Manager (dicek di controller)
+Route::get('/pembayaran/{idPembayaran}/bukti', [BuktiBayarController::class, 'tampil'])
+    ->middleware('auth:web,admin,manager')->whereNumber('idPembayaran')->name('pembayaran.bukti');
 
 // Profil Admin & Manager (guard yang login otomatis dipakai oleh $request->user())
 Route::middleware('auth:admin,manager')->group(function () {
@@ -102,9 +107,15 @@ Route::middleware('auth:admin')->group(function () {
 
 // Panel Manager: dashboard saja untuk saat ini (akses ke laporan pembayaran menyusul)
 Route::middleware('auth:manager')->group(function () {
-    Route::get('/dashboard-manager', function () {
-        return Inertia::render('Dashboard/Manager', ['manager' => Auth::guard('manager')->user()]);
-    })->name('dashboard.manager');
+    Route::get('/dashboard-manager', [ManagerController::class, 'dashboard'])->name('dashboard.manager');
+    // Manager hanya melihat pembayaran, lapangan, dan laporan; yang bisa diubah hanya akun Admin
+    Route::get('/manager/pembayaran', [ManagerController::class, 'pembayaran'])->name('manager.pembayaran');
+    Route::get('/manager/lapangan', [ManagerController::class, 'lapangan'])->name('manager.lapangan');
+    Route::get('/manager/laporan', [ManagerController::class, 'laporanPembayaran'])->name('manager.laporan');
+    Route::get('/manager/admin', [ManagerController::class, 'admin'])->name('manager.admin');
+    Route::post('/manager/admin', [ManagerController::class, 'tambahAdmin'])->name('manager.admin.tambah');
+    Route::put('/manager/admin/{idAdmin}/password', [ManagerController::class, 'resetPasswordAdmin'])->whereNumber('idAdmin')->name('manager.admin.password');
+    Route::delete('/manager/admin/{idAdmin}', [ManagerController::class, 'hapusAdmin'])->whereNumber('idAdmin')->name('manager.admin.hapus');
 });
 
 require __DIR__.'/auth.php';

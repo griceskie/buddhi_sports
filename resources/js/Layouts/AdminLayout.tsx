@@ -2,8 +2,10 @@ import { buttonVariants } from '@/Components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
 import Wordmark from '@/Components/Wordmark';
@@ -69,32 +71,26 @@ export default function AdminLayout({
                                 {pengelola?.nama}
                                 <ChevronDown className="text-muted-foreground" />
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56 p-0">
-                                <DropdownMenuLabel className="border-b px-3 py-2">
-                                    {pengelola?.username} ·{' '}
-                                    {pengelola?.role === 'admin' ? 'Admin' : 'Manager'}
-                                </DropdownMenuLabel>
-                                <DropdownMenuItem
-                                    className="rounded-none px-3 py-2"
-                                    render={<Link href={route('profile.pengelola')} />}
-                                >
-                                    <User />
-                                    Profile
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    variant="destructive"
-                                    className="rounded-none px-3 py-2"
-                                    render={
-                                        <Link
-                                            href={route('logout.pengelola')}
-                                            method="post"
-                                            as="button"
-                                        />
-                                    }
-                                >
-                                    <LogOut className="text-destructive" />
-                                    Log Out
-                                </DropdownMenuItem>
+                            <DropdownMenuContent className="w-56">
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>
+                                        {pengelola?.username} ·{' '}
+                                        {pengelola?.role === 'admin' ? 'Admin' : 'Manager'}
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem render={<Link href={route('profile.pengelola')} />}>
+                                        <User />
+                                        Profile
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        render={<Link href={route('logout.pengelola')} method="post" as="button" />}
+                                    >
+                                        <LogOut />
+                                        Log Out
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

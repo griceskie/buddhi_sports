@@ -6,19 +6,41 @@ use App\Http\Controllers\Controller;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class MasterPembayaranController extends Controller
 {
 
-    public function tampilData(Request $request){
-
-        // periode bulanan dari ?periode=YYYY-MM, bawaannya bulan ini
+    /** Awal bulan dari ?periode=YYYY-MM, bawaannya bulan ini. Dipakai juga halaman Pembayaran Manager. */
+    public static function awalPeriode(Request $request): Carbon
+    {
         $periode = $request->query('periode');
-        $awal = is_string($periode) && preg_match('/^(\d{4})-(0[1-9]|1[0-2])$/', $periode, $m)
+
+        return is_string($periode) && preg_match('/^(\d{4})-(0[1-9]|1[0-2])$/', $periode, $m)
             ? Carbon::create((int) $m[1], (int) $m[2], 1)
             : today()->startOfMonth();
+    }
+
+    /** Jumlah dan total pembayaran per status untuk widget Total pemasukan dan Status pembayaran. */
+    public static function ringkasan(Collection $pembayaran): array
+    {
+        $per = fn (string $status) => [
+            'jumlah' => $pembayaran->where('status', $status)->count(),
+            'total' => (int) $pembayaran->where('status', $status)->sum('jumlahBayar'),
+        ];
+
+        return [
+            'terverifikasi' => $per('Terverifikasi'),
+            'menunggu' => $per('Menunggu Verifikasi'),
+            'ditolak' => $per('Ditolak'),
+        ];
+    }
+
+    public function tampilData(Request $request){
+
+        $awal = self::awalPeriode($request);
         $bulan = $awal->month;
         $tahun = $awal->year;
 
@@ -26,20 +48,12 @@ class MasterPembayaranController extends Controller
             ->whereBetween('tglBayar', [$awal->toDateString(), $awal->copy()->endOfMonth()->toDateString()])
             ->orderBy('tglBayar')
             ->get();
-        $per = fn (string $status) => [
-            'jumlah' => $varpembayaran->where('status', $status)->count(),
-            'total' => (int) $varpembayaran->where('status', $status)->sum('jumlahBayar'),
-        ];
 
         return Inertia::render('Master/Pembayaran/TampilData', [
             'datapembayaran' => $varpembayaran,
             'periode' => ['bulan' => $bulan, 'tahun' => $tahun],
             'namaLaporan' => LaporanPembayaranController::namaLaporan($bulan, $tahun),
-            'ringkasan' => [
-                'terverifikasi' => $per('Terverifikasi'),
-                'menunggu' => $per('Menunggu Verifikasi'),
-                'ditolak' => $per('Ditolak'),
-            ],
+            'ringkasan' => self::ringkasan($varpembayaran),
             'laporan' => DB::table('laporan_pembayarans')->where('bulan', $bulan)->where('tahun', $tahun)
                 ->first(['idLaporan', 'namaLaporan', 'tglLaporan', 'filePdf']),
             'datamanager' => DB::table('managers')->orderBy('namaManager')->get(['idManager', 'namaManager']),
@@ -56,7 +70,8 @@ class MasterPembayaranController extends Controller
             'txtjumlah' => 'required|integer|min:0',
             'txtbukti' => 'nullable|string|max:255',
             'txtstatus' => 'required|string|max:255',
-        ]);
+            'txtalasan' => 'required_if:txtstatus,Ditolak|nullable|string|max:500',
+        ], ['txtalasan.required_if' => 'Tulis alasan penolakan untuk penyewa.']);
 
         // satu booking hanya boleh punya satu pembayaran
         $sudahAda = DB::table('pembayarans')->where('idBooking', $request->txtbooking)->exists();
@@ -71,6 +86,7 @@ class MasterPembayaranController extends Controller
             'jumlahBayar' => $request->txtjumlah,
             'buktiBayar' => $request->txtbukti,
             'status' => $request->txtstatus,
+            'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
         ]);
 
         return back();
@@ -85,7 +101,8 @@ class MasterPembayaranController extends Controller
             'txtjumlah' => 'required|integer|min:0',
             'txtbukti' => 'nullable|string|max:255',
             'txtstatus' => 'required|string|max:255',
-        ]);
+            'txtalasan' => 'required_if:txtstatus,Ditolak|nullable|string|max:500',
+        ], ['txtalasan.required_if' => 'Tulis alasan penolakan untuk penyewa.']);
 
         // booking tidak boleh dipindah ke booking lain yang sudah punya pembayaran
         $sudahAda = DB::table('pembayarans')
@@ -105,6 +122,7 @@ class MasterPembayaranController extends Controller
             'jumlahBayar' => $request->txtjumlah,
             'buktiBayar' => $request->txtbukti,
             'status' => $request->txtstatus,
+            'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
         ]);
 
         return back();

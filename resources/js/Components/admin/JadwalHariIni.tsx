@@ -7,6 +7,7 @@ export type JadwalLapangan = { idLapangan: number; namaLapangan: string; jenisLa
 export type JadwalBooking = {
     idBooking: number;
     idLapangan: number;
+    tanggal: string;
     jamMulai: string;
     jamSelesai: string;
     namaPenyewa: string;
