@@ -372,6 +372,8 @@
 
   html {
     @apply font-sans;
+    scrollbar-gutter: stable;
+
   }
 
   /* Corner smoothing ala iOS (squircle) untuk semua sudut membulat. Browser yang belum mendukung

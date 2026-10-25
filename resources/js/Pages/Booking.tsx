@@ -25,7 +25,7 @@ import {
 } from '@/Components/ui/empty';
 import { FileUpload } from '@/Components/ui/file-upload';
 import { formatRupiah, formatTanggal } from '@/Components/ui/format';
-import { ToggleGroup, ToggleGroupItem } from '@/Components/ui/toggle-group';
+import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import PenyewaLayout from '@/Layouts/PenyewaLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { CalendarX, Clock } from 'lucide-react';
@@ -88,14 +88,12 @@ function DaftarBooking({ bookings, rekening }: Props) {
                             Pantau status booking dan unggah bukti pembayaran.
                         </p>
                     </div>
-                    <ToggleGroup
-                        aria-label="Filter booking"
-                        value={[tab]}
-                        onValueChange={(v) => v[0] && setTab(v[0] as 'aktif' | 'riwayat')}
-                    >
-                        <ToggleGroupItem value="aktif">Aktif ({aktif.length})</ToggleGroupItem>
-                        <ToggleGroupItem value="riwayat">Riwayat ({riwayat.length})</ToggleGroupItem>
-                    </ToggleGroup>
+                    <Tabs value={tab} onValueChange={(v) => setTab(v as 'aktif' | 'riwayat')}>
+                        <TabsList aria-label="Filter booking">
+                            <TabsTrigger value="aktif">Aktif ({aktif.length})</TabsTrigger>
+                            <TabsTrigger value="riwayat">Riwayat ({riwayat.length})</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
 
                 {tampil.length === 0 && (

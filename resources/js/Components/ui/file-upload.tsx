@@ -1,7 +1,15 @@
 import * as React from "react"
 import { cn } from "cn"
 import { FileText, Upload, X } from "lucide-react"
-import { buttonVariants } from "./button"
+import {
+  Attachment,
+  AttachmentAction,
+  AttachmentActions,
+  AttachmentContent,
+  AttachmentDescription,
+  AttachmentMedia,
+  AttachmentTitle,
+} from "./attachment"
 
 type FileUploadProps = {
   /** The chosen file, e.g. Inertia `data.buktiBayar`. */
@@ -64,33 +72,32 @@ function FileUpload({
 
   if (file) {
     return (
-      <div
-        data-slot="file-upload"
-        data-state="filled"
+      <Attachment
         className={cn(
-          "flex items-center gap-3 rounded-lg border border-input bg-background px-3 py-2.5",
+          "w-full",
           invalid && "border-destructive ring-3 ring-destructive/20",
           className
         )}
       >
         {input}
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg]:size-4">
+        <AttachmentMedia>
           <FileText aria-hidden="true" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{file.name}</span>
-          <span className="block text-xs text-muted-foreground">{formatSize(file.size)}</span>
-        </span>
-        <button
-          type="button"
-          aria-label="Hapus file"
-          disabled={disabled}
-          onClick={() => set(null)}
-          className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
-        >
-          <X />
-        </button>
-      </div>
+        </AttachmentMedia>
+        <AttachmentContent>
+          <AttachmentTitle>{file.name}</AttachmentTitle>
+          <AttachmentDescription>{formatSize(file.size)}</AttachmentDescription>
+        </AttachmentContent>
+        <AttachmentActions>
+          <AttachmentAction
+            aria-label={`Hapus ${file.name}`}
+            size="icon-sm"
+            disabled={disabled}
+            onClick={() => set(null)}
+          >
+            <X />
+          </AttachmentAction>
+        </AttachmentActions>
+      </Attachment>
     )
   }
 

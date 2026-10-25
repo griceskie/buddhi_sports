@@ -25,7 +25,7 @@ import {
 } from '@/Components/ui/empty';
 import { formatTanggal, toMinutes } from '@/Components/ui/format';
 import { TimeRange } from '@/Components/ui/slot-picker';
-import { ToggleGroup, ToggleGroupItem } from '@/Components/ui/toggle-group';
+import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import PenyewaLayout from '@/Layouts/PenyewaLayout';
 import { Head, router } from '@inertiajs/react';
 import { CalendarX, CircleAlert } from 'lucide-react';
@@ -137,17 +137,15 @@ export default function Dashboard({
                         </div>
 
                         {jenisList.length > 1 && (
-                            <ToggleGroup
-                                aria-label="Jenis lapangan"
-                                value={[jenis]}
-                                onValueChange={(v) => v[0] && ubahJenis(v[0])}
-                            >
-                                {jenisList.map((j) => (
-                                    <ToggleGroupItem key={j} value={j}>
-                                        {j}
-                                    </ToggleGroupItem>
-                                ))}
-                            </ToggleGroup>
+                            <Tabs value={jenis} onValueChange={(v) => ubahJenis(v as string)}>
+                                <TabsList aria-label="Jenis lapangan">
+                                    {jenisList.map((j) => (
+                                        <TabsTrigger key={j} value={j}>
+                                            {j}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            </Tabs>
                         )}
                     </div>
 
