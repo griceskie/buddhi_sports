@@ -89,12 +89,10 @@ class BookingPenyewaTest extends TestCase
     public function test_hanya_booking_terkonfirmasi_yang_menahan_jam(): void
     {
         $this->bookingLain('Dikonfirmasi', '18:00:00', '20:00:00');
-        $this->bookingLain('Dibayar', '08:00:00', '09:00:00');
         $this->bookingLain('Dipesan', '10:00:00', '12:00:00');
         $this->bookingLain('Dibatalkan', '12:00:00', '13:00:00');
 
         $this->pesan(['jamMulai' => '19:00', 'jamSelesai' => '21:00'])->assertSessionHasErrors(['jamMulai' => 'Lapangan sudah terbooking pada jam tersebut.']);
-        $this->pesan(['jamMulai' => '08:00', 'jamSelesai' => '09:00'])->assertSessionHasErrors('jamMulai');
         $this->pesan(['jamMulai' => '20:00', 'jamSelesai' => '21:00'])->assertSessionHasNoErrors();
         $this->pesan(['jamMulai' => '10:00', 'jamSelesai' => '12:00'])->assertSessionHasNoErrors();
         $this->pesan(['jamMulai' => '12:00', 'jamSelesai' => '13:00'])->assertSessionHasNoErrors();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Support\Pemesanan;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -55,9 +56,15 @@ class MasterPembayaranController extends Controller
             'namaLaporan' => LaporanPembayaranController::namaLaporan($bulan, $tahun),
             'ringkasan' => self::ringkasan($varpembayaran),
             'laporan' => DB::table('laporan_pembayarans')->where('bulan', $bulan)->where('tahun', $tahun)
-                ->first(['idLaporan', 'namaLaporan', 'tglLaporan', 'filePdf']),
+                ->first(['idLaporan', 'namaLaporan', 'tglLaporan', 'filePdf', 'diperiksaPada']),
             'datamanager' => DB::table('managers')->orderBy('namaManager')->get(['idManager', 'namaManager']),
-            'databooking' => DB::table('bookings')->get(),
+            // kode, penyewa, dan jadwal untuk tabel dan pilihan Booking di form
+            'databooking' => DB::table('bookings')
+                ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
+                ->join('lapangans', 'lapangans.idLapangan', '=', 'bookings.idLapangan')
+                ->orderByDesc('bookings.idBooking')
+                ->get(['bookings.idBooking', 'bookings.tanggal', 'penyewas.namaPenyewa', 'lapangans.namaLapangan'])
+                ->map(fn ($b) => (array) $b + ['kode' => Pemesanan::kode($b->idBooking)]),
             'dataadmin' => DB::table('admins')->get(),
         ]);
     }

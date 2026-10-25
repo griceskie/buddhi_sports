@@ -51,7 +51,12 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 if ($user instanceof Manager) {
-                    return ['role' => 'manager', 'nama' => $user->namaManager, 'username' => $user->username];
+                    return [
+                        'role' => 'manager',
+                        'nama' => $user->namaManager,
+                        'username' => $user->username,
+                        'laporanBelumDiperiksa' => DB::table('laporan_pembayarans')->whereNotNull('filePdf')->whereNull('diperiksaPada')->count(),
+                    ];
                 }
 
                 return null;

@@ -74,22 +74,21 @@ function PaymentStatusBadge({
 
 /* -------------------------------------------------------------------------- */
 /*  BookingStatusBadge – bookings.status                                      */
-/*  Only Dibayar and Dikonfirmasi hold the slot (app/Support/Pemesanan.php).  */
+/*  Only Dikonfirmasi holds the slot (app/Support/Pemesanan.php).             */
 /* -------------------------------------------------------------------------- */
 
-type BookingStatus = "dipesan" | "dibayar" | "dikonfirmasi" | "selesai" | "dibatalkan"
+type BookingStatus = "dipesan" | "dikonfirmasi" | "selesai" | "dibatalkan"
 type BadgeVariant = "outline" | "secondary" | "success" | "destructive"
 
 const bookingStatus: Record<BookingStatus, { variant: BadgeVariant; Icon: typeof Clock; label: string }> = {
   dipesan: { variant: "outline", Icon: CalendarClock, label: "Dipesan" },
-  dibayar: { variant: "success", Icon: CircleCheck, label: "Dibayar" },
   dikonfirmasi: { variant: "success", Icon: CircleCheck, label: "Dikonfirmasi" },
   selesai: { variant: "secondary", Icon: CheckCheck, label: "Selesai" },
   dibatalkan: { variant: "destructive", Icon: CircleX, label: "Dibatalkan" },
 }
 
 /** Booking states that still block the slot in the double-booking check. */
-const SLOT_HOLDING_STATUSES: BookingStatus[] = ["dibayar", "dikonfirmasi"]
+const SLOT_HOLDING_STATUSES: BookingStatus[] = ["dikonfirmasi"]
 
 function BookingStatusBadge({ status, className }: { status: BookingStatus | string; className?: string }) {
   const key = String(status).toLowerCase() as BookingStatus

@@ -45,7 +45,7 @@ class MasterBookingController extends Controller
             'txtjammulai' => ['required', Rule::in($jam(Pemesanan::JAM_BUKA, Pemesanan::JAM_TUTUP - 1))],
             'txtjamselesai' => ['required', Rule::in($jam(Pemesanan::JAM_BUKA + 1, Pemesanan::JAM_TUTUP)), 'after:txtjammulai'],
             'txttotal' => 'required|integer|min:0',
-            'txtstatus' => 'required|string|max:255',
+            'txtstatus' => ['required', Rule::in(Pemesanan::STATUS)],
         ], [
             'txtjammulai.in' => "Pilih jam mulai antara {$buka} dan ".sprintf('%02d:00', Pemesanan::JAM_TUTUP - 1).'.',
             'txtjamselesai.in' => 'Pilih jam selesai antara '.sprintf('%02d:00', Pemesanan::JAM_BUKA + 1)." dan {$tutup}.",

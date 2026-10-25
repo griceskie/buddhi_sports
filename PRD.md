@@ -91,7 +91,7 @@
          - Melihat dan mengunduh PDF laporan pembayaran.
          - Akun Manajer tidak dikelola lewat aplikasi untuk saat ini (ditambah lewat database/seeder).
        - Sidebar Manajer: Dashboard; Pemantauan: Pembayaran, Lapangan; Laporan: Laporan Pembayaran; Pengguna: Admin. Sama dengan sidebar Admin (bisa diciutkan, menu nama dengan Profile dan Log Out).
-       - Belum diputuskan: Manajer "memverifikasi" (menandai sudah diperiksa) laporan bulan berjalan; jika ya, badge di menu Laporan Pembayaran menandai laporan yang belum diperiksa.
+       - Manajer menandai laporan pembayaran "sudah diperiksa" (diputuskan 25 Oktober 2026). Setelah ditandai, laporan terkunci: Admin tidak bisa membuat ulang, mengubah, atau menghapusnya. Badge di menu Laporan Pembayaran menunjukkan jumlah laporan yang belum diperiksa.
        - Wajib:
          - Daftar laporan pembayaran (nama laporan, periode, total pemasukan, tanggal laporan, pembuat) dengan tombol Buka PDF.
          - Kartu laporan terbaru dan status bulan berjalan (sudah dibuat atau belum dibuat Admin).

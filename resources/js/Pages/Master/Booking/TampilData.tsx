@@ -9,7 +9,7 @@ import { Button } from '@/Components/ui/button';
 import { Card } from '@/Components/ui/card';
 import { CurrencyInput } from '@/Components/ui/currency-input';
 import { DateInput } from '@/Components/ui/date-input';
-import { formatRupiah, formatTanggal } from '@/Components/ui/format';
+import { bookingTotal, formatRupiah, formatTanggal } from '@/Components/ui/format';
 import { Label } from '@/Components/ui/label';
 import {
     Table,
@@ -41,7 +41,7 @@ const rentangJam = (dari: number, sampai: number) =>
     Array.from({ length: sampai - dari + 1 }, (_, i) => ({ value: jam(dari + i), label: jam(dari + i) }));
 const angkaJam = (j: string) => Number(j.slice(0, 2));
 type Penyewa = { idPenyewa: number; namaPenyewa: string; email: string };
-type Lapangan = { idLapangan: number; namaLapangan: string };
+type Lapangan = { idLapangan: number; namaLapangan: string; tarifPerJam: number };
 type Admin = { idAdmin: number; namaAdmin: string };
 type Pilihan = { datapenyewa: Penyewa[]; datalapangan: Lapangan[]; dataadmin: Admin[]; idAdminLogin: number | null };
 
@@ -141,16 +141,26 @@ function FormBooking({
         txtstatus: row?.status ?? 'Dipesan',
     });
 
+    // total = tarif lapangan x jumlah jam, dihitung ulang tiap lapangan atau jam berganti; Admin masih bisa mengubahnya
+    const denganTotal = (d: typeof data) => {
+        const tarif = datalapangan.find((l) => String(l.idLapangan) === d.txtlapangan)?.tarifPerJam;
+        return tarif && d.txtjammulai && d.txtjamselesai
+            ? { ...d, txttotal: String(bookingTotal(d.txtjammulai, d.txtjamselesai, tarif)) }
+            : d;
+    };
+
     // jam selesai otomatis 1 jam setelah jam mulai bila masih kosong atau tidak lagi setelah jam mulai
     const pilihJamMulai = (mulai: string) =>
-        setData((d) => ({
-            ...d,
-            txtjammulai: mulai,
-            txtjamselesai:
-                mulai && (!d.txtjamselesai || angkaJam(d.txtjamselesai) <= angkaJam(mulai))
-                    ? jam(angkaJam(mulai) + 1)
-                    : d.txtjamselesai,
-        }));
+        setData((d) =>
+            denganTotal({
+                ...d,
+                txtjammulai: mulai,
+                txtjamselesai:
+                    mulai && (!d.txtjamselesai || angkaJam(d.txtjamselesai) <= angkaJam(mulai))
+                        ? jam(angkaJam(mulai) + 1)
+                        : d.txtjamselesai,
+            }),
+        );
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -190,7 +200,7 @@ function FormBooking({
                     id="txtlapangan"
                     className="mt-1"
                     value={data.txtlapangan}
-                    onChange={(v) => setData('txtlapangan', v)}
+                    onChange={(v) => setData((d) => denganTotal({ ...d, txtlapangan: v }))}
                     placeholder="Cari lapangan"
                     options={datalapangan.map((l) => ({
                         value: String(l.idLapangan),
@@ -251,7 +261,7 @@ function FormBooking({
                         id="txtjamselesai"
                         className="mt-1 w-full"
                         value={data.txtjamselesai}
-                        onChange={(v) => setData('txtjamselesai', v)}
+                        onChange={(v) => setData((d) => denganTotal({ ...d, txtjamselesai: v }))}
                         placeholder="Pilih jam"
                         options={rentangJam(data.txtjammulai ? angkaJam(data.txtjammulai) + 1 : JAM_BUKA + 1, JAM_TUTUP)}
                     />
@@ -267,6 +277,7 @@ function FormBooking({
                     value={data.txttotal === '' ? null : Number(data.txttotal)}
                     onValueChange={(v) => setData('txttotal', v == null ? '' : String(v))}
                 />
+                <p className="mt-1 text-sm text-muted-foreground">Terisi otomatis dari tarif × jumlah jam; bisa diubah.</p>
                 <InputError message={errors.txttotal} className="mt-1" />
             </div>
 
@@ -280,7 +291,6 @@ function FormBooking({
                     clearable={false}
                     options={[
                         { value: 'Dipesan', label: 'Dipesan' },
-                        { value: 'Dibayar', label: 'Dibayar' },
                         { value: 'Dikonfirmasi', label: 'Dikonfirmasi' },
                         { value: 'Dibatalkan', label: 'Dibatalkan' },
                     ]}

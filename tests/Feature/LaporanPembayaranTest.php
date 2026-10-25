@@ -154,6 +154,55 @@ class LaporanPembayaranTest extends TestCase
         Storage::disk('local')->assertMissing($l->filePdf);
     }
 
+    public function test_manager_menandai_laporan_diperiksa_dan_badge_berkurang(): void
+    {
+        $this->buat();
+        $id = DB::table('laporan_pembayarans')->value('idLaporan');
+        // sebelum Manager login: setelah actingAs, guard manager tetap login sampai tes selesai
+        $this->actingAs($this->admin, 'admin')->post("/manager/laporan/$id/diperiksa")->assertRedirect('/login-pengelola');
+
+        $this->actingAs($this->manager, 'manager')->get('/manager/laporan')->assertInertia(fn (Assert $p) => $p
+            ->where('pengelola.laporanBelumDiperiksa', 1)
+            ->where('laporan.0.diperiksaPada', null));
+
+        $this->actingAs($this->manager, 'manager')->post("/manager/laporan/$id/diperiksa")->assertSessionHas('success');
+
+        $this->assertNotNull(DB::table('laporan_pembayarans')->value('diperiksaPada'));
+        $this->actingAs($this->manager, 'manager')->get('/manager/laporan')->assertInertia(fn (Assert $p) => $p
+            ->where('pengelola.laporanBelumDiperiksa', 0));
+    }
+
+    public function test_laporan_tanpa_pdf_tidak_bisa_ditandai_diperiksa(): void
+    {
+        $id = DB::table('laporan_pembayarans')->insertGetId([
+            'idAdmin' => $this->admin->idAdmin, 'idManager' => $this->manager->idManager, 'bulan' => 9, 'tahun' => 2026,
+            'totalPemasukan' => 0, 'tglLaporan' => '2026-10-01',
+        ], 'idLaporan');
+
+        $this->actingAs($this->manager, 'manager')->post("/manager/laporan/$id/diperiksa")->assertSessionHas('error');
+        $this->assertNull(DB::table('laporan_pembayarans')->value('diperiksaPada'));
+        $this->actingAs($this->manager, 'manager')->post('/manager/laporan/999/diperiksa')->assertNotFound();
+    }
+
+    public function test_laporan_yang_sudah_diperiksa_terkunci_untuk_admin(): void
+    {
+        $this->buat();
+        DB::table('laporan_pembayarans')->update(['diperiksaPada' => now()]);
+        $l = DB::table('laporan_pembayarans')->first();
+
+        $this->buat(['tglLaporan' => '2026-10-30'])->assertSessionHas('error');
+        $this->actingAs($this->admin, 'admin')->post('/updatelaporanpembayaran', [
+            'txtid' => $l->idLaporan, 'txtadmin' => $this->admin->idAdmin, 'txtmanager' => $this->manager->idManager,
+            'txtbulan' => 10, 'txttahun' => 2026, 'txttotal' => 1, 'txttgllaporan' => '2026-10-29',
+        ])->assertSessionHas('error');
+        $this->actingAs($this->admin, 'admin')->get("/deletelaporanpembayaran/{$l->idLaporan}")->assertSessionHas('error');
+
+        $sesudah = DB::table('laporan_pembayarans')->first();
+        $this->assertSame('2026-10-31', $sesudah->tglLaporan);
+        $this->assertSame((int) $l->totalPemasukan, (int) $sesudah->totalPemasukan);
+        Storage::disk('local')->assertExists($l->filePdf);
+    }
+
     public function test_admin_tidak_bisa_mengelola_data_admin_dan_manager(): void
     {
         foreach (['/tampiladmin', '/formadmin', '/tampilmanager', '/formmanager', "/deleteadmin/{$this->admin->idAdmin}", "/deletemanager/{$this->manager->idManager}"] as $url) {

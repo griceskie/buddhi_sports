@@ -25,7 +25,7 @@ export type Keadaan = 'belumBayar' | 'menungguVerifikasi' | 'ditolak' | 'dikonfi
 // Gabungan status booking dan status pembayaran, karena "Menunggu verifikasi" hanya ada di pembayarans.
 export function keadaan(b: Pick<BookingPenyewa, 'status' | 'statusPembayaran'>): Keadaan {
     if (b.status === 'Dibatalkan') return 'dibatalkan';
-    if (b.status === 'Dikonfirmasi' || b.status === 'Dibayar' || b.statusPembayaran === 'Terverifikasi') {
+    if (b.status === 'Dikonfirmasi' ||b.statusPembayaran === 'Terverifikasi') {
         return 'dikonfirmasi';
     }
     if (b.statusPembayaran === 'Ditolak') return 'ditolak';

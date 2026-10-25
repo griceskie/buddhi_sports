@@ -11,6 +11,8 @@ export interface Pengelola {
     username: string;
     /** Admin saja: jumlah pembayaran yang menunggu verifikasi (badge sidebar). */
     menungguVerifikasi?: number;
+    /** Manager saja: jumlah laporan ber-PDF yang belum ditandai diperiksa (badge sidebar). */
+    laporanBelumDiperiksa?: number;
 }
 
 export type PageProps<

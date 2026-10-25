@@ -14,8 +14,10 @@ class Pemesanan
 
     public const HARI_KE_DEPAN = 30;
 
-    // Hanya booking yang sudah dikonfirmasi yang menahan jam; Dibayar adalah status lama Admin untuk hal yang sama.
-    public const STATUS_MENAHAN_JAM = ['Dikonfirmasi', 'Dibayar'];
+    public const STATUS = ['Dipesan', 'Dikonfirmasi', 'Dibatalkan'];
+
+    // Hanya booking yang sudah dikonfirmasi yang menahan jam.
+    public const STATUS_MENAHAN_JAM = ['Dikonfirmasi'];
 
     public static function batasBayar(?string $createdAt): ?CarbonInterface
     {

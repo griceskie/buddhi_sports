@@ -113,6 +113,23 @@ class ManagerController extends Controller
         ]);
     }
 
+    /** Manager menandai laporan sudah diperiksa; sejak itu Admin tidak bisa membuat ulang, mengedit, atau menghapusnya. */
+    public function tandaiDiperiksa(int $idLaporan): RedirectResponse
+    {
+        $laporan = DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->first(['namaLaporan', 'filePdf', 'diperiksaPada']);
+        abort_if($laporan === null, 404);
+
+        if (! $laporan->filePdf) {
+            return back()->with('error', 'Laporan ini belum punya PDF, jadi belum bisa diperiksa.');
+        }
+
+        if (! $laporan->diperiksaPada) {
+            DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->update(['diperiksaPada' => now()]);
+        }
+
+        return back()->with('success', "{$laporan->namaLaporan} ditandai sudah diperiksa.");
+    }
+
     public function admin(): Response
     {
         return Inertia::render('Manager/Admin', [
@@ -170,7 +187,7 @@ class ManagerController extends Controller
             ->select([
                 'laporan_pembayarans.idLaporan', 'laporan_pembayarans.namaLaporan', 'laporan_pembayarans.bulan',
                 'laporan_pembayarans.tahun', 'laporan_pembayarans.totalPemasukan', 'laporan_pembayarans.tglLaporan',
-                'laporan_pembayarans.filePdf', 'admins.namaAdmin',
+                'laporan_pembayarans.filePdf', 'laporan_pembayarans.diperiksaPada', 'admins.namaAdmin',
             ]);
     }
 }

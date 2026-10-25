@@ -2,10 +2,12 @@ import DeleteButton from '@/Components/DeleteButton';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
+import { Badge } from '@/Components/ui/badge';
 import { Button, buttonVariants } from '@/Components/ui/button';
 import { Card } from '@/Components/ui/card';
 import { CurrencyInput } from '@/Components/ui/currency-input';
-import { BULAN, formatRupiah } from '@/Components/ui/format';
+import { DateInput } from '@/Components/ui/date-input';
+import { BULAN, formatRupiah, formatTanggal } from '@/Components/ui/format';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import {
@@ -19,7 +21,7 @@ import {
 } from '@/Components/ui/table';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { FileText, Pencil, Plus } from 'lucide-react';
+import { CircleCheck, FileText, Pencil, Plus } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 type Laporan = {
@@ -33,10 +35,11 @@ type Laporan = {
     idPembayaran: number | null;
     namaLaporan: string | null;
     filePdf: string | null;
+    diperiksaPada: string | null;
 };
 type Admin = { idAdmin: number; namaAdmin: string };
 type Manager = { idManager: number; namaManager: string };
-type Pembayaran = { idPembayaran: number; jumlahBayar: number };
+type Pembayaran = { idPembayaran: number; kode: string; namaPenyewa: string; jumlahBayar: number };
 type Pilihan = { dataadmin: Admin[]; datamanager: Manager[]; datapembayaran: Pembayaran[] };
 
 export default function TampilData({ datalaporan, ...pilihan }: { datalaporan: Laporan[] } & Pilihan) {
@@ -68,6 +71,7 @@ export default function TampilData({ datalaporan, ...pilihan }: { datalaporan: L
                             <TableHead>Tahun</TableHead>
                             <TableHead>Total Pemasukan</TableHead>
                             <TableHead>Tgl Laporan</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -78,7 +82,17 @@ export default function TampilData({ datalaporan, ...pilihan }: { datalaporan: L
                                 <TableCell>{BULAN[row.bulan - 1] ?? row.bulan}</TableCell>
                                 <TableCell>{row.tahun}</TableCell>
                                 <TableCell>{formatRupiah(row.totalPemasukan)}</TableCell>
-                                <TableCell>{row.tglLaporan}</TableCell>
+                                <TableCell>{formatTanggal(row.tglLaporan, 'EEE, d MMM yyyy')}</TableCell>
+                                <TableCell>
+                                    {row.diperiksaPada ? (
+                                        <Badge variant="success">
+                                            <CircleCheck aria-hidden="true" />
+                                            Sudah diperiksa
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline">Belum diperiksa</Badge>
+                                    )}
+                                </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
                                         {row.filePdf && (
@@ -92,16 +106,21 @@ export default function TampilData({ datalaporan, ...pilihan }: { datalaporan: L
                                                 PDF
                                             </a>
                                         )}
-                                        <Button variant="outline" size="sm" onClick={() => sheet.buka(row)}>
-                                            <Pencil />
-                                            Edit
-                                        </Button>
-                                        <DeleteButton href={`/deletelaporanpembayaran/${row.idLaporan}`} />
+                                        {/* sudah diperiksa Manager: terkunci */}
+                                        {!row.diperiksaPada && (
+                                            <>
+                                                <Button variant="outline" size="sm" onClick={() => sheet.buka(row)}>
+                                                    <Pencil />
+                                                    Edit
+                                                </Button>
+                                                <DeleteButton href={`/deletelaporanpembayaran/${row.idLaporan}`} />
+                                            </>
+                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>
                         ))}
-                        {datalaporan.length === 0 && <TableEmpty colSpan={6} />}
+                        {datalaporan.length === 0 && <TableEmpty colSpan={7} />}
                     </TableBody>
                 </Table>
             </Card>
@@ -221,12 +240,12 @@ function FormLaporan({
 
             <div>
                 <Label htmlFor="txttgllaporan">Tanggal Laporan</Label>
-                <Input
+                <DateInput
                     id="txttgllaporan"
-                    type="date"
                     className="mt-1"
                     value={data.txttgllaporan}
-                    onChange={(e) => setData('txttgllaporan', e.target.value)}
+                    onValueChange={(v) => setData('txttgllaporan', v)}
+                    aria-invalid={!!errors.txttgllaporan}
                 />
                 <InputError message={errors.txttgllaporan} className="mt-1" />
             </div>
@@ -242,7 +261,7 @@ function FormLaporan({
                         { value: '', label: '-' },
                         ...datapembayaran.map((p) => ({
                             value: String(p.idPembayaran),
-                            label: `#${p.idPembayaran} - Rp${p.jumlahBayar.toLocaleString('id-ID')}`,
+                            label: `${p.kode} · ${p.namaPenyewa} · ${formatRupiah(p.jumlahBayar)}`,
                         })),
                     ]}
                 />

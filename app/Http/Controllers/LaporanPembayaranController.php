@@ -47,6 +47,10 @@ class LaporanPembayaranController extends Controller
         $tahun = (int) $data['tahun'];
         $awal = Carbon::create($tahun, $bulan, 1)->startOfMonth();
 
+        if (DB::table('laporan_pembayarans')->where('bulan', $bulan)->where('tahun', $tahun)->whereNotNull('diperiksaPada')->exists()) {
+            return back()->with('error', self::namaLaporan($bulan, $tahun).' sudah diperiksa Manager, jadi tidak bisa dibuat ulang.');
+        }
+
         $pembayaran = DB::table('pembayarans')
             ->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')
             ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')

@@ -8,6 +8,7 @@ import { PaymentStatusBadge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { CurrencyInput } from '@/Components/ui/currency-input';
+import { DateInput } from '@/Components/ui/date-input';
 import { DatePicker } from '@/Components/ui/date-picker';
 import {
     Dialog,
@@ -49,9 +50,15 @@ type Pembayaran = {
     alasanTolak: string | null;
 };
 
-type Laporan = { idLaporan: number; namaLaporan: string | null; tglLaporan: string; filePdf: string | null };
+type Laporan = {
+    idLaporan: number;
+    namaLaporan: string | null;
+    tglLaporan: string;
+    filePdf: string | null;
+    diperiksaPada: string | null;
+};
 type Manager = { idManager: number; namaManager: string };
-type Booking = { idBooking: number; tanggal: string };
+type Booking = { idBooking: number; kode: string; tanggal: string; namaPenyewa: string; namaLapangan: string };
 type Admin = { idAdmin: number; namaAdmin: string };
 
 type Props = {
@@ -82,6 +89,7 @@ export default function TampilData({
 }: Props) {
     const [buatLaporan, setBuatLaporan] = useState(false);
     const sheet = useFormSheet<Pembayaran>();
+    const booking = new Map(databooking.map((b) => [b.idBooking, b]));
 
     const ubahPeriode = (p: Period) =>
         router.get(
@@ -107,10 +115,13 @@ export default function TampilData({
                             <Label>Periode</Label>
                             <PeriodPicker value={periode} onValueChange={ubahPeriode} />
                         </div>
-                        <Button onClick={() => setBuatLaporan(true)}>
-                            <FileText />
-                            {laporan ? 'Buat ulang laporan' : 'Buat laporan'}
-                        </Button>
+                        {/* laporan yang sudah diperiksa Manager terkunci */}
+                        {!laporan?.diperiksaPada && (
+                            <Button onClick={() => setBuatLaporan(true)}>
+                                <FileText />
+                                {laporan ? 'Buat ulang laporan' : 'Buat laporan'}
+                            </Button>
+                        )}
                     </div>
 
                     <RingkasanPembayaran ringkasan={ringkasan} />
@@ -126,6 +137,8 @@ export default function TampilData({
                             >
                                 Buka PDF
                             </a>
+                            {laporan.diperiksaPada &&
+                                ` · Sudah diperiksa Manager ${formatTanggal(laporan.diperiksaPada, 'd MMMM yyyy')}, tidak bisa dibuat ulang.`}
                         </p>
                     )}
                 </CardContent>
@@ -142,7 +155,7 @@ export default function TampilData({
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>ID Booking</TableHead>
+                            <TableHead>Booking</TableHead>
                             <TableHead>Tgl Bayar</TableHead>
                             <TableHead>Jumlah</TableHead>
                             <TableHead>Bukti</TableHead>
@@ -153,8 +166,11 @@ export default function TampilData({
                     <TableBody>
                         {datapembayaran.map((row) => (
                             <TableRow key={row.idPembayaran}>
-                                <TableCell>{row.idBooking}</TableCell>
-                                <TableCell>{row.tglBayar}</TableCell>
+                                <TableCell>
+                                    <div className="font-medium tabular-nums">{booking.get(row.idBooking)?.kode ?? row.idBooking}</div>
+                                    <div className="text-muted-foreground">{booking.get(row.idBooking)?.namaPenyewa}</div>
+                                </TableCell>
+                                <TableCell>{formatTanggal(row.tglBayar, 'EEE, d MMM yyyy')}</TableCell>
                                 <TableCell>{formatRupiah(row.jumlahBayar)}</TableCell>
                                 <TableCell>{row.buktiBayar ?? '-'}</TableCell>
                                 <TableCell><PaymentStatusBadge status={row.status} /></TableCell>
@@ -231,7 +247,7 @@ function FormPembayaran({
     return (
         <SheetForm
             title={row ? 'Edit Pembayaran' : 'Tambah Pembayaran'}
-            description={row && `Booking #${row.idBooking}`}
+            description={row && `Booking ${databooking.find((b) => b.idBooking === row.idBooking)?.kode ?? row.idBooking}`}
             onSubmit={submit}
             processing={processing}
             submitLabel={row ? 'Simpan Perubahan' : 'Simpan'}
@@ -253,7 +269,7 @@ function FormPembayaran({
                     placeholder="Pilih Booking"
                     options={databooking.map((b) => ({
                         value: String(b.idBooking),
-                        label: `#${b.idBooking} - ${b.tanggal}`,
+                        label: `${b.kode} · ${b.namaPenyewa} · ${formatTanggal(b.tanggal, 'd MMM yyyy')}`,
                     }))}
                 />
                 <InputError message={errors.txtbooking} className="mt-1" />
@@ -279,12 +295,12 @@ function FormPembayaran({
 
             <div>
                 <Label htmlFor="txttglbayar">Tanggal Bayar</Label>
-                <Input
+                <DateInput
                     id="txttglbayar"
-                    type="date"
                     className="mt-1"
                     value={data.txttglbayar}
-                    onChange={(e) => setData('txttglbayar', e.target.value)}
+                    onValueChange={(v) => setData('txttglbayar', v)}
+                    aria-invalid={!!errors.txttglbayar}
                 />
                 <InputError message={errors.txttglbayar} className="mt-1" />
             </div>

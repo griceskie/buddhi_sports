@@ -125,7 +125,11 @@ function PenggunaMenu() {
 
 export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
     const { url, props: halaman } = usePage<PageProps>();
-    const menungguVerifikasi = halaman.pengelola?.menungguVerifikasi ?? 0;
+    // angka di samping menu: pembayaran menunggu verifikasi (Admin), laporan belum diperiksa (Manager)
+    const badge: Record<string, { jumlah: number; label: string }> = {
+        '/tampilpembayaran': { jumlah: halaman.pengelola?.menungguVerifikasi ?? 0, label: 'menunggu verifikasi' },
+        '/manager/laporan': { jumlah: halaman.pengelola?.laporanBelumDiperiksa ?? 0, label: 'laporan belum diperiksa' },
+    };
     const manager = halaman.pengelola?.role === 'manager';
     const kelompok = manager ? MENU_MANAGER : MENU_ADMIN;
     const beranda = kelompok[0].menu[0].href;
@@ -166,9 +170,9 @@ export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
                                         <item.icon />
                                         <span>{item.label}</span>
                                     </SidebarMenuButton>
-                                    {item.href === '/tampilpembayaran' && menungguVerifikasi > 0 && (
-                                        <SidebarMenuBadge aria-label={`${menungguVerifikasi} menunggu verifikasi`}>
-                                            {menungguVerifikasi}
+                                    {(badge[item.href]?.jumlah ?? 0) > 0 && (
+                                        <SidebarMenuBadge aria-label={`${badge[item.href].jumlah} ${badge[item.href].label}`}>
+                                            {badge[item.href].jumlah}
                                         </SidebarMenuBadge>
                                     )}
                                 </SidebarMenuItem>
