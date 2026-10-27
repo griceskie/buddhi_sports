@@ -53,11 +53,17 @@ class MasterBookingController extends Controller
         ]);
     }
 
-    // lapangan yang sama tidak boleh dibooking di jam yang tumpang tindih pada tanggal yang sama
-    private function isLapanganTerbooking($idLapangan, $tanggal, $jamMulai, $jamSelesai, $idBookingKecuali = null){
+    // lapangan yang sama tidak boleh dibooking di jam yang tumpang tindih pada tanggal yang sama;
+    // booking Dibatalkan tidak menahan jam, baik yang sudah ada maupun yang sedang disimpan
+    private function isLapanganTerbooking($idLapangan, $tanggal, $jamMulai, $jamSelesai, $idBookingKecuali = null, $status = null){
+        if ($status === 'Dibatalkan') {
+            return false;
+        }
+
         $query = DB::table('bookings')
             ->where('idLapangan', $idLapangan)
             ->where('tanggal', $tanggal)
+            ->where('status', '!=', 'Dibatalkan')
             ->where('jamMulai', '<', $jamSelesai)
             ->where('jamSelesai', '>', $jamMulai);
 
@@ -71,7 +77,7 @@ class MasterBookingController extends Controller
     public function insertData(Request $request){
         $this->validasiBooking($request);
 
-        if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai)) {
+        if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, null, $request->txtstatus)) {
             return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
         }
 
@@ -92,7 +98,7 @@ class MasterBookingController extends Controller
     public function updateData(Request $request){
         $this->validasiBooking($request, ['txtid' => 'required|integer']);
 
-        if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, $request->txtid)) {
+        if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, $request->txtid, $request->txtstatus)) {
             return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
         }
 

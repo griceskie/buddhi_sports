@@ -41,6 +41,25 @@ class MasterDataSheetTest extends TestCase
             ->has('dataadmin', 1)->has('datamanager', 0)->has('datapembayaran', 0));
     }
 
+    public function test_booking_dibatalkan_tidak_menghalangi_jam_di_form_admin(): void
+    {
+        $b = DB::table('bookings')->first();
+        $simpan = fn (string $status) => $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', [
+            'txtpenyewa' => $b->idPenyewa, 'txtlapangan' => $b->idLapangan, 'txtadmin' => $this->admin->idAdmin,
+            'txttanggal' => '2026-10-24', 'txtjammulai' => '18:00', 'txtjamselesai' => '19:00', 'txttotal' => 50000, 'txtstatus' => $status,
+        ]);
+
+        // booking yang disimpan sebagai Dibatalkan tidak menahan jam, jadi boleh di jam yang sudah terisi
+        $simpan('Dibatalkan')->assertSessionHasNoErrors();
+        $simpan('Dipesan')->assertSessionHasErrors('txtlapangan');
+
+        // setelah booking lama dibatalkan, jamnya bisa dipakai lagi
+        DB::table('bookings')->where('idBooking', $this->booking)->update(['status' => 'Dibatalkan']);
+        $simpan('Dipesan')->assertSessionHasNoErrors();
+        // booking Dipesan milik orang lain tetap menghalangi di form Admin
+        $simpan('Dikonfirmasi')->assertSessionHasErrors('txtlapangan');
+    }
+
     public function test_halaman_form_lama_sudah_tidak_ada(): void
     {
         foreach (['/formpenyewa', '/editpenyewa/1', '/formlapangan', '/formbooking', "/editbooking/{$this->booking}", '/formpembayaran', '/formlaporanpembayaran'] as $url) {
