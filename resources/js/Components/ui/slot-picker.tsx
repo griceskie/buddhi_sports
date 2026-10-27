@@ -134,7 +134,7 @@ function SlotPicker({
             taken &&
               "cursor-not-allowed border-dashed border-input bg-transparent font-medium text-muted-foreground line-through decoration-muted-foreground/60",
             past && "border-transparent bg-canvas font-medium",
-            !taken && !past && "border-transparent bg-primary/7 font-semibold text-primary hover:bg-primary/12"
+            !taken && !past && "border-transparent bg-canvas font-medium hover:bg-muted"
           )}
         >
           {toTime(m)}

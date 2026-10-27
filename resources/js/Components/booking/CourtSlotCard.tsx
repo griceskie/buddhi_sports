@@ -61,7 +61,7 @@ export default function CourtSlotCard({
                         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                             <div className="flex flex-wrap items-center gap-3.5">
                                 <span className="flex items-center gap-1.5">
-                                    <span className="size-3 rounded-sm bg-primary/12" />
+                                    <span className="size-3 rounded-sm bg-canvas ring-1 ring-border/60" />
                                     Kosong
                                 </span>
                                 <span className="flex items-center gap-1.5">
