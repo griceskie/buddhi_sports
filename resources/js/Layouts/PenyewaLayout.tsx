@@ -17,8 +17,13 @@ import { PropsWithChildren, ReactNode, useState } from 'react';
 
 export default function PenyewaLayout({
     header,
+    band,
     children,
-}: PropsWithChildren<{ header?: ReactNode }>) {
+}: PropsWithChildren<{
+    header?: ReactNode;
+    /** Blok putih menyambung di bawah navigasi (judul, tab, pilihan tanggal); dipakai halaman Home. */
+    band?: ReactNode;
+}>) {
     const user = usePage().props.auth.user;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
@@ -26,7 +31,7 @@ export default function PenyewaLayout({
 
     return (
         <div className="min-h-screen bg-canvas">
-            <nav className="border-b bg-background">
+            <nav className={cn('bg-background', !band && 'border-b')}>
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 items-center justify-between">
                         <div className="flex items-center gap-6">
@@ -127,6 +132,12 @@ export default function PenyewaLayout({
                     </div>
                 )}
             </nav>
+
+            {band && (
+                <div className="relative border-b bg-background shadow-sm">
+                    <div className="mx-auto max-w-7xl px-4 pt-4 pb-6 sm:px-6 lg:px-8">{band}</div>
+                </div>
+            )}
 
             {header && (
                 <header className="border-b bg-background">

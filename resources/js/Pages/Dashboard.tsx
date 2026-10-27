@@ -6,6 +6,8 @@ import {
     HARI_KE_DEPAN,
     isoTanggal,
     jam,
+    JAM_BUKA,
+    JAM_TUTUP,
     jamKosong,
     jamSudahLewat,
     Lapangan,
@@ -31,12 +33,23 @@ import { Head, router } from '@inertiajs/react';
 import { CalendarX, CircleAlert } from 'lucide-react';
 import { useState } from 'react';
 
+// gambar ikon tab per jenis lapangan
+const IKON_JENIS: Record<string, string> = {
+    'Bulu Tangkis': '/images/olahraga/kok.png',
+    Basket: '/images/olahraga/basket.png',
+};
+
+// tanggal ditandai "Terbatas" bila jam kosongnya tinggal seperempat dari kapasitas jenis itu atau kurang
+const PORSI_TERBATAS = 0.25;
+
 export default function Dashboard({
     lapangan,
     terisi = [],
+    batasBayarMenit,
 }: {
     lapangan: Lapangan[];
     terisi?: Terisi[];
+    batasBayarMenit: number;
 }) {
     const sekarang = new Date();
     const hariIni = awalHari(sekarang);
@@ -62,6 +75,8 @@ export default function Dashboard({
         tanggal: h.tanggal,
         kosong: lapangan.reduce((n, l) => n + jamKosong(terisi, l, h.tanggal, sekarang), 0),
     }));
+    const kapasitas = tampil.filter((l) => !sedangPerbaikan(l)).length * (JAM_TUTUP - JAM_BUKA);
+    const sudahTutup = isoTanggal(tanggal) === isoTanggal(sekarang) && sekarang.getHours() >= JAM_TUTUP;
     const penuh = kosongSemua.filter((h) => h.kosong === 0).map((h) => h.tanggal);
     const hampirPenuh = kosongSemua
         .filter((h) => h.kosong > 0 && h.kosong <= HAMPIR_PENUH)
@@ -117,56 +132,87 @@ export default function Dashboard({
         );
     };
 
+    const band = (
+        // minmax(0,1fr): pita tanggal yang bisa digeser tidak boleh ikut melebarkan halaman
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
+            <div className="grid gap-1">
+                <h1 id="judul-pesan" className="text-[22px] leading-7 font-semibold tracking-tight">
+                    Pesan lapangan
+                </h1>
+                <p className="text-[15px] text-muted-foreground">
+                    Pilih jenis lapangan dan tanggal, lalu ketuk jam yang kosong.
+                </p>
+            </div>
+
+            {jenisList.length > 1 && (
+                <Tabs value={jenis} onValueChange={(v) => ubahJenis(v as string)}>
+                    <TabsList
+                        variant="line"
+                        aria-label="Jenis lapangan"
+                        className="w-full justify-start gap-9 rounded-none border-b p-0 group-data-horizontal/tabs:h-auto"
+                    >
+                        {jenisList.map((j) => (
+                            <TabsTrigger
+                                key={j}
+                                value={j}
+                                className="h-auto flex-none justify-start gap-2.5 px-0.5 pt-0 pb-3 text-left text-muted-foreground group-data-horizontal/tabs:after:-bottom-px data-active:text-foreground"
+                            >
+                                {IKON_JENIS[j] && (
+                                    <img src={IKON_JENIS[j]} alt="" width={44} height={44} className="size-11 object-contain" />
+                                )}
+                                <span className="flex flex-col">
+                                    <span className="text-[15px] font-semibold">{j}</span>
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                        {lapangan.filter((l) => l.jenisLapangan === j).length} lapangan
+                                    </span>
+                                </span>
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </Tabs>
+            )}
+
+            <DateStrip
+                hari={hari}
+                terpilih={tanggal}
+                penuh={penuh}
+                hampirPenuh={hampirPenuh}
+                batasTerbatas={kapasitas * PORSI_TERBATAS}
+                onSelect={ubahTanggal}
+            />
+        </div>
+    );
+
     return (
-        <PenyewaLayout>
+        <PenyewaLayout band={band}>
             <Head title="Home" />
 
-            <div className="grid gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:pb-0">
-                <section aria-labelledby="judul-pesan" className="min-w-0">
-                    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <h1
-                                id="judul-pesan"
-                                className="text-xl leading-7 font-semibold tracking-tight"
-                            >
-                                Pesan lapangan
-                            </h1>
-                            <p className="mt-0.5 text-muted-foreground">
-                                Pilih tanggal, lalu ketuk jam yang kosong.
-                            </p>
-                        </div>
-
-                        {jenisList.length > 1 && (
-                            <Tabs value={jenis} onValueChange={(v) => ubahJenis(v as string)}>
-                                <TabsList aria-label="Jenis lapangan">
-                                    {jenisList.map((j) => (
-                                        <TabsTrigger key={j} value={j}>
-                                            {j}
-                                        </TabsTrigger>
-                                    ))}
-                                </TabsList>
-                            </Tabs>
-                        )}
-                    </div>
-
+            <div className="grid gap-8 pb-24 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:pb-0">
+                <section aria-labelledby="judul-pesan" className="grid min-w-0 gap-4">
                     {galat && (
-                        <Alert variant="destructive" className="mb-4">
+                        <Alert variant="destructive">
                             <CircleAlert />
                             <AlertTitle>{galat}</AlertTitle>
                         </Alert>
                     )}
 
-                    <DateStrip
-                        hari={hari}
-                        terpilih={tanggal}
-                        penuh={penuh}
-                        hampirPenuh={hampirPenuh}
-                        onSelect={ubahTanggal}
-                    />
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                        <h2 className="text-[17px] leading-6 font-semibold">{formatTanggal(tanggal)}</h2>
+                        <p className="text-sm text-muted-foreground">
+                            {sudahTutup ? (
+                                <>
+                                    <span className="font-medium text-destructive">Tutup</span> · Buka besok pukul{' '}
+                                    {jam(JAM_BUKA)}
+                                </>
+                            ) : (
+                                <>
+                                    <span className="font-medium text-success">Buka</span> · Tutup pukul {jam(JAM_TUTUP)}
+                                </>
+                            )}
+                        </p>
+                    </div>
 
-                    <p className="mt-2.5 mb-4 font-semibold">{formatTanggal(tanggal)}</p>
-
-                    <div className="grid gap-3">
+                    <div className="grid gap-4">
                         {tampil.length === 0 && (
                             <Empty>
                                 <EmptyHeader>
@@ -202,13 +248,14 @@ export default function Dashboard({
                     </div>
                 </section>
 
-                <aside className="hidden lg:block">
+                <aside className="hidden self-stretch lg:block">
                     <RingkasanBooking
                         lapangan={lapPilihan}
                         pilihan={sel}
                         tanggal={tanggal}
                         memproses={memproses}
                         onBook={book}
+                        batasBayarMenit={batasBayarMenit}
                     />
                 </aside>
             </div>

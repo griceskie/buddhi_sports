@@ -23,6 +23,11 @@ type SlotPickerProps = {
   alternatives?: { id: string | number; label: string }[]
   onPickAlternative?: (id: string | number) => void
   disabled?: boolean
+  /**
+   * `compact`: one-line 44px slots without the sub-line, the chosen hours merged into one capsule
+   * (click it to clear the choice), and no legend or summary line (the parent shows them).
+   */
+  variant?: "default" | "compact"
   className?: string
 }
 
@@ -40,12 +45,15 @@ function SlotPicker({
   alternatives,
   onPickAlternative,
   disabled,
+  variant = "default",
   className,
 }: SlotPickerProps) {
   const [inner, setInner] = React.useState<TimeRange | null>(defaultValue)
   const [anchor, setAnchor] = React.useState<number | null>(null)
   const [conflict, setConflict] = React.useState<string | null>(null)
   const range = value !== undefined ? value : inner
+  const compact = variant === "compact"
+  const columns = useGridColumns(compact)
 
   const slots = React.useMemo(() => {
     const out: number[] = []
@@ -81,14 +89,71 @@ function SlotPicker({
 
   const hours = range ? (toMinutes(range.end) - toMinutes(range.start)) / 60 : 0
 
+  const clear = () => {
+    setConflict(null)
+    setAnchor(null)
+    set(null)
+  }
+
+  const compactSlots = () =>
+    slots.map((m) => {
+      if (range && isSelected(m)) {
+        // the whole range is one capsule, placed at its first hour
+        if (m !== toMinutes(range.start)) return null
+        return (
+          <button
+            key={m}
+            type="button"
+            disabled={disabled}
+            aria-pressed={true}
+            aria-label={`Dipilih ${range.start}–${range.end}, ${hours} jam. Ketuk untuk membatalkan`}
+            data-state="selected"
+            onClick={clear}
+            style={{ gridColumn: `span ${Math.min(hours, columns.count)}` }}
+            className="flex h-11 cursor-pointer items-center justify-between gap-2 rounded-md border border-primary bg-primary px-3.5 text-sm font-semibold text-primary-foreground tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <span className="truncate">{range.start}–{range.end}</span>
+            <span className="shrink-0 text-xs font-medium text-primary-foreground/90">{hours} jam</span>
+          </button>
+        )
+      }
+      const taken = isBooked(m)
+      const past = !taken && !!isPast?.(toTime(m))
+      return (
+        <button
+          key={m}
+          type="button"
+          disabled={disabled || past}
+          aria-pressed={false}
+          aria-disabled={taken || undefined}
+          aria-label={taken ? `${toTime(m)}, terbooking` : past ? `${toTime(m)}, sudah lewat` : undefined}
+          data-state={taken ? "booked" : past ? "past" : "free"}
+          onClick={() => pick(m)}
+          className={cn(
+            "flex h-11 cursor-pointer items-center justify-center rounded-md border px-1 text-sm tabular-nums transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+            taken &&
+              "cursor-not-allowed border-dashed border-input bg-transparent font-medium text-muted-foreground line-through decoration-muted-foreground/60",
+            past && "border-transparent bg-canvas font-medium",
+            !taken && !past && "border-transparent bg-primary/7 font-semibold text-primary hover:bg-primary/12"
+          )}
+        >
+          {toTime(m)}
+        </button>
+      )
+    })
+
   return (
-    <div data-slot="slot-picker" className={cn("grid gap-3", className)}>
+    <div data-slot="slot-picker" data-variant={variant} className={cn("grid gap-3", className)}>
       <div
+        ref={columns.ref}
         role="group"
         aria-label="Pilih jam"
-        className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2"
+        className={cn(
+          "grid gap-2",
+          compact ? "grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]"
+        )}
       >
-        {slots.map((m) => {
+        {compact ? compactSlots() : slots.map((m) => {
           const taken = isBooked(m)
           const selected = isSelected(m)
           const past = !taken && !!isPast?.(toTime(m))
@@ -119,6 +184,7 @@ function SlotPicker({
         })}
       </div>
 
+      {!compact && (
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex items-center gap-1.5"><span className="size-3 rounded-sm bg-canvas ring-1 ring-border/60" />Kosong</span>
@@ -129,6 +195,7 @@ function SlotPicker({
           {range ? `${range.start}–${range.end} · ${hours} jam` : "Klik jam mulai, lalu jam terakhir"}
         </span>
       </div>
+      )}
 
       {conflict && (
         <div
@@ -158,6 +225,23 @@ function SlotPicker({
       )}
     </div>
   )
+}
+
+/** Number of columns the auto-fill grid currently has, so a capsule never spans more than one row. */
+function useGridColumns(active: boolean) {
+  const ref = React.useRef<HTMLDivElement>(null)
+  const [count, setCount] = React.useState(7)
+  React.useEffect(() => {
+    const el = ref.current
+    if (!active || !el) return
+    const measure = () =>
+      setCount(Math.max(1, getComputedStyle(el).gridTemplateColumns.split(" ").filter(Boolean).length))
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [active])
+  return { ref, count }
 }
 
 export { SlotPicker }

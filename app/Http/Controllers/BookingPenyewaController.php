@@ -28,6 +28,8 @@ class BookingPenyewaController extends Controller
                     $hariIni->copy()->addDays(Pemesanan::HARI_KE_DEPAN - 1)->toDateString(),
                 ])
                 ->get(['idLapangan', 'tanggal', 'jamMulai', 'jamSelesai']),
+            // untuk catatan di ringkasan booking
+            'batasBayarMenit' => (int) config('pembayaran.batas_bayar_menit'),
         ]);
     }
 

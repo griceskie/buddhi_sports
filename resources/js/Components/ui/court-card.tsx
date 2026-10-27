@@ -24,6 +24,13 @@ type CourtCardProps = {
   aside?: React.ReactNode
   /** Footer content, e.g. a Booking button. Ignored when `onSelect` is set. */
   action?: React.ReactNode
+  /**
+   * `inline`: name on the left and the rate on the right of one header row, no court type,
+   * and the status badge only while the court is under repair (shown beside the name).
+   */
+  headerLayout?: "stacked" | "inline"
+  /** The `aside` column gets no padding or centring, e.g. for a photo that fills it (200px wide, at least 180px tall). */
+  asideFlush?: boolean
   className?: string
 }
 
@@ -38,10 +45,33 @@ function CourtCard({
   onSelect,
   action,
   aside,
+  headerLayout = "stacked",
+  asideFlush,
   className,
 }: CourtCardProps) {
   const unavailable = String(status).toLowerCase() === "perbaikan"
-  const body = (
+  const inline = headerLayout === "inline"
+  const body = inline ? (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
+          <p className="truncate text-base font-semibold">{name}</p>
+          {unavailable && (
+            <CourtStatusBadge status={status} className="bg-accessible-orange text-grays-white">
+              {statusLabel}
+            </CourtStatusBadge>
+          )}
+        </div>
+        <p className="shrink-0 text-right text-muted-foreground">
+          <span className={cn("text-[17px] font-semibold tabular-nums", !unavailable && "text-foreground")}>
+            {formatRupiah(rate)}
+          </span>{" "}
+          / jam
+        </p>
+      </div>
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    </>
+  ) : (
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -94,17 +124,22 @@ function CourtCard({
       <div
         data-slot="court-card"
         className={cn(
-          "grid overflow-hidden rounded-lg border bg-card text-left text-card-foreground shadow-sm sm:grid-cols-[minmax(0,1fr)_150px]",
+          "grid overflow-hidden rounded-lg border bg-card text-left text-card-foreground shadow-sm",
+          asideFlush ? "sm:grid-cols-[minmax(0,1fr)_200px]" : "sm:grid-cols-[minmax(0,1fr)_150px]",
           className
         )}
       >
-        <div className="flex min-w-0 flex-col gap-3 p-4">
+        <div className={cn("flex min-w-0 flex-col", inline ? "gap-3.5 px-5 py-4.5" : "gap-3 p-4")}>
           {body}
           {footer}
         </div>
         <div
           data-slot="court-card-aside"
-          className="flex items-baseline justify-between gap-2 border-t px-4 py-3 sm:flex-col sm:items-center sm:justify-center sm:border-t-0 sm:border-l sm:p-4 sm:text-center"
+          className={
+            asideFlush
+              ? "relative min-h-45 overflow-hidden border-t sm:border-t-0 sm:border-l"
+              : "flex items-baseline justify-between gap-2 border-t px-4 py-3 sm:flex-col sm:items-center sm:justify-center sm:border-t-0 sm:border-l sm:p-4 sm:text-center"
+          }
         >
           {aside}
         </div>
