@@ -54,7 +54,7 @@ export default function Bayar({ booking, rekening }: { booking: BookingPenyewa; 
             );
         }
         return (
-            <Button size="lg" className={className} disabled={!form.data.bukti || form.processing} onClick={kirim}>
+            <Button variant="elevated" size="lg" className={className} disabled={!form.data.bukti || form.processing} onClick={kirim}>
                 {form.processing ? 'Mengirim…' : 'Kirim bukti pembayaran'}
             </Button>
         );

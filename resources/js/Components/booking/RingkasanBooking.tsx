@@ -68,7 +68,7 @@ export default function RingkasanBooking({
                     </div>
                 </dl>
 
-                <Button className="h-11 w-full text-[15px]" disabled={!ada || memproses} onClick={onBook}>
+                <Button variant="elevated" className="h-11 w-full text-[15px]" disabled={!ada || memproses} onClick={onBook}>
                     {memproses ? 'Menyimpan…' : 'Booking sekarang'}
                 </Button>
 
@@ -122,7 +122,7 @@ export function BarBookingMobile({ lapangan, pilihan, tanggal, onBook, memproses
                         : 'Ketuk jam kosong di salah satu lapangan.'}
                 </div>
             </div>
-            <Button className="h-11 text-[15px]" disabled={!pilihan || memproses} onClick={onBook}>
+            <Button variant="elevated" className="h-11 text-[15px]" disabled={!pilihan || memproses} onClick={onBook}>
                 {memproses ? 'Menyimpan…' : 'Booking sekarang'}
             </Button>
         </div>
