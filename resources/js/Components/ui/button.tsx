@@ -8,9 +8,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/80",
-        // Uji coba: tombol "taktil" untuk satu aksi utama per halaman (garis primary, kilap atas, bayangan dalam dan luar).
+        // Uji coba: tombol "taktil" untuk aksi utama (garis tipis primary, kilap atas, bayangan dalam; tanpa bayangan jatuh).
         elevated:
-          "bg-primary text-primary-foreground shadow-[0_3px_6px_rgb(0_0_0/0.2),inset_0_1px_0_rgb(255_255_255/0.4),inset_0_0_6px_2px_rgb(255_255_255/0.24),0_0_0_1px_var(--primary)] hover:bg-[color-mix(in_oklch,var(--primary),white_8%)] active:shadow-[0_1px_2px_rgb(0_0_0/0.2),inset_0_1px_0_rgb(255_255_255/0.3),inset_0_0_6px_2px_rgb(255_255_255/0.18),0_0_0_1px_var(--primary)] dark:shadow-[0_3px_8px_rgb(0_0_0/0.5),inset_0_1px_0_rgb(255_255_255/0.25),inset_0_0_6px_2px_rgb(255_255_255/0.12),0_0_0_1px_var(--primary)]",
+          "bg-primary text-primary-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.4),inset_0_0_6px_2px_rgb(255_255_255/0.24),0_0_0_0.5px_var(--primary)] hover:bg-[color-mix(in_oklch,var(--primary),white_8%)] active:shadow-[inset_0_1px_0_rgb(255_255_255/0.3),inset_0_0_6px_2px_rgb(255_255_255/0.18),0_0_0_0.5px_var(--primary)] dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.25),inset_0_0_6px_2px_rgb(255_255_255/0.12),0_0_0_0.5px_var(--primary)]",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
