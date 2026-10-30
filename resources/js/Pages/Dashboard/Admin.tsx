@@ -161,7 +161,7 @@ export default function AdminDashboard({
                         <h1 className="text-xl leading-7 font-semibold tracking-tight">Halo, {nama}</h1>
                         <p className="mt-0.5 text-muted-foreground">{formatTanggal(new Date())}</p>
                     </div>
-                    <Link href="/tampilbooking?tambah" className={buttonVariants()}>
+                    <Link href="/tampilbooking?tambah" className={buttonVariants({ variant: 'elevated' })}>
                         <Plus />
                         Tambah booking
                     </Link>
