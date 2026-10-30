@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/booking', [BookingPenyewaController::class, 'store'])->name('booking.store');
     Route::get('/booking/{idBooking}/bayar', [BookingPenyewaController::class, 'bayar'])->whereNumber('idBooking')->name('booking.bayar');
     Route::post('/booking/{idBooking}/bukti', [BookingPenyewaController::class, 'unggahBukti'])->whereNumber('idBooking')->name('booking.bukti');
+    Route::post('/booking/{idBooking}/batal', [BookingPenyewaController::class, 'batal'])->whereNumber('idBooking')->name('booking.batal');
 });
 
 // Penyewa (mahasiswa / masyarakat umum)

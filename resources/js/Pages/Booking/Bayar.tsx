@@ -64,7 +64,9 @@ export default function Bayar({ booking, rekening }: { booking: BookingPenyewa; 
     const subjudul = diTransfer
         ? 'Cek ringkasan, lalu transfer sesuai total.'
         : k === 'dibatalkan'
-          ? 'Booking ini melewati batas bayar.'
+          ? booking.dibatalkanPenyewa
+            ? 'Anda membatalkan booking ini.'
+            : 'Booking ini melewati batas bayar.'
           : 'Unggah bukti transfer agar admin bisa memverifikasi.';
 
     return (
@@ -115,9 +117,13 @@ export default function Bayar({ booking, rekening }: { booking: BookingPenyewa; 
                     {k === 'dibatalkan' && (
                         <Alert variant="destructive">
                             <CircleX />
-                            <AlertTitle>Booking dibatalkan otomatis</AlertTitle>
+                            <AlertTitle>
+                                {booking.dibatalkanPenyewa ? 'Booking dibatalkan' : 'Booking dibatalkan otomatis'}
+                            </AlertTitle>
                             <AlertDescription>
-                                Bukti transfer tidak diunggah dalam 2 jam, jadi jadwal ini dilepas. Silakan pesan lagi.
+                                {booking.dibatalkanPenyewa
+                                    ? 'Anda membatalkan booking ini. Silakan pesan lagi bila perlu.'
+                                    : 'Bukti transfer tidak diunggah sebelum batas waktu, jadi jadwal ini dilepas. Silakan pesan lagi.'}
                             </AlertDescription>
                         </Alert>
                     )}

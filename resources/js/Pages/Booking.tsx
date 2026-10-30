@@ -3,6 +3,17 @@ import { BookingPenyewa, keadaan, Rekening, useSisaWaktu } from '@/Components/bo
 import RekeningTransfer from '@/Components/booking/RekeningTransfer';
 import StatusBooking from '@/Components/booking/StatusBooking';
 import InputError from '@/Components/InputError';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/Components/ui/alert-dialog';
 import { Badge } from '@/Components/ui/badge';
 import { BookingSummary } from '@/Components/ui/booking-summary';
 import { Button, buttonVariants } from '@/Components/ui/button';
@@ -27,7 +38,8 @@ import { FileUpload } from '@/Components/ui/file-upload';
 import { formatRupiah, formatTanggal } from '@/Components/ui/format';
 import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import PenyewaLayout from '@/Layouts/PenyewaLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { cn } from 'cn';
 import { CalendarX, Clock } from 'lucide-react';
 import { useState } from 'react';
 
@@ -158,7 +170,10 @@ function KartuBooking({ booking: b, onUnggah }: { booking: BookingPenyewa; onUng
                 {k === 'menungguVerifikasi' && (
                     <p className="mt-0.5 text-xs text-muted-foreground">Bukti terkirim, menunggu pengecekan admin.</p>
                 )}
-                {k === 'dibatalkan' && b.batasBayar && (
+                {k === 'dibatalkan' && b.dibatalkanPenyewa && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">Anda membatalkan booking ini.</p>
+                )}
+                {k === 'dibatalkan' && !b.dibatalkanPenyewa && b.batasBayar && (
                     <p className="mt-0.5 text-xs text-muted-foreground">
                         Dibatalkan otomatis karena melewati batas bayar.
                     </p>
@@ -197,9 +212,57 @@ function KartuBooking({ booking: b, onUnggah }: { booking: BookingPenyewa; onUng
                             </p>
                         )}
                     </BookingSummary>
+                    {k === 'belumBayar' && <BatalkanBooking booking={b} onSelesai={() => setDetail(false)} />}
+                    {(k === 'menungguVerifikasi' || k === 'ditolak' || k === 'dikonfirmasi') &&
+                        b.tanggal >= isoTanggal(new Date()) && (
+                            <p className="text-center text-xs text-muted-foreground">
+                                Bukti bayar sudah dikirim. Untuk membatalkan, hubungi pengelola.
+                            </p>
+                        )}
                 </DialogContent>
             </Dialog>
         </Card>
+    );
+}
+
+// Hanya untuk booking yang belum ada bukti bayarnya; server memeriksa ulang.
+function BatalkanBooking({ booking: b, onSelesai }: { booking: BookingPenyewa; onSelesai: () => void }) {
+    const [memproses, setMemproses] = useState(false);
+
+    const batalkan = () =>
+        router.post(
+            route('booking.batal', b.idBooking),
+            {},
+            {
+                preserveScroll: true,
+                onStart: () => setMemproses(true),
+                onFinish: () => setMemproses(false),
+                onSuccess: onSelesai,
+            },
+        );
+
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger className={cn(buttonVariants({ variant: 'destructive', size: 'lg' }), 'w-full')}>
+                Batalkan booking
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Batalkan booking {b.kode}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {b.namaLapangan}, {formatTanggal(b.tanggal, 'EEE, d MMM yyyy')} pukul {b.jamMulai}–
+                        {b.jamSelesai}. Booking yang dibatalkan tidak bisa dipulihkan; pesan lagi dari Home bila
+                        perlu.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Kembali</AlertDialogCancel>
+                    <AlertDialogAction variant="destructive" disabled={memproses} onClick={batalkan}>
+                        {memproses ? 'Membatalkan…' : 'Ya, batalkan'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }
 

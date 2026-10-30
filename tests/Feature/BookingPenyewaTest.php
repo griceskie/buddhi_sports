@@ -134,6 +134,45 @@ class BookingPenyewaTest extends TestCase
         $this->actingAs($this->buatPenyewa('lain2@example.com'))->post("/booking/$id/bukti", [])->assertNotFound();
     }
 
+    public function test_penyewa_bisa_membatalkan_booking_yang_belum_dibayar(): void
+    {
+        $this->pesan();
+        $id = DB::table('bookings')->value('idBooking');
+
+        // bukan pemilik: tidak ditemukan, status tetap
+        $this->actingAs($this->buatPenyewa('lain@example.com'))->post("/booking/$id/batal")->assertNotFound();
+        $this->assertSame('Dipesan', DB::table('bookings')->value('status'));
+
+        $this->actingAs($this->penyewa)->from('/booking')->post("/booking/$id/batal")
+            ->assertRedirect('/booking')->assertSessionHas('success');
+        $b = DB::table('bookings')->first();
+        $this->assertSame('Dibatalkan', $b->status);
+        $this->assertTrue((bool) $b->dibatalkanPenyewa);
+
+        $this->actingAs($this->penyewa)->get('/booking')->assertInertia(fn (Assert $p) => $p
+            ->where('bookings.0.status', 'Dibatalkan')
+            ->where('bookings.0.dibatalkanPenyewa', true));
+    }
+
+    public function test_booking_yang_sudah_ada_bukti_tidak_bisa_dibatalkan_penyewa(): void
+    {
+        $this->pesan();
+        $id = DB::table('bookings')->value('idBooking');
+        foreach (['Menunggu Verifikasi', 'Ditolak', 'Terverifikasi'] as $status) {
+            DB::table('pembayarans')->updateOrInsert(['idBooking' => $id], ['tglBayar' => '2026-10-23', 'jumlahBayar' => 100000, 'status' => $status]);
+
+            $this->actingAs($this->penyewa)->post("/booking/$id/batal")->assertSessionHas('error');
+            $this->assertSame('Dipesan', DB::table('bookings')->value('status'), "status pembayaran $status");
+        }
+
+        // batal otomatis (kedaluwarsa) tidak ditandai sebagai dibatalkan penyewa
+        DB::table('pembayarans')->delete();
+        $this->travel(config('pembayaran.batas_bayar_menit') + 1)->minutes();
+        $this->actingAs($this->penyewa)->get('/booking');
+        $this->assertSame('Dibatalkan', DB::table('bookings')->value('status'));
+        $this->assertFalse((bool) DB::table('bookings')->value('dibatalkanPenyewa'));
+    }
+
     public function test_unggah_bukti_membuat_pembayaran_menunggu_verifikasi(): void
     {
         Storage::fake('local');

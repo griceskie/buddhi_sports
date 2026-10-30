@@ -158,6 +158,22 @@ class BookingPenyewaController extends Controller
         return back()->with('success', 'Bukti terkirim. Admin akan memverifikasi pembayaran Anda.');
     }
 
+    /** Penyewa membatalkan booking sendiri, hanya selama belum ada bukti bayar (belum ada uang yang perlu dikembalikan). */
+    public function batal(int $idBooking): RedirectResponse
+    {
+        Pemesanan::batalkanKedaluwarsa();
+        $booking = $this->milikSaya($idBooking);
+
+        if ($booking->status !== 'Dipesan' || $booking->statusPembayaran !== null) {
+            return back()->with('error', 'Booking ini tidak bisa dibatalkan dari sini. Hubungi pengelola.');
+        }
+
+        DB::table('bookings')->where('idBooking', $booking->idBooking)
+            ->update(['status' => 'Dibatalkan', 'dibatalkanPenyewa' => true]);
+
+        return back()->with('success', 'Booking '.Pemesanan::kode($booking->idBooking).' dibatalkan.');
+    }
+
     public function daftar(): Response
     {
         Pemesanan::batalkanKedaluwarsa();
@@ -183,6 +199,7 @@ class BookingPenyewaController extends Controller
                 'bookings.jamSelesai',
                 'bookings.totalBayar',
                 'bookings.status',
+                'bookings.dibatalkanPenyewa',
                 'bookings.created_at',
                 'lapangans.namaLapangan',
                 'lapangans.jenisLapangan',
@@ -213,6 +230,7 @@ class BookingPenyewaController extends Controller
             'jamSelesai' => substr($b->jamSelesai, 0, 5),
             'totalBayar' => (int) $b->totalBayar,
             'status' => $b->status,
+            'dibatalkanPenyewa' => (bool) $b->dibatalkanPenyewa,
             'statusPembayaran' => $b->statusPembayaran,
             'alasanTolak' => $b->alasanTolak,
             'batasBayar' => Pemesanan::batasBayar($b->created_at)?->toIso8601String(),
