@@ -403,3 +403,17 @@
     }
   }
 }
+/* Animasi masuk objek di halaman tamu (Components/auth/AuthScene.tsx): bergeser dari luar ke posisinya sambil muncul.
+   Arah datang dari --auth-dari-x / --auth-dari-y; posisi objek memakai properti `translate`, jadi tidak bentrok dengan `transform`. */
+@keyframes auth-masuk {
+  from {
+    opacity: 0;
+    transform: translate(var(--auth-dari-x, 0), var(--auth-dari-y, 0));
+  }
+}
+
+@keyframes auth-pudar {
+  from {
+    opacity: 0;
+  }
+}
