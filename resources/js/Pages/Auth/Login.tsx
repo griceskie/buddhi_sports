@@ -31,8 +31,11 @@ export default function Login({
     };
 
     return (
-        <GuestLayout>
-            <Head title="Login" />
+        <GuestLayout
+            title="Welcome back👋, mate!"
+            description="Good to see you again. Log in and grab a court for your next game."
+        >
+            <Head title="Log in" />
 
             {status && (
                 <Alert variant="success" className="mb-4">
@@ -40,85 +43,81 @@ export default function Login({
                 </Alert>
             )}
 
-            <form onSubmit={submit}>
-                <div>
-                    <Label htmlFor="email" className="text-muted-foreground">
-                        Email
-                    </Label>
+            <form onSubmit={submit} className="flex flex-col gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
 
                     <Input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-2"
                         autoComplete="username"
+                        placeholder="you@email.com"
                         autoFocus
                         onChange={(e) => setData('email', e.target.value)}
                     />
 
-                    <InputError message={errors.email} className="mt-2" />
+                    <InputError message={errors.email} />
                 </div>
 
-                <div className="mt-4">
-                    <Label htmlFor="password" className="text-muted-foreground">
-                        Password
-                    </Label>
+                <div className="grid gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="password">Password</Label>
+
+                        {canResetPassword && (
+                            <Link
+                                href={route('password.request')}
+                                className="text-sm text-primary hover:underline"
+                            >
+                                Forgot your password?
+                            </Link>
+                        )}
+                    </div>
 
                     <PasswordInput
                         id="password"
                         name="password"
                         value={data.password}
-                        className="mt-2"
                         autoComplete="current-password"
                         onChange={(e) => setData('password', e.target.value)}
                     />
 
-                    <InputError message={errors.password} className="mt-2" />
+                    <InputError message={errors.password} />
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-3">
-                    <Label className="font-normal text-foreground">
-                        <Checkbox
-                            name="remember"
-                            className="rounded-[4px]"
-                            checked={data.remember}
-                            onCheckedChange={(checked) =>
-                                setData('remember', checked)
-                            }
-                        />
-                        Ingat saya
-                    </Label>
-
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="text-sm text-primary hover:underline"
-                        >
-                            Lupa password?
-                        </Link>
-                    )}
-                </div>
+                <Label className="font-normal text-foreground">
+                    <Checkbox
+                        name="remember"
+                        className="rounded-[4px]"
+                        checked={data.remember}
+                        onCheckedChange={(checked) =>
+                            setData('remember', checked)
+                        }
+                    />
+                    Keep me logged in
+                </Label>
 
                 <Button
                     type="submit"
+                    variant="elevated"
                     size="lg"
-                    className="mt-6 w-full"
+                    className="mt-2 w-full"
                     disabled={processing}
                 >
-                    Lanjut
+                    Log in
                 </Button>
-
-                <p className="mt-4 text-center text-sm text-muted-foreground">
-                    Belum punya akun?{' '}
-                    <Link
-                        href={route('register')}
-                        className="text-primary hover:underline"
-                    >
-                        Daftar
-                    </Link>
-                </p>
             </form>
+
+            <p className="mt-7 text-sm text-muted-foreground">
+                New here?{' '}
+                <Link
+                    href={route('register')}
+                    className="text-primary hover:underline"
+                >
+                    Create an account
+                </Link>
+            </p>
         </GuestLayout>
     );
 }

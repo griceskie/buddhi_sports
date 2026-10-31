@@ -164,7 +164,7 @@ class BlackboxAutentikasiPenyewaTest extends TestCase
 
         $response->assertSessionHasErrors('email');
         $pesan = session('errors')->first('email');
-        $this->assertStringContainsString('Terlalu banyak', $pesan);
+        $this->assertStringContainsString('Too many login attempts', $pesan);
         $this->assertGuest();
     }
 
