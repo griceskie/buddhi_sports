@@ -104,19 +104,19 @@ class MasterDataSheetTest extends TestCase
         $this->assertDatabaseHas('pembayarans', ['idBooking' => $this->booking, 'status' => 'Ditolak', 'alasanTolak' => 'Foto buram']);
     }
 
-    public function test_pesan_validasi_berbahasa_indonesia_dengan_nama_kolom_yang_ramah(): void
+    public function test_pesan_validasi_dengan_nama_kolom_yang_ramah(): void
     {
         $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', ['txtstatus' => 'Dipesan'])
             ->assertSessionHasErrors([
-                'txtpenyewa' => 'Penyewa wajib diisi.',
-                'txtadmin' => 'Admin wajib diisi.',
-                'txtlapangan' => 'Lapangan wajib diisi.',
-                'txtjammulai' => 'Jam mulai wajib diisi.',
-                'txttotal' => 'Total bayar wajib diisi.',
+                'txtpenyewa' => 'The renter field is required.',
+                'txtadmin' => 'The admin field is required.',
+                'txtlapangan' => 'The court field is required.',
+                'txtjammulai' => 'The start time field is required.',
+                'txttotal' => 'The total amount field is required.',
             ]);
 
         $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', ['txttotal' => 'abc'])
-            ->assertSessionHasErrors(['txttotal' => 'Total bayar harus berupa bilangan bulat.']);
+            ->assertSessionHasErrors(['txttotal' => 'The total amount field must be an integer.']);
     }
 
     public function test_jam_booking_harus_bulat_dalam_jam_operasional_dan_selesai_setelah_mulai(): void
@@ -144,6 +144,6 @@ class MasterDataSheetTest extends TestCase
             ->assertInertia(fn (Assert $p) => $p->where('idAdminLogin', $this->admin->idAdmin));
 
         $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', ['txtadmin' => 9999])
-            ->assertSessionHasErrors(['txtadmin' => 'Admin yang dipilih tidak valid.']);
+            ->assertSessionHasErrors(['txtadmin' => 'The selected admin is invalid.']);
     }
 }

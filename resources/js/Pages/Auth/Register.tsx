@@ -1,4 +1,6 @@
 import InputError from '@/Components/InputError';
+import PasswordInput from '@/Components/PasswordInput';
+import PhoneInput from '@/Components/PhoneInput';
 import { Button } from '@/Components/ui/button';
 import { Checkbox } from '@/Components/ui/checkbox';
 import { Input } from '@/Components/ui/input';
@@ -26,99 +28,95 @@ export default function Register() {
     };
 
     return (
-        <GuestLayout>
-            <Head title="Daftar" />
+        <GuestLayout
+            title="Welcome👐, mate!"
+            description="You'll need an account before booking a court. It only takes a minute."
+        >
+            <Head title="Create an account" />
 
-            <form onSubmit={submit}>
-                <div>
-                    <Label htmlFor="namaPenyewa" className="text-muted-foreground">
-                        Nama
-                    </Label>
+            <form onSubmit={submit} className="flex flex-col gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="namaPenyewa">Your name</Label>
 
                     <Input
                         id="namaPenyewa"
                         name="namaPenyewa"
                         value={data.namaPenyewa}
-                        className="mt-2"
                         autoComplete="name"
+                        placeholder="Budi Santoso"
                         autoFocus
                         onChange={(e) => setData('namaPenyewa', e.target.value)}
                         required
                     />
 
-                    <InputError message={errors.namaPenyewa} className="mt-2" />
+                    <InputError message={errors.namaPenyewa} />
                 </div>
 
-                <div className="mt-4">
-                    <Label htmlFor="noHp" className="text-muted-foreground">
-                        No HP
-                    </Label>
+                <div className="grid gap-2">
+                    <Label htmlFor="noHp">Phone number</Label>
 
-                    <Input
+                    <PhoneInput
                         id="noHp"
                         name="noHp"
                         value={data.noHp}
-                        className="mt-2"
                         autoComplete="tel"
-                        onChange={(e) => setData('noHp', e.target.value)}
+                        placeholder="0812 3456 7890"
+                        aria-describedby="noHp-hint"
+                        onValueChange={(digits) => setData('noHp', digits)}
                         required
                     />
 
-                    <InputError message={errors.noHp} className="mt-2" />
+                    <p id="noHp-hint" className="text-[13px] leading-[18px] text-muted-foreground">
+                        In case we need to reach you about a booking.
+                    </p>
+
+                    <InputError message={errors.noHp} />
                 </div>
 
-                <div className="mt-4">
-                    <Label htmlFor="email" className="text-muted-foreground">
-                        Email
-                    </Label>
+                <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
 
                     <Input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-2"
                         autoComplete="username"
+                        placeholder="you@email.com"
                         onChange={(e) => setData('email', e.target.value)}
                         required
                     />
 
-                    <InputError message={errors.email} className="mt-2" />
+                    <InputError message={errors.email} />
                 </div>
 
-                <div className="mt-4">
-                    <Label htmlFor="password" className="text-muted-foreground">
-                        Password
-                    </Label>
+                <div className="grid gap-2">
+                    <Label htmlFor="password">Password</Label>
 
-                    <Input
+                    <PasswordInput
                         id="password"
-                        type="password"
                         name="password"
                         value={data.password}
-                        className="mt-2"
                         autoComplete="new-password"
+                        aria-describedby="password-hint"
                         onChange={(e) => setData('password', e.target.value)}
                         required
                     />
 
-                    <InputError message={errors.password} className="mt-2" />
+                    <p id="password-hint" className="text-[13px] leading-[18px] text-muted-foreground">
+                        At least 8 characters.
+                    </p>
+
+                    <InputError message={errors.password} />
                 </div>
 
-                <div className="mt-4">
-                    <Label
-                        htmlFor="password_confirmation"
-                        className="text-muted-foreground"
-                    >
-                        Konfirmasi Password
-                    </Label>
+                <div className="grid gap-2">
+                    <Label htmlFor="password_confirmation">Confirm password</Label>
 
-                    <Input
+                    <PasswordInput
                         id="password_confirmation"
-                        type="password"
                         name="password_confirmation"
                         value={data.password_confirmation}
-                        className="mt-2"
                         autoComplete="new-password"
                         onChange={(e) =>
                             setData('password_confirmation', e.target.value)
@@ -126,45 +124,41 @@ export default function Register() {
                         required
                     />
 
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
+                    <InputError message={errors.password_confirmation} />
                 </div>
 
-                <div className="mt-4">
-                    <Label className="font-normal text-foreground">
-                        <Checkbox
-                            name="remember"
-                            className="rounded-[4px]"
-                            checked={data.remember}
-                            onCheckedChange={(checked) =>
-                                setData('remember', checked)
-                            }
-                        />
-                        Ingat saya
-                    </Label>
-                </div>
+                <Label className="font-normal text-foreground">
+                    <Checkbox
+                        name="remember"
+                        className="rounded-[4px]"
+                        checked={data.remember}
+                        onCheckedChange={(checked) =>
+                            setData('remember', checked)
+                        }
+                    />
+                    Keep me logged in
+                </Label>
 
                 <Button
                     type="submit"
+                    variant="elevated"
                     size="lg"
-                    className="mt-6 w-full"
+                    className="mt-2 w-full"
                     disabled={processing}
                 >
-                    Daftar
+                    Create account
                 </Button>
-
-                <p className="mt-4 text-center text-sm text-muted-foreground">
-                    Sudah punya akun?{' '}
-                    <Link
-                        href={route('login')}
-                        className="text-primary hover:underline"
-                    >
-                        Login
-                    </Link>
-                </p>
             </form>
+
+            <p className="mt-7 text-sm text-muted-foreground">
+                Already have an account?{' '}
+                <Link
+                    href={route('login')}
+                    className="text-primary hover:underline"
+                >
+                    Log in
+                </Link>
+            </p>
         </GuestLayout>
     );
 }
