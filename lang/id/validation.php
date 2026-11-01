@@ -194,6 +194,8 @@ return [
         'txtjamselesai' => 'jam selesai',
         'txttotal' => 'total bayar',
         'txtstatus' => 'status',
+        'foto' => 'foto lapangan',
+        'foto.*' => 'foto lapangan',
         'txtjenis' => 'jenis lapangan',
         'txttarif' => 'tarif per jam',
         'txttglbayar' => 'tanggal bayar',

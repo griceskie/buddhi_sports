@@ -20,8 +20,13 @@ import {
 } from '@/Components/ui/table';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { Pencil, Plus } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { ImagePlus, Pencil, Plus, X } from 'lucide-react';
+import { FormEventHandler, useEffect, useMemo } from 'react';
+
+// harus sama dengan FotoLapangan::MAKS di server
+const MAKS_FOTO = 6;
+
+type Foto = { path: string; url: string };
 
 type Lapangan = {
     idLapangan: number;
@@ -29,6 +34,7 @@ type Lapangan = {
     jenisLapangan: string;
     tarifPerJam: number;
     status: string;
+    foto: Foto[];
 };
 
 export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] }) {
@@ -65,7 +71,16 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
                     <TableBody>
                         {datalapangan.map((row) => (
                             <TableRow key={row.idLapangan}>
-                                <TableCell>{row.namaLapangan}</TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                        {row.foto[0] ? (
+                                            <img src={row.foto[0].url} alt="" className="h-9 w-12 shrink-0 rounded-md object-cover" />
+                                        ) : (
+                                            <div className="h-9 w-12 shrink-0 rounded-md bg-canvas" />
+                                        )}
+                                        {row.namaLapangan}
+                                    </div>
+                                </TableCell>
                                 <TableCell>{row.jenisLapangan}</TableCell>
                                 <TableCell>{formatRupiah(row.tarifPerJam)}</TableCell>
                                 <TableCell><CourtStatusBadge status={row.status} /></TableCell>
@@ -93,13 +108,32 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
 }
 
 function FormLapangan({ row, onDone }: { row: Lapangan | null; onDone: () => void }) {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm<{
+        txtid: number | string;
+        txtnama: string;
+        txtjenis: string;
+        txttarif: string;
+        txtstatus: string;
+        fotoLama: string[];
+        foto: File[];
+    }>({
         txtid: row?.idLapangan ?? '',
         txtnama: row?.namaLapangan ?? '',
         txtjenis: row?.jenisLapangan ?? 'Bulu Tangkis',
         txttarif: row ? String(row.tarifPerJam) : '',
         txtstatus: row?.status ?? 'Tersedia',
+        fotoLama: row?.foto.map((f) => f.path) ?? [],
+        foto: [],
     });
+
+    // pratinjau foto baru; URL dilepas lagi saat daftar berubah atau sheet ditutup
+    const pratinjau = useMemo(() => data.foto.map((f) => URL.createObjectURL(f)), [data.foto]);
+    useEffect(() => () => pratinjau.forEach((u) => URL.revokeObjectURL(u)), [pratinjau]);
+    const lama = (row?.foto ?? []).filter((f) => data.fotoLama.includes(f.path));
+    const sisa = MAKS_FOTO - lama.length - data.foto.length;
+    const galatFoto =
+        errors.foto ??
+        Object.entries(errors).find(([k]) => k.startsWith('foto.'))?.[1];
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -167,6 +201,67 @@ function FormLapangan({ row, onDone }: { row: Lapangan | null; onDone: () => voi
                     ]}
                 />
                 <InputError message={errors.txtstatus} className="mt-1" />
+            </div>
+
+            <div>
+                <Label htmlFor="foto">Foto</Label>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                    JPG, PNG, atau WebP, maks. 2 MB per foto, paling banyak {MAKS_FOTO}. Foto pertama jadi foto utama di Home.
+                </p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                    {lama.map((f) => (
+                        <div key={f.path} className="relative aspect-4/3 overflow-hidden rounded-md bg-canvas">
+                            <img src={f.url} alt="" className="size-full object-cover" />
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                size="icon-xs"
+                                aria-label="Hapus foto"
+                                className="absolute top-1 right-1 rounded-full"
+                                onClick={() => setData('fotoLama', data.fotoLama.filter((p) => p !== f.path))}
+                            >
+                                <X />
+                            </Button>
+                        </div>
+                    ))}
+                    {pratinjau.map((u, i) => (
+                        <div key={u} className="relative aspect-4/3 overflow-hidden rounded-md bg-canvas">
+                            <img src={u} alt="" className="size-full object-cover" />
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                size="icon-xs"
+                                aria-label="Hapus foto"
+                                className="absolute top-1 right-1 rounded-full"
+                                onClick={() => setData('foto', data.foto.filter((_, j) => j !== i))}
+                            >
+                                <X />
+                            </Button>
+                        </div>
+                    ))}
+                    {sisa > 0 && (
+                        <label
+                            htmlFor="foto"
+                            className="flex aspect-4/3 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-input text-xs text-muted-foreground hover:bg-muted"
+                        >
+                            <ImagePlus className="size-5" aria-hidden="true" />
+                            Tambah foto
+                            <input
+                                id="foto"
+                                type="file"
+                                multiple
+                                accept="image/jpeg,image/png,image/webp"
+                                className="sr-only"
+                                onChange={(e) => {
+                                    const dipilih = Array.from(e.target.files ?? []).slice(0, sisa);
+                                    setData('foto', [...data.foto, ...dipilih]);
+                                    e.target.value = '';
+                                }}
+                            />
+                        </label>
+                    )}
+                </div>
+                <InputError message={galatFoto} className="mt-1" />
             </div>
         </SheetForm>
     );
