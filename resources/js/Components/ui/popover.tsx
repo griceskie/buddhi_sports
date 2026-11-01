@@ -14,15 +14,18 @@ function PopoverContent({
   align = "center",
   side = "bottom",
   sideOffset = 4,
+  collisionPadding,
   ...props
 }: PopoverPrimitive.Popup.Props & {
   align?: PopoverPrimitive.Positioner.Props["align"]
   side?: PopoverPrimitive.Positioner.Props["side"]
   sideOffset?: number
+  /** Space kept between the popup and the viewport edges. */
+  collisionPadding?: PopoverPrimitive.Positioner.Props["collisionPadding"]
 }) {
   return (
     <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Positioner align={align} side={side} sideOffset={sideOffset} className="z-50">
+      <PopoverPrimitive.Positioner align={align} side={side} sideOffset={sideOffset} collisionPadding={collisionPadding} className="z-50">
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(

@@ -29,6 +29,8 @@ type SlotPickerProps = {
    * and no legend or summary line (the parent shows them).
    */
   variant?: "default" | "compact"
+  /** Extra classes for the grid of hours, e.g. the number of columns per breakpoint. */
+  gridClassName?: string
   className?: string
 }
 
@@ -47,11 +49,13 @@ function SlotPicker({
   onPickAlternative,
   disabled,
   variant = "default",
+  gridClassName,
   className,
 }: SlotPickerProps) {
   const [inner, setInner] = React.useState<TimeRange | null>(defaultValue)
   const [anchor, setAnchor] = React.useState<number | null>(null)
   const [conflict, setConflict] = React.useState<string | null>(null)
+  const [hover, setHover] = React.useState<number | null>(null)
   const range = value !== undefined ? value : inner
   const compact = variant === "compact"
 
@@ -71,6 +75,13 @@ function SlotPicker({
     onValueChange?.(r)
   }
 
+  // A lone chosen hour set from outside (e.g. preselected by the page) also acts as the anchor.
+  const start =
+    anchor ??
+    (range && toMinutes(range.end) - toMinutes(range.start) === 60 ? toMinutes(range.start) : null)
+  const canExtendTo = (m: number) =>
+    start !== null && m > start && !slots.some((s) => s > start && s <= m && isBooked(s))
+
   const pick = (m: number) => {
     if (isBooked(m)) {
       setConflict(`${toTime(m)}–${toTime(m + 60)}`)
@@ -78,9 +89,10 @@ function SlotPicker({
     }
     setConflict(null)
     // Second click after the anchor extends the range, as long as no booked hour sits between.
-    if (anchor !== null && m > anchor && !slots.some((s) => s > anchor && s < m && isBooked(s))) {
-      set({ start: toTime(anchor), end: toTime(m + 60) })
+    if (canExtendTo(m)) {
+      set({ start: toTime(start!), end: toTime(m + 60) })
       setAnchor(null)
+      setHover(null)
       return
     }
     set({ start: toTime(m), end: toTime(m + 60) })
@@ -96,15 +108,22 @@ function SlotPicker({
   }
 
   // Like a date-range calendar: the first and last hour are filled, the hours between are tinted.
+  // While a start is set, hovering a later free hour previews the range up to it.
+  const preview = hover !== null && canExtendTo(hover) ? { from: start!, to: hover } : null
   const compactSlots = () =>
     slots.map((m) => {
       const taken = isBooked(m)
       const past = !taken && !!isPast?.(toTime(m))
-      const selected = isSelected(m)
-      const edge = selected && (m === toMinutes(range!.start) || m + 60 === toMinutes(range!.end))
+      const selected = preview ? m >= preview.from && m <= preview.to : isSelected(m)
+      const edge =
+        selected &&
+        (preview
+          ? m === preview.from || m === preview.to
+          : m === toMinutes(range!.start) || m + 60 === toMinutes(range!.end))
       const middle = selected && !edge
       // the only chosen hour, clicked again, clears the choice
-      const single = selected && hours === 1
+      const single = !preview && selected && hours === 1
+      const label = `${toTime(m)}–${toTime(m + 60)}`
       return (
         <button
           key={m}
@@ -112,22 +131,24 @@ function SlotPicker({
           disabled={disabled || past}
           aria-pressed={selected}
           aria-disabled={taken || undefined}
-          aria-label={taken ? `${toTime(m)}, terbooking` : past ? `${toTime(m)}, sudah lewat` : undefined}
+          aria-label={taken ? `${label}, terbooking` : past ? `${label}, sudah lewat` : label}
           data-state={taken ? "booked" : past ? "past" : selected ? "selected" : "free"}
           data-range-edge={edge || undefined}
           data-range-middle={middle || undefined}
           onClick={() => (single ? clear() : pick(m))}
+          onMouseEnter={() => setHover(m)}
+          onMouseLeave={() => setHover(null)}
           className={cn(
-            "flex h-11 cursor-pointer items-center justify-center rounded-md border px-1 text-sm tabular-nums transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+            "flex h-11 cursor-pointer items-center justify-center rounded-md border px-1 text-sm whitespace-nowrap tabular-nums transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
             taken &&
-              "cursor-not-allowed border-dashed border-input bg-transparent font-medium text-muted-foreground line-through decoration-muted-foreground/60",
+              "cursor-not-allowed border-[1.5px] border-dashed border-foreground/32 bg-transparent font-medium text-muted-foreground line-through decoration-muted-foreground/60",
             past && "border-transparent bg-canvas font-medium",
             !taken && !past && !selected && "border-transparent bg-canvas font-medium hover:bg-muted",
             edge && "border-primary bg-primary font-semibold text-primary-foreground",
             middle && "border-transparent bg-primary/15 font-medium text-foreground"
           )}
         >
-          {toTime(m)}
+          {label}
         </button>
       )
     })
@@ -139,7 +160,8 @@ function SlotPicker({
         aria-label="Pilih jam"
         className={cn(
           "grid gap-2",
-          compact ? "grid-cols-[repeat(auto-fill,minmax(4.75rem,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]"
+          compact ? "grid-cols-[repeat(auto-fill,minmax(6rem,1fr))]" : "grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))]",
+          gridClassName
         )}
       >
         {compact ? compactSlots() : slots.map((m) => {

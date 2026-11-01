@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\FotoLapangan;
 use App\Support\Pemesanan;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,10 @@ class BookingPenyewaController extends Controller
         $hariIni = today();
 
         return Inertia::render('Dashboard', [
-            'lapangan' => DB::table('lapangans')->get(),
+            'lapangan' => DB::table('lapangans')->get()->map(function ($l) {
+                $l->foto = FotoLapangan::urls($l->foto);
+                return $l;
+            }),
             'terisi' => DB::table('bookings')
                 ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
                 ->whereBetween('tanggal', [
@@ -28,8 +32,6 @@ class BookingPenyewaController extends Controller
                     $hariIni->copy()->addDays(Pemesanan::HARI_KE_DEPAN - 1)->toDateString(),
                 ])
                 ->get(['idLapangan', 'tanggal', 'jamMulai', 'jamSelesai']),
-            // untuk catatan di ringkasan booking
-            'batasBayarMenit' => (int) config('pembayaran.batas_bayar_menit'),
         ]);
     }
 

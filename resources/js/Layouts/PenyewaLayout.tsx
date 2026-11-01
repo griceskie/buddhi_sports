@@ -18,11 +18,14 @@ import { PropsWithChildren, ReactNode, useState } from 'react';
 export default function PenyewaLayout({
     header,
     band,
+    navTengah,
     children,
 }: PropsWithChildren<{
     header?: ReactNode;
-    /** Blok putih menyambung di bawah navigasi (judul, tab, pilihan tanggal); dipakai halaman Home. */
+    /** Blok putih di bawah navigasi (judul, foto, pilih lapangan); dipakai halaman Home. */
     band?: ReactNode;
+    /** Isi di tengah nav, mis. status buka GOR di Home. */
+    navTengah?: ReactNode;
 }>) {
     const user = usePage().props.auth.user;
 
@@ -31,14 +34,18 @@ export default function PenyewaLayout({
 
     return (
         <div className="min-h-screen bg-canvas">
-            <nav className={cn('bg-background', !band && 'border-b')}>
+            <nav className="sticky top-0 z-30 border-b bg-background">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 items-center justify-between">
+                    <div className="relative flex h-16 items-center justify-between gap-3">
                         <div className="flex items-center gap-6">
-                            <Link href={route('dashboard')}>
-                                <Wordmark />
+                            <Link href={route('dashboard')} className="shrink-0">
+                                <Wordmark className="whitespace-nowrap" />
                             </Link>
                         </div>
+
+                        {navTengah && (
+                            <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2">{navTengah}</div>
+                        )}
 
                         <div className="hidden sm:block">
                             <DropdownMenu>
@@ -134,7 +141,7 @@ export default function PenyewaLayout({
             </nav>
 
             {band && (
-                <div className="relative border-b bg-background shadow-sm">
+                <div className="border-b bg-background">
                     <div className="mx-auto max-w-7xl px-4 pt-4 pb-6 sm:px-6 lg:px-8">{band}</div>
                 </div>
             )}
