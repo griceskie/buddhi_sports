@@ -54,6 +54,47 @@
   --radius-sm: calc(var(--radius) - 4px);
 }
 
+/* Skala tipografi (Design System, kartu Typography). Kelas: text-large-title … text-caption-2.
+   Ukuran bawaan Tailwind (text-xs, text-sm, text-base, …) sengaja tidak ditimpa: komponen shadcn memakainya.
+   Catatan: text-body = 24px (bukan teks paragraf); teks UI biasa = text-footnote (14px). */
+@theme {
+  --text-large-title: 3rem;
+  --text-large-title--line-height: 1.1;
+  --text-large-title--letter-spacing: -0.8px;
+  --text-large-title--font-weight: 600;
+  --text-title-1: 2.5rem;
+  --text-title-1--line-height: 1.15;
+  --text-title-1--letter-spacing: -0.4px;
+  --text-title-1--font-weight: 600;
+  --text-title-2: 2.25rem;
+  --text-title-2--line-height: 1.2;
+  --text-title-2--letter-spacing: -0.4px;
+  --text-title-2--font-weight: 600;
+  --text-title-3: 2rem;
+  --text-title-3--line-height: 1.25;
+  --text-title-3--letter-spacing: -0.3px;
+  --text-title-3--font-weight: 600;
+  --text-headline: 1.75rem;
+  --text-headline--line-height: 1.3;
+  --text-headline--letter-spacing: 0.2px;
+  --text-headline--font-weight: 600;
+  --text-body: 1.5rem;
+  --text-body--line-height: 1.333;
+  --text-body--letter-spacing: -0.1px;
+  --text-callout: 1.25rem;
+  --text-callout--line-height: 1.4;
+  --text-subheadline: 1rem;
+  --text-subheadline--line-height: 1.5;
+  --text-footnote: 0.875rem;
+  --text-footnote--line-height: 1.5;
+  --text-caption-1: 0.75rem;
+  --text-caption-1--line-height: 1.45;
+  --text-caption-1--letter-spacing: 0.1px;
+  --text-caption-2: 0.625rem;
+  --text-caption-2--line-height: 1.3;
+  --text-caption-2--letter-spacing: 0.5px;
+}
+
 /* iOS colour names as Tailwind colours (bg-labels-secondary, text-accents-blue, …) */
 @theme inline {
   --color-accents-red: var(--accents-red);

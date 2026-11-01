@@ -147,6 +147,28 @@ Font Geist dimuat dari paket `@fontsource-variable/geist` (baris 4). Untuk mengg
 
 Ukuran teks memakai skala bawaan Tailwind (`text-xs` 12px, `text-sm` 14px, `text-base` 16px, `text-lg` 18px, `text-xl` 20px). Field form memakai `text-base` (16px) supaya Safari di iPhone tidak memperbesar halaman saat field disentuh.
 
+### Skala tipografi
+
+Selain skala bawaan, `app.css` punya blok `@theme` kedua (komentar "Skala tipografi") dengan 11 gaya dari kartu Typography di Design System. Satu kelas sudah membawa ukuran, tinggi baris, jarak huruf, dan (untuk judul) ketebalan. Ukuran bawaan Tailwind tidak ditimpa, karena komponen shadcn memakainya.
+
+| Kelas | Ukuran / tinggi baris / jarak huruf | Tebal |
+|---|---|---|
+| `text-large-title` | 48px / 110% / -0.8px | 600 |
+| `text-title-1` | 40px / 115% / -0.4px | 600 |
+| `text-title-2` | 36px / 120% / -0.4px | 600 |
+| `text-title-3` | 32px / 125% / -0.3px | 600 |
+| `text-headline` | 28px / 130% / 0.2px | 600 |
+| `text-body` | 24px / 133% / -0.1px | - |
+| `text-callout` | 20px / 140% | - |
+| `text-subheadline` | 16px / 150% | - |
+| `text-footnote` | 14px / 150% | - |
+| `text-caption-1` | 12px / 145% / 0.1px | - |
+| `text-caption-2` | 10px / 130% / 0.5px | - |
+
+Perhatikan: `text-body` itu 24px, bukan teks paragraf. Teks UI biasa = `text-footnote` (14px). Sejauh ini skala ini baru dipakai di Home penyewa.
+
+Kalau menambah gaya baru, daftarkan juga namanya di [resources/js/lib/cn.ts](resources/js/lib/cn.ts). Fungsi `cn` (paket `cn`, pengganti tailwind-merge) menganggap `text-<nama>` yang tidak dikenal sebagai warna, sehingga `cn('text-footnote', 'text-muted-foreground')` membuang ukurannya. `vite.config.js` mengarahkan import `cn` ke file itu.
+
 ---
 
 ## 4. Sudut membulat (radius)

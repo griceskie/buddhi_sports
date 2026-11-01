@@ -204,7 +204,7 @@ export default function Bayar({ booking, rekening }: { booking: BookingPenyewa; 
                     )}
                 </section>
 
-                <aside className="order-first lg:sticky lg:top-4 lg:order-none">
+                <aside className="order-first lg:sticky lg:top-24 lg:order-none">
                     <BookingSummary
                         court={booking.namaLapangan}
                         type={booking.jenisLapangan}

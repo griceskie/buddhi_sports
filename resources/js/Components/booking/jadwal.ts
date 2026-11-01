@@ -13,6 +13,8 @@ export type Lapangan = {
     jenisLapangan: string;
     tarifPerJam: number;
     status: string;
+    /** URL foto; yang pertama = foto utama. */
+    foto: string[];
 };
 
 export type Terisi = {
@@ -77,4 +79,18 @@ export function jamKosong(
         if (statusJam(terisi, l.idLapangan, h, tanggal, sekarang) === 'free') n++;
     }
     return n;
+}
+
+/** Jam penuh pertama yang masih bisa dipesan (hari ini: setelah jam berjalan), atau null bila penuh. */
+export function jamKosongPertama(
+    terisi: Terisi[],
+    l: Lapangan,
+    tanggal: Date,
+    sekarang: Date,
+): number | null {
+    if (sedangPerbaikan(l)) return null;
+    for (let h = JAM_BUKA; h < JAM_TUTUP; h++) {
+        if (statusJam(terisi, l.idLapangan, h, tanggal, sekarang) === 'free') return h;
+    }
+    return null;
 }

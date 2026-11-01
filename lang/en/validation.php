@@ -38,6 +38,8 @@ return [
         'txtjamselesai' => 'end time',
         'txttotal' => 'total amount',
         'txtstatus' => 'status',
+        'foto' => 'court photos',
+        'foto.*' => 'court photo',
         'txtjenis' => 'court type',
         'txttarif' => 'hourly rate',
         'txttglbayar' => 'payment date',
