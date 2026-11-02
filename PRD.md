@@ -67,7 +67,7 @@
        - Penyewa yang sudah terdaftar login menggunakan akun yang dimiliki untuk melakukan booking.
        - Setelah login, Penyewa melihat menu Home dan Booking; setelah logout, Penyewa diarahkan kembali ke halaman login.
      - **Pengelolaan Data Lapangan**
-       - Admin mengelola data 3 hall bulutangkis dan 1 lapangan basket, termasuk nama, jenis, tarif per jam, dan status.
+       - Admin mengelola data 3 hall bulutangkis dan 1 lapangan basket, termasuk nama, jenis, tarif per jam, status, dan foto (paling banyak 6 foto per lapangan, JPG/PNG/WebP maks 2 MB; foto pertama menjadi foto utama yang tampil di halaman pemesanan Penyewa).
        - Tarif sewa: lapangan bulutangkis Rp 50.000,-/jam, lapangan basket Rp 100.000,-/jam.
      - **Booking Lapangan**
        - Penyewa memilih lapangan, tanggal, dan jam (jam mulai dan jam selesai) yang ingin dibooking.
@@ -80,6 +80,7 @@
        - Jika Admin menolak bukti, Admin wajib menulis alasan penolakan; alasan ditampilkan ke penyewa (Booking saya, halaman Bayar) agar bisa mengunggah ulang bukti yang benar.
        - Bukti pembayaran disimpan privat dan hanya dapat dibuka oleh penyewa pemilik booking, Admin, dan Manajer.
        - Booking yang belum mengunggah bukti dibatalkan otomatis setelah batas waktu bayar (saat ini 1 jam, diatur di config/pembayaran.php).
+       - Penyewa dapat membatalkan sendiri booking yang belum mengunggah bukti bayar (dari dialog Detail booking, dengan konfirmasi). Setelah bukti dikirim, pembatalan hanya lewat pengelola karena sudah ada uang yang masuk.
      - **Laporan Pembayaran**
        - Admin membuat laporan pembayaran berdasarkan data pembayaran yang telah terverifikasi, direkap per bulan/tahun.
        - Laporan pembayaran dapat dilihat oleh Manajer Lapangan.
