@@ -20,6 +20,8 @@ type FileUploadProps = {
   label?: React.ReactNode
   /** One line under the label: allowed types and size, as the controller validates them. */
   description?: React.ReactNode
+  /** Hide the "Tarik file ke sini atau pilih file" line when the label already says it. */
+  hideHint?: boolean
   name?: string
   id?: string
   disabled?: boolean
@@ -39,6 +41,7 @@ function FileUpload({
   accept,
   label = "Unggah bukti pembayaran",
   description,
+  hideHint,
   name,
   id,
   disabled,
@@ -129,9 +132,11 @@ function FileUpload({
         <Upload aria-hidden="true" />
       </span>
       <span className="text-sm font-medium">{label}</span>
-      <span className="text-xs text-muted-foreground">
-        Tarik file ke sini atau <span className="font-medium text-foreground underline underline-offset-4">pilih file</span>
-      </span>
+      {!hideHint && (
+        <span className="text-xs text-muted-foreground">
+          Tarik file ke sini atau <span className="font-medium text-foreground underline underline-offset-4">pilih file</span>
+        </span>
+      )}
       {description && <span className="text-xs text-muted-foreground">{description}</span>}
     </label>
   )

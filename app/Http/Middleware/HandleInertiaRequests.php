@@ -7,6 +7,7 @@ use App\Models\Manager;
 use App\Models\Penyewa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -77,10 +78,11 @@ class HandleInertiaRequests extends Middleware
                     ->where(fn ($q) => $q->whereNull('pembayarans.idPembayaran')->orWhere('pembayarans.status', 'Ditolak'))
                     ->count();
             },
-            'flash' => [
+            // selalu dikirim, juga pada partial reload; kalau tidak, flash lama ikut terbawa dan toast muncul dua kali
+            'flash' => Inertia::always(fn () => [
                 'error' => session('error'),
                 'success' => session('success'),
-            ],
+            ]),
         ];
     }
 }

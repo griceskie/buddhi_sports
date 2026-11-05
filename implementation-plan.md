@@ -38,6 +38,9 @@ Sisa:
    3. Cek browser hanya-baca (Manager `Manager1` / `Manager123`).
    - Wewenang dan sidebar Manager sudah diputuskan 2026-10-24 (PRD bagian 4): lihat Pembayaran dan Lapangan, kelola akun Admin (lihat, tambah, hapus dengan konfirmasi, reset password), unduh PDF laporan. Perlu route GET hanya-baca untuk Manager dan `AdminSidebar` dengan menu per peran.
    - ~~Manager memverifikasi laporan bulanan~~ — **selesai 2026-10-25**: Manager menandai laporan sudah diperiksa, laporan itu terkunci untuk Admin, dan badge di menu Laporan Pembayaran menghitung laporan yang belum diperiksa. Lihat CLAUDE.md.
+5. ~~Booking saya + Konfirmasi dan bayar (Draft 2)~~ — **selesai 2026-11-05** (PR `feat/confirm-and-pay`). Rancangan: kanvas "Booking saya + Bayar" (`project/BookingSaya-Draft2.dc.html`, `project/Bayar-Draft2.dc.html`, rencana `project/RENCANA-IMPLEMENTASI.md`). Ringkasan di CLAUDE.md. Sisa:
+   - "Hubungi pengelola" masih teks tebal, belum tautan: belum ada kontak pengelola (WhatsApp/telepon/email) di aplikasi. Perlu keputusan kontak mana, lalu ganti komponen `HubungiPengelola` (`Components/booking/DialogBukti.tsx`).
+   - Design system belum memuat komponen baru (lihat CLAUDE.md); perlu sinkron.
 
 Sebelum dipakai sungguhan:
 - Ganti `BANK_NAMA`, `BANK_NO_REKENING`, `BANK_ATAS_NAMA` di `.env` dengan rekening asli (sekarang placeholder `0000000000`).

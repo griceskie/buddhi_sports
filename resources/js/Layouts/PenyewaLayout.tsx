@@ -9,11 +9,10 @@ import {
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
 import Wordmark from '@/Components/Wordmark';
-import { navLinkClass } from '@/Layouts/AdminLayout';
 import { Link, usePage } from '@inertiajs/react';
 import { cn } from 'cn';
-import { CalendarDays, ChevronDown, LogOut, Menu, User, X } from 'lucide-react';
-import { PropsWithChildren, ReactNode, useState } from 'react';
+import { CalendarDays, ChevronDown, CircleUser, LogOut, User } from 'lucide-react';
+import { PropsWithChildren, ReactNode } from 'react';
 
 export default function PenyewaLayout({
     header,
@@ -27,10 +26,8 @@ export default function PenyewaLayout({
     /** Isi di tengah nav, mis. status buka GOR di Home. */
     navTengah?: ReactNode;
 }>) {
-    const user = usePage().props.auth.user;
-
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+    const { auth, perluTindakan } = usePage().props;
+    const user = auth.user;
 
     return (
         <div className="min-h-screen bg-canvas">
@@ -47,97 +44,51 @@ export default function PenyewaLayout({
                             <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2">{navTengah}</div>
                         )}
 
-                        <div className="hidden sm:block">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger
-                                    className={buttonVariants({ variant: 'ghost' })}
-                                >
-                                    {user.namaPenyewa}
-                                    <ChevronDown className="text-muted-foreground" />
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56">
-                                    <DropdownMenuGroup>
-                                        <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
-                                        <DropdownMenuItem render={<Link href={route('booking')} />}>
-                                            <CalendarDays />
-                                            Booking saya
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem render={<Link href={route('profile.edit')} />}>
-                                            <User />
-                                            Profile
-                                        </DropdownMenuItem>
-                                    </DropdownMenuGroup>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuGroup>
-                                        <DropdownMenuItem
-                                            render={<Link href={route('logout')} method="post" as="button" />}
-                                        >
-                                            <LogOut />
-                                            Log Out
-                                        </DropdownMenuItem>
-                                    </DropdownMenuGroup>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-
-                        <button
-                            type="button"
-                            aria-label={
-                                showingNavigationDropdown ? 'Tutup menu' : 'Buka menu'
-                            }
-                            aria-expanded={showingNavigationDropdown}
-                            onClick={() =>
-                                setShowingNavigationDropdown(
-                                    (previousState) => !previousState,
-                                )
-                            }
-                            className={cn(
-                                buttonVariants({ variant: 'ghost', size: 'icon' }),
-                                'sm:hidden',
-                            )}
-                        >
-                            {showingNavigationDropdown ? <X /> : <Menu />}
-                        </button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                aria-label={perluTindakan > 0 ? `Menu akun, ${perluTindakan} booking perlu tindakan` : 'Menu akun'}
+                                className={cn(buttonVariants({ variant: 'ghost' }), 'relative max-sm:size-10 max-sm:px-0')}
+                            >
+                                {perluTindakan > 0 && (
+                                    <span
+                                        aria-hidden="true"
+                                        className="size-2 rounded-full bg-destructive max-sm:absolute max-sm:top-2 max-sm:right-2"
+                                    />
+                                )}
+                                <CircleUser className="size-5 sm:hidden" aria-hidden="true" />
+                                <span className="max-sm:hidden">{user.namaPenyewa}</span>
+                                <ChevronDown className="text-muted-foreground max-sm:hidden" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                                    <DropdownMenuItem render={<Link href={route('booking')} />}>
+                                        <CalendarDays />
+                                        Booking saya
+                                        {perluTindakan > 0 && (
+                                            <span className="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-[5px] text-caption-2 font-bold text-white tabular-nums">
+                                                {perluTindakan}
+                                            </span>
+                                        )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem render={<Link href={route('profile.edit')} />}>
+                                        <User />
+                                        Profile
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        render={<Link href={route('logout')} method="post" as="button" />}
+                                    >
+                                        <LogOut />
+                                        Log Out
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
-
-                {showingNavigationDropdown && (
-                    <div className="border-t sm:hidden">
-                        <div className="p-2">
-                            <div className="px-2.5 py-2">
-                                <div className="text-base font-medium">
-                                    {user.namaPenyewa}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                    {user.email}
-                                </div>
-                            </div>
-                            <Link
-                                href={route('booking')}
-                                className={cn(navLinkClass(false), 'block text-base')}
-                            >
-                                Booking saya
-                            </Link>
-                            <Link
-                                href={route('profile.edit')}
-                                className={cn(navLinkClass(false), 'block text-base')}
-                            >
-                                Profile
-                            </Link>
-                            <Link
-                                href={route('logout')}
-                                method="post"
-                                as="button"
-                                className={cn(
-                                    navLinkClass(false),
-                                    'mt-2 block w-full border-t text-start text-base',
-                                )}
-                            >
-                                Log Out
-                            </Link>
-                        </div>
-                    </div>
-                )}
             </nav>
 
             {band && (
