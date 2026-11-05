@@ -7,6 +7,8 @@ use App\Support\Pemesanan;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -18,28 +20,76 @@ class BookingPenyewaController extends Controller
 {
     public function home(): Response
     {
-        $hariIni = today();
-
         return Inertia::render('Dashboard', [
             'lapangan' => DB::table('lapangans')->get()->map(function ($l) {
                 $l->foto = FotoLapangan::urls($l->foto);
+
                 return $l;
             }),
-            'terisi' => DB::table('bookings')
-                ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
-                ->whereBetween('tanggal', [
-                    $hariIni->toDateString(),
-                    $hariIni->copy()->addDays(Pemesanan::HARI_KE_DEPAN - 1)->toDateString(),
-                ])
-                ->get(['idLapangan', 'tanggal', 'jamMulai', 'jamSelesai']),
+            'terisi' => $this->terisi(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        [$data, $mulai, $selesai] = $this->validasiJadwal($request, ['idLapangan' => 'required|integer|exists:lapangans,idLapangan']);
+        $jamMulai = sprintf('%02d:00:00', $mulai);
+        $jamSelesai = sprintf('%02d:00:00', $selesai);
+
+        $idBooking = DB::transaction(function () use ($data, $jamMulai, $jamSelesai, $mulai, $selesai) {
+            $lapangan = $this->kunciLapangan((int) $data['idLapangan'], $data['tanggal'], $jamMulai, $jamSelesai);
+
+            return DB::table('bookings')->insertGetId([
+                'idPenyewa' => Auth::id(),
+                'idLapangan' => $data['idLapangan'],
+                'tanggal' => $data['tanggal'],
+                'jamMulai' => $jamMulai,
+                'jamSelesai' => $jamSelesai,
+                'totalBayar' => $lapangan->tarifPerJam * ($selesai - $mulai),
+                'status' => 'Dipesan',
+                'created_at' => now(),
+            ], 'idBooking');
+        });
+
+        return redirect()->route('booking.bayar', $idBooking);
+    }
+
+    /**
+     * Penyewa mengubah tanggal dan jam booking-nya sendiri (lapangan tetap), hanya selama belum ada bukti bayar.
+     * Batas bayar tidak dihitung ulang: tetap dari created_at.
+     */
+    public function ubahJadwal(Request $request, int $idBooking): RedirectResponse
+    {
+        Pemesanan::batalkanKedaluwarsa();
+        $booking = $this->milikSaya($idBooking);
+
+        if ($booking->status !== 'Dipesan' || $booking->statusPembayaran !== null) {
+            return back()->with('error', 'Jadwal booking ini tidak bisa diubah lagi. Hubungi pengelola.');
+        }
+
+        [$data, $mulai, $selesai] = $this->validasiJadwal($request);
+        $jamMulai = sprintf('%02d:00:00', $mulai);
+        $jamSelesai = sprintf('%02d:00:00', $selesai);
+
+        DB::transaction(function () use ($booking, $data, $jamMulai, $jamSelesai, $mulai, $selesai) {
+            $lapangan = $this->kunciLapangan((int) $booking->idLapangan, $data['tanggal'], $jamMulai, $jamSelesai);
+
+            DB::table('bookings')->where('idBooking', $booking->idBooking)->update([
+                'tanggal' => $data['tanggal'],
+                'jamMulai' => $jamMulai,
+                'jamSelesai' => $jamSelesai,
+                'totalBayar' => $lapangan->tarifPerJam * ($selesai - $mulai),
+            ]);
+        });
+
+        return back()->with('success', 'Jadwal booking '.Pemesanan::kode($booking->idBooking).' diubah.');
+    }
+
+    /** Aturan tanggal dan jam yang sama untuk booking baru dan ubah jadwal; mengembalikan [data, jam mulai, jam selesai]. */
+    private function validasiJadwal(Request $request, array $aturanLain = []): array
+    {
         $hariIni = today();
-        $data = $request->validate([
-            'idLapangan' => 'required|integer|exists:lapangans,idLapangan',
+        $data = $request->validate($aturanLain + [
             'tanggal' => [
                 'required',
                 'date_format:Y-m-d',
@@ -68,41 +118,30 @@ class BookingPenyewaController extends Controller
             throw ValidationException::withMessages(['jamMulai' => 'Jam tersebut sudah lewat.']);
         }
 
-        $jamMulai = sprintf('%02d:00:00', $mulai);
-        $jamSelesai = sprintf('%02d:00:00', $selesai);
+        return [$data, $mulai, $selesai];
+    }
 
-        $idBooking = DB::transaction(function () use ($data, $jamMulai, $jamSelesai, $mulai, $selesai) {
-            // kunci baris lapangan supaya dua penyewa tidak lolos cek bentrok di saat yang sama
-            $lapangan = DB::table('lapangans')->where('idLapangan', $data['idLapangan'])->lockForUpdate()->first();
+    /** Kunci baris lapangan (dua penyewa tidak lolos cek bentrok bersamaan), lalu tolak bila diperbaiki atau bentrok. Panggil di dalam transaksi. */
+    private function kunciLapangan(int $idLapangan, string $tanggal, string $jamMulai, string $jamSelesai): object
+    {
+        $lapangan = DB::table('lapangans')->where('idLapangan', $idLapangan)->lockForUpdate()->first();
 
-            if (strtolower($lapangan->status) === 'perbaikan') {
-                throw ValidationException::withMessages(['idLapangan' => 'Lapangan sedang diperbaiki.']);
-            }
+        if (strtolower($lapangan->status) === 'perbaikan') {
+            throw ValidationException::withMessages(['idLapangan' => 'Lapangan sedang diperbaiki.']);
+        }
 
-            $bentrok = DB::table('bookings')
-                ->where('idLapangan', $data['idLapangan'])
-                ->where('tanggal', $data['tanggal'])
-                ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
-                ->where('jamMulai', '<', $jamSelesai)
-                ->where('jamSelesai', '>', $jamMulai)
-                ->exists();
-            if ($bentrok) {
-                throw ValidationException::withMessages(['jamMulai' => 'Lapangan sudah terbooking pada jam tersebut.']);
-            }
+        $bentrok = DB::table('bookings')
+            ->where('idLapangan', $idLapangan)
+            ->where('tanggal', $tanggal)
+            ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
+            ->where('jamMulai', '<', $jamSelesai)
+            ->where('jamSelesai', '>', $jamMulai)
+            ->exists();
+        if ($bentrok) {
+            throw ValidationException::withMessages(['jamMulai' => 'Lapangan sudah terbooking pada jam tersebut.']);
+        }
 
-            return DB::table('bookings')->insertGetId([
-                'idPenyewa' => Auth::id(),
-                'idLapangan' => $data['idLapangan'],
-                'tanggal' => $data['tanggal'],
-                'jamMulai' => $jamMulai,
-                'jamSelesai' => $jamSelesai,
-                'totalBayar' => $lapangan->tarifPerJam * ($selesai - $mulai),
-                'status' => 'Dipesan',
-                'created_at' => now(),
-            ], 'idBooking');
-        });
-
-        return redirect()->route('booking.bayar', $idBooking);
+        return $lapangan;
     }
 
     public function bayar(int $idBooking): Response
@@ -112,6 +151,8 @@ class BookingPenyewaController extends Controller
         return Inertia::render('Booking/Bayar', [
             'booking' => $this->detail($this->milikSaya($idBooking)),
             'rekening' => $this->rekening(),
+            // hanya dimuat saat dialog Ubah jadwal dibuka (partial reload)
+            'terisi' => Inertia::optional(fn () => $this->terisi()),
         ]);
     }
 
@@ -130,10 +171,10 @@ class BookingPenyewaController extends Controller
         }
 
         $request->validate([
-            'bukti' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'bukti' => 'required|file|mimes:jpg,jpeg,png|max:2048',
         ], [
             'bukti.required' => 'Pilih file bukti transfer.',
-            'bukti.mimes' => 'File harus JPG, PNG, atau PDF.',
+            'bukti.mimes' => 'File harus JPG atau PNG.',
             'bukti.max' => 'Ukuran file maksimal 2 MB.',
         ]);
 
@@ -142,6 +183,7 @@ class BookingPenyewaController extends Controller
             'tglBayar' => today()->toDateString(),
             'jumlahBayar' => $booking->totalBayar,
             'buktiBayar' => $request->file('bukti')->store('bukti', 'local'),
+            'dikirimPada' => now(),
             'status' => 'Menunggu Verifikasi',
             'alasanTolak' => null,
         ];
@@ -157,7 +199,7 @@ class BookingPenyewaController extends Controller
             DB::table('pembayarans')->insert($data + ['idBooking' => $booking->idBooking]);
         }
 
-        return back()->with('success', 'Bukti terkirim. Admin akan memverifikasi pembayaran Anda.');
+        return back()->with('success', 'Bukti terkirim. Pengelola akan memverifikasi pembayaran Anda.');
     }
 
     /** Penyewa membatalkan booking sendiri, hanya selama belum ada bukti bayar (belum ada uang yang perlu dikembalikan). */
@@ -184,6 +226,7 @@ class BookingPenyewaController extends Controller
             'bookings' => $this->query()->orderByDesc('bookings.idBooking')->get()
                 ->map(fn (object $b) => $this->detail($b)),
             'rekening' => $this->rekening(),
+            'terisi' => Inertia::optional(fn () => $this->terisi()),
         ]);
     }
 
@@ -196,6 +239,7 @@ class BookingPenyewaController extends Controller
             ->where('bookings.idPenyewa', Auth::id())
             ->select(
                 'bookings.idBooking',
+                'bookings.idLapangan',
                 'bookings.tanggal',
                 'bookings.jamMulai',
                 'bookings.jamSelesai',
@@ -206,6 +250,10 @@ class BookingPenyewaController extends Controller
                 'lapangans.namaLapangan',
                 'lapangans.jenisLapangan',
                 'lapangans.tarifPerJam',
+                'lapangans.foto',
+                'pembayarans.idPembayaran',
+                'pembayarans.buktiBayar',
+                'pembayarans.dikirimPada',
                 'pembayarans.status as statusPembayaran',
                 'pembayarans.alasanTolak',
             );
@@ -223,10 +271,12 @@ class BookingPenyewaController extends Controller
     {
         return [
             'idBooking' => $b->idBooking,
+            'idLapangan' => (int) $b->idLapangan,
             'kode' => Pemesanan::kode($b->idBooking),
             'namaLapangan' => $b->namaLapangan,
             'jenisLapangan' => $b->jenisLapangan,
             'tarifPerJam' => (int) $b->tarifPerJam,
+            'foto' => FotoLapangan::urls($b->foto)[0] ?? null,
             'tanggal' => $b->tanggal,
             'jamMulai' => substr($b->jamMulai, 0, 5),
             'jamSelesai' => substr($b->jamSelesai, 0, 5),
@@ -236,7 +286,25 @@ class BookingPenyewaController extends Controller
             'statusPembayaran' => $b->statusPembayaran,
             'alasanTolak' => $b->alasanTolak,
             'batasBayar' => Pemesanan::batasBayar($b->created_at)?->toIso8601String(),
+            'dibuatPada' => $b->created_at ? Carbon::parse($b->created_at)->toIso8601String() : null,
+            'dikirimPada' => $b->dikirimPada ? Carbon::parse($b->dikirimPada)->toIso8601String() : null,
+            // bukti hanya lewat route privat; path file tidak dikirim ke browser
+            'buktiUrl' => $b->buktiBayar ? route('pembayaran.bukti', $b->idPembayaran) : null,
         ];
+    }
+
+    /** Jam yang sudah dipegang booking terkonfirmasi, hari ini sampai HARI_KE_DEPAN hari. */
+    private function terisi(): Collection
+    {
+        $hariIni = today();
+
+        return DB::table('bookings')
+            ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
+            ->whereBetween('tanggal', [
+                $hariIni->toDateString(),
+                $hariIni->copy()->addDays(Pemesanan::HARI_KE_DEPAN - 1)->toDateString(),
+            ])
+            ->get(['idLapangan', 'tanggal', 'jamMulai', 'jamSelesai']);
     }
 
     private function rekening(): array

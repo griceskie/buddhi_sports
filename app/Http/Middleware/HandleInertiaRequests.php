@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Admin;
 use App\Models\Manager;
+use App\Models\Penyewa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Middleware;
@@ -60,6 +61,21 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 return null;
+            },
+            // Penyewa: jumlah booking mendatang yang menunggu tindakannya (belum bayar atau bukti ditolak), untuk titik merah di menu akun
+            'perluTindakan' => function () use ($request) {
+                $user = $request->user();
+                if (! $user instanceof Penyewa) {
+                    return 0;
+                }
+
+                return DB::table('bookings')
+                    ->leftJoin('pembayarans', 'pembayarans.idBooking', '=', 'bookings.idBooking')
+                    ->where('bookings.idPenyewa', $user->idPenyewa)
+                    ->where('bookings.status', 'Dipesan')
+                    ->where('bookings.tanggal', '>=', today()->toDateString())
+                    ->where(fn ($q) => $q->whereNull('pembayarans.idPembayaran')->orWhere('pembayarans.status', 'Ditolak'))
+                    ->count();
             },
             'flash' => [
                 'error' => session('error'),
