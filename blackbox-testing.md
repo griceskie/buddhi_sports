@@ -80,9 +80,9 @@ Diuji otomatis lewat request HTTP ke `POST /booking` (`tests/Feature/BlackboxBoo
 
 | ID | Skenario | Hasil yang diharapkan | Hasil aktual | Status |
 |---|---|---|---|---|
-| E01 | Unggah bukti JPG/PNG/PDF ≤ 2 MB | Status pembayaran `Menunggu Verifikasi` | Ketiga format diterima, baris `pembayarans` dibuat dengan status `Menunggu Verifikasi` | Valid |
+| E01 | Unggah bukti JPG/PNG ≤ 2 MB; PDF | JPG/PNG: status pembayaran `Menunggu Verifikasi`; PDF ditolak | JPG dan PNG diterima, baris `pembayarans` dibuat dengan status `Menunggu Verifikasi`; PDF ditolak dengan error pada `bukti` (bukti hanya gambar sejak 2026-11-05) | Valid |
 | E02 | File tepat 2 MB / 2,1 MB | Diterima / ditolak | 2048 KB (tepat 2 MB) diterima; 2150 KB (±2,1 MB) ditolak dengan error pada `bukti` | Valid |
-| E03 | File .docx atau .exe | Ditolak | Keduanya ditolak dengan error pada `bukti` (`mimes:jpg,jpeg,png,pdf`) | Valid |
+| E03 | File .docx atau .exe | Ditolak | Keduanya ditolak dengan error pada `bukti` (`mimes:jpg,jpeg,png`) | Valid |
 | E04 | Tidak mengunggah dalam 60 menit | Booking otomatis `Dibatalkan` | Booking yang lewat `batas_bayar_menit` (dari `config/pembayaran.php`) menjadi `Dibatalkan` begitu halaman Booking saya dibuka; yang belum lewat tetap `Dipesan` | Valid |
 | E05 | Bukti ditolak Admin | Alasan penolakan tampil, Penyewa bisa unggah ulang | Prop `alasanTolak` terkirim ke halaman `/booking`; unggah ulang berhasil dan mengganti baris pembayaran yang sama (status balik `Menunggu Verifikasi`, `alasanTolak` kosong) | Valid |
 | E06 | Halaman Booking saya tanpa data | Tampil keadaan kosong | Prop `bookings` dikirim sebagai array kosong saat Penyewa belum punya booking | Valid, sebagian |

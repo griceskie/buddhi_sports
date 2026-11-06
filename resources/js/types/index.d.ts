@@ -22,6 +22,8 @@ export type PageProps<
         user: User;
     };
     pengelola: Pengelola | null;
+    /** Penyewa: booking mendatang yang belum dibayar atau buktinya ditolak (0 untuk akun lain). */
+    perluTindakan: number;
     flash: {
         error?: string;
         success?: string;

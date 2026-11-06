@@ -3,6 +3,7 @@ import GaleriLapangan from '@/Components/booking/GaleriLapangan';
 import {
     awalHari,
     HARI_KE_DEPAN,
+    IKON_JENIS,
     isoTanggal,
     jam,
     jamKosong,
@@ -27,12 +28,6 @@ import PenyewaLayout from '@/Layouts/PenyewaLayout';
 import { Head, router } from '@inertiajs/react';
 import { CalendarX, CircleAlert } from 'lucide-react';
 import { useState } from 'react';
-
-// gambar ikon tab per jenis lapangan
-const IKON_JENIS: Record<string, string> = {
-    'Bulu Tangkis': '/images/olahraga/kok.png',
-    Basket: '/images/olahraga/basket.png',
-};
 
 // tanggal ditandai "Terbatas" bila jam kosong lapangan terpilih tinggal 3 atau kurang (sekitar seperempat dari 14 jam)
 const BATAS_TERBATAS = 3;

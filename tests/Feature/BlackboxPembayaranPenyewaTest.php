@@ -57,7 +57,8 @@ class BlackboxPembayaranPenyewaTest extends TestCase
         $this->assertDatabaseHas('pembayarans', ['idBooking' => $id, 'status' => 'Menunggu Verifikasi']);
     }
 
-    public function test_e01_unggah_bukti_pdf(): void
+    // Sejak 2026-11-05 bukti hanya gambar (keputusan pengguna); PDF ditolak.
+    public function test_e01_unggah_bukti_pdf_ditolak(): void
     {
         Storage::fake('local');
         $penyewa = Penyewa::factory()->create();
@@ -65,9 +66,9 @@ class BlackboxPembayaranPenyewaTest extends TestCase
 
         $this->actingAs($penyewa)->post("/booking/{$id}/bukti", [
             'bukti' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
-        ])->assertSessionHasNoErrors();
+        ])->assertSessionHasErrors('bukti');
 
-        $this->assertDatabaseHas('pembayarans', ['idBooking' => $id, 'status' => 'Menunggu Verifikasi']);
+        $this->assertDatabaseMissing('pembayarans', ['idBooking' => $id]);
     }
 
     // E02: file tepat 2 MB -> diterima, 2,1 MB -> ditolak.

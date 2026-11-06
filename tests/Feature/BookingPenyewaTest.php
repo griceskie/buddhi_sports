@@ -188,7 +188,14 @@ class BookingPenyewaTest extends TestCase
         $this->assertSame('Menunggu Verifikasi', $p->status);
         $this->assertSame(100000, (int) $p->jumlahBayar);
         $this->assertSame('2026-10-23', $p->tglBayar);
+        $this->assertSame('2026-10-23 14:30:00', Carbon::parse($p->dikirimPada)->format('Y-m-d H:i:s'));
         Storage::disk('local')->assertExists($p->buktiBayar);
+
+        // halaman menerima alamat bukti (route privat) dan waktunya, bukan path file
+        $this->actingAs($this->penyewa)->get('/booking')->assertInertia(fn (Assert $pg) => $pg
+            ->where('bookings.0.buktiUrl', route('pembayaran.bukti', $p->idPembayaran))
+            ->where('bookings.0.dikirimPada', Carbon::parse('2026-10-23 14:30:00')->toIso8601String())
+            ->missing('bookings.0.buktiBayar'));
 
         $this->actingAs($this->penyewa)->post("/booking/$id/bukti", ['bukti' => UploadedFile::fake()->create('lagi.jpg', 100, 'image/jpeg')])
             ->assertSessionHasErrors(['bukti' => 'Bukti untuk booking ini sudah dikirim.']);
@@ -203,11 +210,60 @@ class BookingPenyewaTest extends TestCase
 
         $this->actingAs($this->penyewa)->post("/booking/$id/bukti", [])->assertSessionHasErrors(['bukti' => 'Pilih file bukti transfer.']);
         $this->actingAs($this->penyewa)->post("/booking/$id/bukti", ['bukti' => UploadedFile::fake()->create('a.txt', 10, 'text/plain')])
-            ->assertSessionHasErrors(['bukti' => 'File harus JPG, PNG, atau PDF.']);
+            ->assertSessionHasErrors(['bukti' => 'File harus JPG atau PNG.']);
+        $this->actingAs($this->penyewa)->post("/booking/$id/bukti", ['bukti' => UploadedFile::fake()->create('bukti.pdf', 500, 'application/pdf')])
+            ->assertSessionHasErrors(['bukti' => 'File harus JPG atau PNG.']);
         $this->actingAs($this->penyewa)->post("/booking/$id/bukti", ['bukti' => UploadedFile::fake()->create('besar.jpg', 3000, 'image/jpeg')])
             ->assertSessionHasErrors(['bukti' => 'Ukuran file maksimal 2 MB.']);
-        $this->actingAs($this->penyewa)->post("/booking/$id/bukti", ['bukti' => UploadedFile::fake()->create('bukti.pdf', 500, 'application/pdf')])
+        $this->actingAs($this->penyewa)->post("/booking/$id/bukti", ['bukti' => UploadedFile::fake()->create('bukti.png', 500, 'image/png')])
             ->assertSessionHasNoErrors();
+    }
+
+    public function test_penyewa_bisa_mengubah_tanggal_dan_jam_sebelum_ada_bukti(): void
+    {
+        $this->pesan();
+        $id = DB::table('bookings')->value('idBooking');
+        $dibuat = DB::table('bookings')->value('created_at');
+        $ubah = fn (array $data, ?Penyewa $oleh = null) => $this->actingAs($oleh ?? $this->penyewa)->from('/booking')
+            ->patch("/booking/$id/jadwal", $data + ['tanggal' => '2026-10-25', 'jamMulai' => '08:00', 'jamSelesai' => '11:00']);
+
+        $this->travel(10)->minutes();
+        $ubah([])->assertRedirect('/booking')->assertSessionHas('success');
+        $b = DB::table('bookings')->first();
+        $this->assertSame('2026-10-25', $b->tanggal);
+        $this->assertSame('08:00:00', $b->jamMulai);
+        $this->assertSame('11:00:00', $b->jamSelesai);
+        $this->assertSame(150000, (int) $b->totalBayar);
+        $this->assertSame((int) $this->lapangan, (int) $b->idLapangan);
+        // batas bayar tidak dihitung ulang
+        $this->assertSame($dibuat, $b->created_at);
+
+        $ubah([], $this->buatPenyewa('lain@example.com'))->assertNotFound();
+        $ubah(['jamMulai' => '14:00', 'tanggal' => '2026-10-23', 'jamSelesai' => '15:00'])->assertSessionHasErrors('jamMulai');
+
+        $this->bookingLain('Dikonfirmasi', '18:00:00', '20:00:00');
+        $ubah(['tanggal' => '2026-10-24', 'jamMulai' => '19:00', 'jamSelesai' => '21:00'])
+            ->assertSessionHasErrors(['jamMulai' => 'Lapangan sudah terbooking pada jam tersebut.']);
+        $this->assertSame('2026-10-25', DB::table('bookings')->where('idBooking', $id)->value('tanggal'));
+
+        DB::table('pembayarans')->insert(['idBooking' => $id, 'tglBayar' => '2026-10-23', 'jumlahBayar' => 150000, 'status' => 'Menunggu Verifikasi']);
+        $ubah(['tanggal' => '2026-10-26'])->assertSessionHas('error');
+        $this->assertSame('2026-10-25', DB::table('bookings')->where('idBooking', $id)->value('tanggal'));
+    }
+
+    public function test_jumlah_booking_yang_perlu_tindakan_dibagikan_ke_halaman(): void
+    {
+        $this->pesan();
+        $this->pesan(['jamMulai' => '10:00', 'jamSelesai' => '11:00']);
+        $this->pesan(['jamMulai' => '12:00', 'jamSelesai' => '13:00']);
+        [$a, $b, $c] = DB::table('bookings')->orderBy('idBooking')->pluck('idBooking')->all();
+        DB::table('pembayarans')->insert([
+            ['idBooking' => $b, 'tglBayar' => '2026-10-23', 'jumlahBayar' => 50000, 'status' => 'Ditolak'],
+            ['idBooking' => $c, 'tglBayar' => '2026-10-23', 'jumlahBayar' => 50000, 'status' => 'Menunggu Verifikasi'],
+        ]);
+
+        // $a belum bayar + $b ditolak; $c menunggu verifikasi tidak dihitung
+        $this->actingAs($this->penyewa)->get('/booking')->assertInertia(fn (Assert $p) => $p->where('perluTindakan', 2));
     }
 
     public function test_booking_tanpa_bukti_batal_otomatis_setelah_2_jam(): void

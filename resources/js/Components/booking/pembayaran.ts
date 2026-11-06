@@ -1,3 +1,4 @@
+import { formatTanggal } from '@/Components/ui/format';
 import { useEffect, useState } from 'react';
 
 export type Rekening = { bank: string; nomor: string; atasNama: string };
@@ -5,10 +6,13 @@ export type Rekening = { bank: string; nomor: string; atasNama: string };
 /** Satu booking milik penyewa, seperti dikirim BookingPenyewaController::detail(). */
 export type BookingPenyewa = {
     idBooking: number;
+    idLapangan: number;
     kode: string;
     namaLapangan: string;
     jenisLapangan: string;
     tarifPerJam: number;
+    /** Foto utama lapangan, atau null. */
+    foto: string | null;
     tanggal: string;
     jamMulai: string;
     jamSelesai: string;
@@ -20,6 +24,11 @@ export type BookingPenyewa = {
     /** Diisi Admin saat menolak bukti; null lagi setelah bukti diunggah ulang. */
     alasanTolak: string | null;
     batasBayar: string | null;
+    dibuatPada: string | null;
+    /** Waktu bukti terakhir dikirim. */
+    dikirimPada: string | null;
+    /** Alamat bukti lewat route privat `pembayaran.bukti`, atau null. */
+    buktiUrl: string | null;
 };
 
 export type Keadaan = 'belumBayar' | 'menungguVerifikasi' | 'ditolak' | 'dikonfirmasi' | 'dibatalkan';
@@ -35,24 +44,36 @@ export function keadaan(b: Pick<BookingPenyewa, 'status' | 'statusPembayaran'>):
     return 'belumBayar';
 }
 
+/** Siapa yang membatalkan: penyewa sendiri, sistem (batas bayar lewat tanpa bukti), atau pengelola. */
+export function sebabBatal(b: Pick<BookingPenyewa, 'dibatalkanPenyewa' | 'statusPembayaran' | 'batasBayar'>) {
+    if (b.dibatalkanPenyewa) return 'penyewa' as const;
+    if (!b.statusPembayaran && b.batasBayar) return 'otomatis' as const;
+    return 'pengelola' as const;
+}
+
+/** Hari dan jam singkat untuk riwayat status, mis. "Kamis, 26 Nov pukul 16:12". */
+export const waktuSingkat = (iso: string) => formatTanggal(iso, "EEEE, d MMM 'pukul' HH:mm");
+
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** Jam batas bayar dan sisa waktunya; diperbarui tiap 30 detik. */
+/** Jam batas bayar dan sisa waktunya (mm:ss), diperbarui tiap detik. `genting` = kurang dari 10 menit. */
 export function useSisaWaktu(batas: string | null) {
     const [sekarang, setSekarang] = useState(() => Date.now());
 
     useEffect(() => {
         if (!batas) return;
-        const t = setInterval(() => setSekarang(Date.now()), 30_000);
+        const t = setInterval(() => setSekarang(Date.now()), 1000);
         return () => clearInterval(t);
     }, [batas]);
 
     if (!batas) return null;
     const d = new Date(batas);
-    const menit = Math.max(0, Math.ceil((d.getTime() - sekarang) / 60_000));
+    const detik = Math.max(0, Math.floor((d.getTime() - sekarang) / 1000));
     return {
         jamBatas: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
-        sisa: menit >= 60 ? `${Math.floor(menit / 60)} jam ${menit % 60} menit` : `${menit} menit`,
-        habis: menit === 0,
+        sisa: `${pad(Math.floor(detik / 60))}:${pad(detik % 60)}`,
+        habis: detik === 0,
+        genting: detik < 600,
     };
 }
+

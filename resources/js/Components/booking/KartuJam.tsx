@@ -15,6 +15,7 @@ export default function KartuJam({
     isPast,
     value,
     onValueChange,
+    kataAksi = 'booking',
 }: {
     lapangan: Lapangan;
     perbaikan: boolean;
@@ -23,6 +24,8 @@ export default function KartuJam({
     isPast: (start: string) => boolean;
     value: TimeRange | null;
     onValueChange: (r: TimeRange | null) => void;
+    /** Kata kerja di petunjuk "…atau langsung {kataAksi}"; Ubah jadwal memakai "simpan". */
+    kataAksi?: string;
 }) {
     const durasi = value ? (Number(value.end.slice(0, 2)) - Number(value.start.slice(0, 2))) : 0;
     const judul = perbaikan
@@ -75,7 +78,7 @@ export default function KartuJam({
                         />
                         <p className="text-footnote text-muted-foreground">
                             {value
-                                ? 'Klik kotak sesudahnya untuk menambah jam, atau langsung booking.'
+                                ? `Klik kotak sesudahnya untuk menambah jam, atau langsung ${kataAksi}.`
                                 : jamKosong > 0
                                   ? 'Klik jam yang ingin dipesan.'
                                   : 'Semua jam di tanggal ini sudah terisi.'}

@@ -7,6 +7,12 @@ export const HAMPIR_PENUH = 12;
 // true: jam hari ini yang sudah mulai tidak bisa dipilih. Ubah ke false bila perlu semua jam terbuka untuk mengisi data uji.
 export const BLOKIR_JAM_LEWAT = true;
 
+/** Ikon per jenis lapangan (tab Home, kartu Booking saya). */
+export const IKON_JENIS: Record<string, string> = {
+    'Bulu Tangkis': '/images/olahraga/kok.png',
+    Basket: '/images/olahraga/basket.png',
+};
+
 export type Lapangan = {
     idLapangan: number;
     namaLapangan: string;
