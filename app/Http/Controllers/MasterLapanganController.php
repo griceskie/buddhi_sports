@@ -19,7 +19,7 @@ class MasterLapanganController extends Controller
         // foto dikirim sebagai path (untuk dipertahankan saat edit) + URL (untuk ditampilkan)
         $varlapangan = DB::table('lapangans')->get()->map(function ($l) {
             $l->foto = array_map(
-                fn ($p) => ['path' => $p, 'url' => Storage::disk('public')->url($p)],
+                fn ($p) => ['path' => $p, 'url' => FotoLapangan::url($p)],
                 FotoLapangan::paths($l->foto),
             );
             return $l;

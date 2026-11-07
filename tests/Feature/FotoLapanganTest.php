@@ -87,7 +87,7 @@ class FotoLapanganTest extends TestCase
 
         $this->actingAs($penyewa)->get('/dashboard')->assertInertia(fn (Assert $p) => $p
             ->has('lapangan.0.foto', 1)
-            ->where('lapangan.0.foto.0', fn ($url) => str_contains($url, '/storage/lapangan/')));
+            ->where('lapangan.0.foto.0', fn ($url) => str_starts_with($url, '/storage/lapangan/')));
     }
 
     public function test_hapus_lapangan_ikut_menghapus_foto(): void
