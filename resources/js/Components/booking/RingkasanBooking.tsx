@@ -128,7 +128,7 @@ export function BarBookingMobile({ lapangan, pilihan, tanggal, onBook, memproses
     const h = hitung(lapangan, pilihan);
 
     return (
-        <div className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t bg-background px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-20 flex flex-col gap-3 border-t bg-background px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between lg:hidden">
             <div className="min-w-0">
                 {h && lapangan ? (
                     <>
@@ -147,7 +147,7 @@ export function BarBookingMobile({ lapangan, pilihan, tanggal, onBook, memproses
                     </>
                 )}
             </div>
-            <Button variant="elevated" className="h-11 shrink-0 text-[15px]" disabled={!h || memproses} onClick={onBook}>
+            <Button variant="elevated" className="h-11 w-full shrink-0 text-[15px] sm:w-auto" disabled={!h || memproses} onClick={onBook}>
                 {memproses ? 'Menyimpan…' : 'Booking sekarang'}
             </Button>
         </div>

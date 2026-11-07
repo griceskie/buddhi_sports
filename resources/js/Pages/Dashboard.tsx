@@ -1,9 +1,10 @@
 import DateStrip, { HariItem } from '@/Components/booking/DateStrip';
 import GaleriLapangan from '@/Components/booking/GaleriLapangan';
+import HeaderBeranda from '@/Components/booking/HeaderBeranda';
+import IslandStatus from '@/Components/booking/IslandStatus';
 import {
     awalHari,
     HARI_KE_DEPAN,
-    IKON_JENIS,
     isoTanggal,
     jam,
     jamKosong,
@@ -12,22 +13,21 @@ import {
     Lapangan,
     Pilihan,
     sedangPerbaikan,
+    statusGor,
     tambahHari,
     Terisi,
 } from '@/Components/booking/jadwal';
 import KartuJam from '@/Components/booking/KartuJam';
-import PilihLapangan from '@/Components/booking/PilihLapangan';
 import RingkasanBooking, { BarBookingMobile } from '@/Components/booking/RingkasanBooking';
-import StatusBuka from '@/Components/booking/StatusBuka';
+import { useSekarangPerMenit } from '@/Components/booking/StatusBuka';
 import { Alert, AlertTitle } from '@/Components/ui/alert';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/Components/ui/empty';
 import { toMinutes } from '@/Components/ui/format';
 import { TimeRange } from '@/Components/ui/slot-picker';
-import { Tabs, TabsIndicator, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 import PenyewaLayout from '@/Layouts/PenyewaLayout';
 import { Head, router } from '@inertiajs/react';
 import { CalendarX, CircleAlert } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 // tanggal ditandai "Terbatas" bila jam kosong lapangan terpilih tinggal 3 atau kurang (sekitar seperempat dari 14 jam)
 const BATAS_TERBATAS = 3;
@@ -47,6 +47,10 @@ export default function Dashboard({ lapangan, terisi = [] }: { lapangan: Lapanga
     const [jamPilihan, setJamPilihan] = useState<Jam | 'auto' | null>('auto');
     const [galat, setGalat] = useState<string | null>(null);
     const [memproses, setMemproses] = useState(false);
+    // titik status di header diklik: tampilkan island jam buka
+    const [mintaIsland, setMintaIsland] = useState(0);
+    const gor = statusGor(useSekarangPerMenit());
+    const kartuJamRef = useRef<HTMLElement>(null);
 
     const tampil = lapangan.filter((l) => l.jenisLapangan === jenis);
     const lapAktif =
@@ -120,58 +124,33 @@ export default function Dashboard({ lapangan, terisi = [] }: { lapangan: Lapanga
         );
     };
 
-    const band = (
-        // minmax(0,1fr): deretan lapangan yang bisa digeser di HP tidak boleh ikut melebarkan halaman
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
-            <h1 id="judul-pesan" className="text-body font-semibold lg:text-headline">
-                Pesan lapangan
-            </h1>
+    // "Pesan sekarang" di galeri: geser ke kartu jam (HP: header tidak menempel; mulai sm: di bawah header ringkas)
+    const keKartuJam = () => {
+        const el = kartuJamRef.current;
+        if (!el) return;
+        const jarak = window.matchMedia('(min-width: 640px)').matches ? 104 : 16;
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - jarak, behavior: 'smooth' });
+    };
 
-            {/* tinggi tetap mulai sm: pindah ke jenis dengan lebih sedikit lapangan tidak menggeser isi di bawahnya */}
-            <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:h-72 sm:grid-cols-[minmax(0,1fr)_280px] sm:grid-rows-[minmax(0,1fr)] sm:gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
-                <GaleriLapangan lapangan={lapAktif} ikon={IKON_JENIS[jenis]} />
-
-                <div className="grid min-w-0 content-start gap-3 sm:-m-1 sm:overflow-y-auto sm:p-1">
-                    {jenisList.length > 1 && (
-                        <Tabs value={jenis} onValueChange={(v) => ubahJenis(v as string)}>
-                            <TabsList
-                                variant="line"
-                                aria-label="Jenis lapangan"
-                                className="relative w-full gap-0 rounded-none border-b p-0 group-data-horizontal/tabs:h-auto"
-                            >
-                                {jenisList.map((j) => (
-                                    <TabsTrigger
-                                        key={j}
-                                        value={j}
-                                        className="h-auto gap-2 px-1 pt-0 pb-2.5 text-footnote font-semibold text-muted-foreground after:hidden data-active:text-foreground"
-                                    >
-                                        {IKON_JENIS[j] && (
-                                            <img src={IKON_JENIS[j]} alt="" width={28} height={28} className="size-7 object-contain" />
-                                        )}
-                                        {j}
-                                    </TabsTrigger>
-                                ))}
-                                <TabsIndicator className="-bottom-px" />
-                            </TabsList>
-                        </Tabs>
-                    )}
-                    <h2 className="text-subheadline font-semibold">Pilih lapangan</h2>
-                    <PilihLapangan
-                        lapangan={tampil}
-                        value={lapAktif?.idLapangan ?? null}
-                        onChange={ubahLapangan}
-                        jamKosong={(l) => jamKosong(terisi, l, tanggal, sekarang)}
-                    />
-                </div>
-            </div>
-        </div>
+    const header = (
+        <HeaderBeranda
+            jenisList={jenisList}
+            jenis={jenis}
+            onJenis={ubahJenis}
+            lapangan={tampil}
+            value={lapAktif?.idLapangan ?? null}
+            onLapangan={ubahLapangan}
+            jamKosong={(l) => jamKosong(terisi, l, tanggal, sekarang)}
+            buka={gor.buka}
+            onStatus={() => setMintaIsland((n) => n + 1)}
+        />
     );
 
     return (
-        <PenyewaLayout band={band} navTengah={<StatusBuka />}>
+        <PenyewaLayout nav={header}>
             <Head title="Home" />
 
-            <div className="grid grid-cols-[minmax(0,1fr)] gap-6 pb-28 lg:pb-0">
+            <div className="-mt-2 grid grid-cols-[minmax(0,1fr)] gap-6 pb-40 sm:pb-24 lg:pb-0">
                 {galat && (
                     <Alert variant="destructive">
                         <CircleAlert />
@@ -193,10 +172,17 @@ export default function Dashboard({ lapangan, terisi = [] }: { lapangan: Lapanga
                     </Empty>
                 ) : (
                     <>
+                        <section aria-labelledby="judul-lapangan" className="grid grid-cols-[minmax(0,1fr)] gap-4">
+                            <h1 id="judul-lapangan" className="text-callout font-semibold sm:text-body">
+                                {lapAktif.namaLapangan}
+                            </h1>
+                            <GaleriLapangan key={lapAktif.idLapangan} lapangan={lapAktif} onPesan={keKartuJam} />
+                        </section>
+
                         <DateStrip hari={hari} terpilih={tanggal} batasTerbatas={BATAS_TERBATAS} onSelect={ubahTanggal} />
 
                         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-                            <section aria-labelledby="judul-pesan" className="min-w-0">
+                            <section ref={kartuJamRef} aria-label="Pilih jam" className="min-w-0">
                                 <KartuJam
                                     // SlotPicker menyimpan jam awal pilihan; mulai bersih saat lapangan atau tanggal ganti
                                     key={`${lapAktif.idLapangan}-${isoTanggal(tanggal)}`}
@@ -223,6 +209,8 @@ export default function Dashboard({ lapangan, terisi = [] }: { lapangan: Lapanga
                     </>
                 )}
             </div>
+
+            <IslandStatus buka={gor.buka} bukaLagi={gor.bukaLagi} minta={mintaIsland} />
 
             {lapAktif && (
                 <BarBookingMobile

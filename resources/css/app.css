@@ -458,3 +458,137 @@
     opacity: 0;
   }
 }
+
+/* Header Home (Components/booking/HeaderBeranda.tsx). Mulai sm header menempel; `.ringkas` (setelah digulir):
+   blok putih menyusut setinggi nav, kategori naik dan hilang, pill lapangan naik ke nav dan mengecil.
+   Angka --naik / --pill-y mengikuti tinggi nav (80px desktop, 120px dengan baris kategori di bawah lg)
+   dan tinggi blok pill (pt-2 + pill 66px + pb-7 + border; di bawah lg ditambah padding geser 12px).
+   Di layer components supaya utilitas Tailwind (mis. max-sm:hidden) tetap menang. */
+@layer components {
+  .kepala-beranda {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    pointer-events: none;
+    --naik: -103px;
+    --pill-y: 22px;
+    --pill-s: 0.82;
+    --tinggi-nav: 80px;
+    background: linear-gradient(var(--background), var(--background)) no-repeat;
+    background-size: 100% 100%;
+    transition: background-size 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .kepala-beranda > nav,
+  .kepala-beranda .pill-lapangan {
+    pointer-events: auto;
+  }
+  .bawah-beranda {
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .baris-pill {
+    display: flex;
+    transform-origin: center;
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .kepala-beranda .kategori-beranda {
+    transition:
+      opacity 0.2s ease,
+      transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+      visibility 0s linear 0s;
+  }
+  .kepala-beranda.ringkas {
+    background-size: 100% var(--tinggi-nav);
+  }
+  .ringkas .bawah-beranda {
+    transform: translateY(var(--naik));
+  }
+  .ringkas .baris-pill {
+    transform: translateY(var(--pill-y)) scale(var(--pill-s));
+  }
+  .ringkas .kategori-beranda {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -16px);
+    transition:
+      opacity 0.2s ease,
+      transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+      visibility 0s linear 0.32s;
+  }
+  @media (max-width: 1279px) {
+    .kepala-beranda {
+      --pill-s: 0.72;
+    }
+  }
+  @media (max-width: 1023px) {
+    .kepala-beranda {
+      --tinggi-nav: 120px;
+      --naik: -115px;
+      --pill-y: 44px;
+      --pill-s: 0.9;
+    }
+    .ringkas .kategori-beranda {
+      transform: translateY(-16px);
+    }
+    /* tablet: pill bisa digeser bila tidak muat; margin auto di pill menjaga tetap di tengah bila muat */
+    .baris-pill {
+      overflow-x: auto;
+      margin: 0 -1.5rem;
+      padding: 0 1.5rem 12px;
+      scrollbar-width: none;
+      pointer-events: auto;
+    }
+    .baris-pill::-webkit-scrollbar {
+      display: none;
+    }
+  }
+  @media (max-width: 639px) {
+    .kepala-beranda {
+      position: relative;
+      background: var(--background);
+      transition: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .kepala-beranda,
+    .bawah-beranda,
+    .baris-pill,
+    .kepala-beranda .kategori-beranda {
+      transition: none;
+    }
+  }
+}
+
+/* Island status buka/tutup (Components/booking/IslandStatus.tsx); posisi tengahnya memakai `translate`, jadi keyframe ini hanya menggeser naik-turun */
+@keyframes island-masuk {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+@keyframes island-keluar {
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+}
+/* papan Open/Close berayun dari cincinnya saat muncul */
+@keyframes ayun-papan {
+  0% {
+    transform: rotate(-16deg);
+  }
+  24% {
+    transform: rotate(10deg);
+  }
+  44% {
+    transform: rotate(-6deg);
+  }
+  63% {
+    transform: rotate(3.5deg);
+  }
+  80% {
+    transform: rotate(-1.5deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}

@@ -13,6 +13,12 @@ export const IKON_JENIS: Record<string, string> = {
     Basket: '/images/olahraga/basket.png',
 };
 
+/** Ikon lapangan 3D per jenis (pilihan lapangan di Home). */
+export const IKON_LAPANGAN: Record<string, string> = {
+    'Bulu Tangkis': '/images/olahraga/lapangan-bulu-tangkis.webp',
+    Basket: '/images/olahraga/lapangan-basket.webp',
+};
+
 export type Lapangan = {
     idLapangan: number;
     namaLapangan: string;
@@ -37,6 +43,15 @@ export type StatusJam = 'free' | 'taken' | 'past';
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export const jam = (h: number) => `${pad(h)}:00`;
+
+/** Status GOR pada jam ini: buka JAM_BUKA–JAM_TUTUP; saat tutup, kapan buka lagi. */
+export function statusGor(sekarang: Date) {
+    const h = sekarang.getHours();
+    return {
+        buka: h >= JAM_BUKA && h < JAM_TUTUP,
+        bukaLagi: `buka ${h >= JAM_TUTUP ? 'besok' : 'pukul'} ${jam(JAM_BUKA)}`,
+    };
+}
 
 export const isoTanggal = (d: Date) =>
     `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

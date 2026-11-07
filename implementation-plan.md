@@ -1,5 +1,7 @@
 # Implementation Plan — Buddhi Sports
 
+> 2026-11-07: Home penyewa ala Airbnb selesai di PR `feat/home-airbnb` (lihat CLAUDE.md). Sisa terkait: sinkron design system untuk `MenuAkun`, `HeaderBeranda`, `PillLapangan`, `GaleriLapangan` baru, `IslandStatus`, `DateStrip` (tanggal penuh dicoret), `BarBookingMobile`; foto lapangan asli diunggah pengelola.
+
 Status (2026-10-20): CRUD master data (7 model, 42 route, 21 halaman TSX), autentikasi multi-role, profil pengelola, dan tampilan Home Penyewa sudah selesai dan dihapus dari dokumen ini. Sisa pekerjaan ada di bawah. Progres ringkas ada di [CLAUDE.md](CLAUDE.md).
 
 ## 1. Email / SMTP untuk lupa password (sedang dikerjakan)
