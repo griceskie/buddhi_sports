@@ -1,3 +1,4 @@
+import NavPenyewa from '@/Components/booking/NavPenyewa';
 import InputError from '@/Components/InputError';
 import PasswordInput from '@/Components/PasswordInput';
 import PhoneInput from '@/Components/PhoneInput';
@@ -68,7 +69,7 @@ export default function Edit() {
     const syaratTerpenuhi = password.data.password.length >= PANJANG_MIN_PASSWORD;
 
     return (
-        <PenyewaLayout>
+        <PenyewaLayout nav={<NavPenyewa />}>
             <Head title="Profile" />
 
             <div className="mx-auto flex max-w-[40rem] flex-col gap-8">

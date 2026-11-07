@@ -1,13 +1,11 @@
 import MenuAkun from '@/Components/MenuAkun';
 import { Tabs, TabsIndicator, TabsList, TabsTrigger } from '@/Components/ui/tabs';
-import Wordmark from '@/Components/Wordmark';
-import { Link } from '@inertiajs/react';
 import { cn } from 'cn';
 import { useEffect, useState } from 'react';
 import { IKON_JENIS, IKON_LAPANGAN, Lapangan } from './jadwal';
+import { LogoStatus } from './NavPenyewa';
 import PilihLapangan from './PilihLapangan';
 import PillLapangan from './PillLapangan';
-import { TitikStatus } from './StatusBuka';
 
 /**
  * Header Home (pola Airbnb): logo + titik status buka, kategori lapangan di tengah, menu akun avatar,
@@ -43,19 +41,7 @@ export default function HeaderBeranda({
     return (
         <div className={cn('kepala-beranda', ringkas && 'ringkas')}>
             <nav className="relative mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 px-4 pt-3 sm:px-6 lg:h-20 lg:px-8 lg:pt-0">
-                <div className="flex items-center gap-1">
-                    <Link href={route('dashboard')} className="shrink-0 text-lg">
-                        <Wordmark className="whitespace-nowrap" />
-                    </Link>
-                    <button
-                        type="button"
-                        onClick={onStatus}
-                        aria-label={`Lapangan ${buka ? 'buka' : 'tutup'}, lihat jam buka`}
-                        className="flex size-9 cursor-pointer items-center justify-center rounded-full outline-none transition-colors hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/50"
-                    >
-                        <TitikStatus buka={buka} />
-                    </button>
-                </div>
+                <LogoStatus buka={buka} onStatus={onStatus} />
 
                 {jenisList.length > 1 && (
                     <Tabs
