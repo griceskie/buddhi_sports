@@ -6,6 +6,7 @@ import {
     jamKosong,
     jamSudahLewat,
     Lapangan,
+    sisaHariIni,
     tambahHari,
     Terisi,
 } from '@/Components/booking/jadwal';
@@ -100,7 +101,12 @@ function IsiUbahJadwal({
 
     const hari: HariItem[] = Array.from({ length: HARI_KE_DEPAN }, (_, i) => {
         const d = tambahHari(hariIni, i);
-        return { tanggal: d, kosong: jamKosong(data, lapangan, d, sekarang) };
+        const akhir = i === 0 ? sisaHariIni(sekarang) : null;
+        return {
+            tanggal: d,
+            kosong: jamKosong(data, lapangan, d, sekarang),
+            tutup: akhir ? (akhir === 'tutup' ? 'Tutup' : 'Lewat') : undefined,
+        };
     });
 
     // pindah tanggal: jam pilihan dipertahankan bila masih kosong di tanggal baru

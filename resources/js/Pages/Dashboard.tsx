@@ -5,6 +5,7 @@ import IslandStatus from '@/Components/booking/IslandStatus';
 import {
     awalHari,
     HARI_KE_DEPAN,
+    JAM_BUKA,
     isoTanggal,
     jam,
     jamKosong,
@@ -13,6 +14,7 @@ import {
     Lapangan,
     Pilihan,
     sedangPerbaikan,
+    sisaHariIni,
     statusGor,
     tambahHari,
     Terisi,
@@ -20,13 +22,13 @@ import {
 import KartuJam from '@/Components/booking/KartuJam';
 import RingkasanBooking, { BarBookingMobile } from '@/Components/booking/RingkasanBooking';
 import { useSekarangPerMenit } from '@/Components/booking/StatusBuka';
-import { Alert, AlertTitle } from '@/Components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/alert';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/Components/ui/empty';
 import { toMinutes } from '@/Components/ui/format';
 import { TimeRange } from '@/Components/ui/slot-picker';
 import PenyewaLayout from '@/Layouts/PenyewaLayout';
 import { Head, router } from '@inertiajs/react';
-import { CalendarX, CircleAlert } from 'lucide-react';
+import { CalendarX, CircleAlert, MoonStar } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 // tanggal ditandai "Terbatas" bila jam kosong lapangan terpilih tinggal 3 atau kurang (sekitar seperempat dari 14 jam)
@@ -43,7 +45,9 @@ export default function Dashboard({ lapangan, terisi = [] }: { lapangan: Lapanga
     const [jenis, setJenis] = useState(jenisList[0] ?? '');
     // lapangan terpilih diingat per jenis, supaya pindah tab bolak-balik tidak mengulang pilihan
     const [pilihanLapangan, setPilihanLapangan] = useState<Record<string, number>>({});
-    const [tanggal, setTanggal] = useState(hariIni);
+    // hari ini sudah habis (GOR tutup atau jam terakhir sudah dimulai): mulai dari besok, hari ini diberi label
+    const akhirHari = sisaHariIni(sekarang);
+    const [tanggal, setTanggal] = useState(() => tambahHari(hariIni, akhirHari ? 1 : 0));
     const [jamPilihan, setJamPilihan] = useState<Jam | 'auto' | null>('auto');
     const [galat, setGalat] = useState<string | null>(null);
     const [memproses, setMemproses] = useState(false);
@@ -72,7 +76,11 @@ export default function Dashboard({ lapangan, terisi = [] }: { lapangan: Lapanga
 
     const hari: HariItem[] = Array.from({ length: HARI_KE_DEPAN }, (_, i) => {
         const d = tambahHari(hariIni, i);
-        return { tanggal: d, kosong: lapAktif ? jamKosong(terisi, lapAktif, d, sekarang) : 0 };
+        return {
+            tanggal: d,
+            kosong: lapAktif ? jamKosong(terisi, lapAktif, d, sekarang) : 0,
+            tutup: i === 0 && akhirHari ? (akhirHari === 'tutup' ? 'Tutup' : 'Lewat') : undefined,
+        };
     });
 
     const mulaiUlang = () => {
@@ -180,6 +188,21 @@ export default function Dashboard({ lapangan, terisi = [] }: { lapangan: Lapanga
                         </section>
 
                         <DateStrip hari={hari} terpilih={tanggal} batasTerbatas={BATAS_TERBATAS} onSelect={ubahTanggal} />
+
+                        {akhirHari && (
+                            <Alert variant="warning">
+                                <MoonStar />
+                                <AlertTitle>
+                                    {akhirHari === 'tutup' ? 'GOR sudah tutup untuk hari ini' : 'Jam hari ini sudah habis'}
+                                </AlertTitle>
+                                <AlertDescription>
+                                    {akhirHari === 'tutup'
+                                        ? `Buka lagi besok pukul ${jam(JAM_BUKA)}. `
+                                        : 'Jam terakhir hari ini sudah dimulai. '}
+                                    Anda tetap bisa booking untuk besok dan seterusnya.
+                                </AlertDescription>
+                            </Alert>
+                        )}
 
                         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
                             <section ref={kartuJamRef} aria-label="Pilih jam" className="min-w-0">
