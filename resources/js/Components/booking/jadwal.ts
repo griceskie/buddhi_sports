@@ -53,6 +53,16 @@ export function statusGor(sekarang: Date) {
     };
 }
 
+/**
+ * Hari ini sudah tidak punya jam yang bisa dipesan karena waktu: 'tutup' = GOR sudah tutup (mulai JAM_TUTUP),
+ * 'lewat' = masih buka tapi jam terakhir sudah dimulai. null = masih ada jam (atau BLOKIR_JAM_LEWAT mati).
+ */
+export function sisaHariIni(sekarang: Date): 'tutup' | 'lewat' | null {
+    if (!BLOKIR_JAM_LEWAT) return null;
+    const h = sekarang.getHours();
+    return h >= JAM_TUTUP ? 'tutup' : h >= JAM_TUTUP - 1 ? 'lewat' : null;
+}
+
 export const isoTanggal = (d: Date) =>
     `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 

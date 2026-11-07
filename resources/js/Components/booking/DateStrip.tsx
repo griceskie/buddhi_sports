@@ -6,7 +6,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { isoTanggal } from './jadwal';
 
-export type HariItem = { tanggal: Date; kosong: number };
+/** `tutup`: hari ini yang habis karena waktu (bukan karena penuh); dipakai sebagai label menggantikan "Penuh". */
+export type HariItem = { tanggal: Date; kosong: number; tutup?: string };
 
 const NAMA_HARI = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 const GAP = 6;
@@ -66,7 +67,7 @@ export default function DateStrip({
     const k = iTerpilih - awal;
     const pertama = hari[0].tanggal;
     const terakhir = hari[hari.length - 1].tanggal;
-    const penuh = hari.filter((h) => h.kosong === 0).map((h) => h.tanggal);
+    const penuh = hari.filter((h) => h.kosong === 0 && !h.tutup).map((h) => h.tanggal);
 
     return (
         <div className="grid gap-2.5 rounded-2xl border bg-card px-3 pt-3.5 pb-3 sm:px-5 sm:pt-4">
@@ -140,7 +141,7 @@ export default function DateStrip({
                 {terlihat.map((h) => {
                     const i = hari.indexOf(h);
                     const aktif = i === iTerpilih;
-                    const status = h.kosong === 0 ? 'Penuh' : h.kosong <= batasTerbatas ? 'Terbatas' : '';
+                    const status = h.tutup ?? (h.kosong === 0 ? 'Penuh' : h.kosong <= batasTerbatas ? 'Terbatas' : '');
                     const nama = i === 0 ? 'Hari ini' : i === 1 ? 'Besok' : NAMA_HARI[h.tanggal.getDay()];
                     return (
                         <button
@@ -151,7 +152,7 @@ export default function DateStrip({
                             onClick={() => onSelect(h.tanggal)}
                             className={cn(
                                 'relative flex h-17 min-w-0 cursor-pointer flex-col items-center justify-center rounded-xl outline-none hover:bg-foreground/4 focus-visible:ring-3 focus-visible:ring-ring/50',
-                                status === 'Penuh' && !aktif && 'text-muted-foreground',
+                                (status === 'Penuh' || h.tutup) && !aktif && 'text-muted-foreground',
                             )}
                         >
                             <span className="text-caption-1 whitespace-nowrap text-muted-foreground">{nama}</span>
