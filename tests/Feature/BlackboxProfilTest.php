@@ -26,8 +26,8 @@ class BlackboxProfilTest extends TestCase
 
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('penyewas', ['idPenyewa' => $penyewa->idPenyewa, 'namaPenyewa' => 'Nama Baru']);
-        // tidak ada flash 'success' -> toast di app.tsx (tampilkanFlash) tidak akan muncul.
-        $this->assertNull($response->getSession()->get('success'));
+        // flash 'success' -> toast di app.tsx (sejak redesign Profile 2026-11-07)
+        $response->assertSessionHas('success', 'Profil disimpan.');
     }
 
     // J01: Admin (Pengelola) mengubah nama -> tersimpan.
@@ -43,6 +43,20 @@ class BlackboxProfilTest extends TestCase
         $this->assertDatabaseHas('admins', ['idAdmin' => $admin->idAdmin, 'namaAdmin' => 'Nama Baru']);
         // tidak ada flash 'success' -> toast di app.tsx (tampilkanFlash) tidak akan muncul.
         $this->assertNull($response->getSession()->get('success'));
+    }
+
+    // J02: ganti password Penyewa dengan data benar -> tersimpan, dengan toast.
+    public function test_j02_penyewa_ganti_password_berhasil(): void
+    {
+        $penyewa = Penyewa::factory()->create(); // password default 'password', lihat PenyewaFactory
+
+        $this->actingAs($penyewa)->put('/password', [
+            'current_password' => 'password',
+            'password' => 'passwordBaru1',
+            'password_confirmation' => 'passwordBaru1',
+        ])->assertSessionHasNoErrors()->assertSessionHas('success', 'Password diperbarui.');
+
+        $this->assertTrue(Hash::check('passwordBaru1', $penyewa->fresh()->password));
     }
 
     // J02: ganti password Penyewa dengan password lama salah -> ditolak.

@@ -55,7 +55,14 @@ Sebelum dipakai sungguhan:
 3. (Minor) ID relasi (`txtpenyewa`, `txtlapangan`, dst.) divalidasi `integer` saja, bukan `exists:`; ID tidak valid berujung error 500 dari FK, bukan pesan validasi.
 4. (Minor) `/logout-pengelola` meng-invalidate seluruh session, jadi Penyewa yang login di browser yang sama ikut logout.
 
-## 4. Verifikasi akhir
+## 4. Profile penyewa (setelah PR `feat/profile-penyewa`, belum diputuskan)
+
+- `DELETE /profile` (`ProfileController@destroy`) masih aktif walau tombol Hapus akun nonaktif. `bookings.idPenyewa` tanpa cascade, jadi menghapus penyewa yang punya booking kemungkinan gagal di database. Nasib riwayat booking (hapus, anonimkan, nonaktifkan akun) menunggu keputusan user.
+- Validasi `noHp` masih `string|max:255` di Register dan Profile, sementara `PhoneInput` membatasi 13 digit.
+- Pesan validasi framework berbahasa Inggris (`APP_LOCALE=en`) muncul di bawah form berbahasa Indonesia, misalnya "The password is incorrect." di baris Password.
+- `@headlessui/react` di `package.json` tidak dipakai lagi sejak `Profile/Partials` dihapus; belum di-uninstall.
+
+## 5. Verifikasi akhir
 
 - Cek manual tiap halaman master: tambah → muncul di list → edit → delete (termasuk kasus delete gagal karena FK).
 - `php artisan test` hijau semua.

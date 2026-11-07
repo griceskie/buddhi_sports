@@ -32,7 +32,7 @@ class ProfileController extends Controller
         // catatan: Penyewa tidak memiliki kolom email_verified_at (tidak ada verifikasi email untuk Penyewa)
         $request->user()->save();
 
-        return Redirect::route('profile.edit');
+        return Redirect::route('profile.edit')->with('success', 'Profil disimpan.');
     }
 
     /**
