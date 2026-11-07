@@ -2,6 +2,7 @@ import { HubungiPengelola } from '@/Components/booking/DialogBukti';
 import { Terisi } from '@/Components/booking/jadwal';
 import KartuBookingSaya from '@/Components/booking/KartuBookingSaya';
 import KonfirmasiBatal from '@/Components/booking/KonfirmasiBatal';
+import NavPenyewa from '@/Components/booking/NavPenyewa';
 import PanelPembayaran from '@/Components/booking/PanelPembayaran';
 import { BookingPenyewa, keadaan, Rekening } from '@/Components/booking/pembayaran';
 import { kelasPopup } from '@/Components/booking/popup';
@@ -79,7 +80,7 @@ export default function Booking({ bookings, rekening, terisi }: Props) {
     ] as const;
 
     return (
-        <PenyewaLayout>
+        <PenyewaLayout nav={<NavPenyewa />}>
             <Head title="Booking saya" />
 
             <div className="mx-auto flex max-w-3xl flex-col gap-6">

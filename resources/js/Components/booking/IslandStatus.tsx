@@ -11,9 +11,20 @@ const TAMPIL_MS = 6_000;
  * Island status buka/tutup di tengah bawah (pola pill Airbnb). Papan Open/Close di depan island, di kiri teks:
  * cincin dan kawatnya di dalam island, bawah platnya menjulur keluar dan berayun saat muncul.
  * Muncul saat digulir (tiap 2 menit), saat `minta` berubah (titik status di header diklik), hilang setelah
- * 6 detik atau lewat X. Di bawah lg posisinya di atas bar booking.
+ * 6 detik atau lewat X. Di Home, di bawah lg posisinya di atas bar booking.
  */
-export default function IslandStatus({ buka, bukaLagi, minta }: { buka: boolean; bukaLagi: string; minta: number }) {
+export default function IslandStatus({
+    buka,
+    bukaLagi,
+    minta,
+    tanpaBarBawah = false,
+}: {
+    buka: boolean;
+    bukaLagi: string;
+    minta: number;
+    /** Halaman tanpa bar booking di bawah (Booking saya, Profile): island cukup 48px dari bawah di semua lebar. */
+    tanpaBarBawah?: boolean;
+}) {
     const [fase, setFaseState] = useState<'tampil' | 'keluar' | null>(null);
     const faseRef = useRef(fase);
     const setFase = (f: typeof fase) => {
@@ -63,7 +74,8 @@ export default function IslandStatus({ buka, bukaLagi, minta }: { buka: boolean;
             role="status"
             aria-live="polite"
             className={cn(
-                'fixed bottom-44 left-1/2 z-30 max-w-[calc(100%-2rem)] -translate-x-1/2 sm:bottom-30 lg:bottom-12 motion-reduce:animate-none',
+                'fixed left-1/2 z-30 max-w-[calc(100%-2rem)] -translate-x-1/2 motion-reduce:animate-none',
+                tanpaBarBawah ? 'bottom-12' : 'bottom-44 sm:bottom-30 lg:bottom-12',
                 fase === 'keluar'
                     ? 'animate-[island-keluar_.2s_cubic-bezier(.4,0,1,1)_both]'
                     : 'animate-[island-masuk_.34s_cubic-bezier(.2,.8,.2,1)_both]',

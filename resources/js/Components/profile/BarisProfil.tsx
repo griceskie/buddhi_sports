@@ -102,7 +102,8 @@ function Lipat({ buka, id, children }: { buka: boolean; id?: string; children: R
     );
 }
 
-const JARAK_NAV = 80; // nav sticky 64px + 16px
+// jarak dari atas layar: tinggi nav sticky (64px, 80px mulai lg) + 16px
+const jarakNav = () => (document.querySelector('nav')?.getBoundingClientRect().height ?? 64) + 16;
 
 /**
  * Dipanggil langsung saat Ubah diklik. Kalau ujung bawah form akan lewat bawah layar, halaman digeser
@@ -115,8 +116,8 @@ function geserKeForm(baris: HTMLElement | null, panel: HTMLElement | null) {
     const r = baris.getBoundingClientRect();
     const lebih = r.bottom + tinggiPanel + 24 - window.innerHeight;
     if (lebih <= 0) return;
-    const muat = r.height + tinggiPanel <= window.innerHeight - JARAK_NAV - 24;
-    const geser = muat ? lebih : r.top - JARAK_NAV;
+    const muat = r.height + tinggiPanel <= window.innerHeight - jarakNav() - 24;
+    const geser = muat ? lebih : r.top - jarakNav();
     if (geser <= 0) return;
 
     const y0 = window.scrollY;
