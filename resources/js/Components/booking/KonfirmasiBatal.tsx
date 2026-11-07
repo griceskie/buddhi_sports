@@ -26,22 +26,23 @@ export default function KonfirmasiBatal({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
+            {/* rata tengah ala Airbnb: ikon besar, judul besar, dua tombol penuh bertumpuk */}
+            <AlertDialogContent className="gap-6">
+                <AlertDialogHeader className="items-center text-center sm:text-center">
                     <img
                         src="/images/booking/tempat-sampah.webp"
                         alt=""
-                        width={72}
-                        height={72}
-                        className="mx-auto mb-1 size-18 sm:mx-0"
+                        width={112}
+                        height={112}
+                        className="mb-1 size-28"
                     />
-                    <AlertDialogTitle>Batalkan booking ini?</AlertDialogTitle>
+                    <AlertDialogTitle className="text-body font-semibold text-balance">Batalkan booking ini?</AlertDialogTitle>
                     {/* pendek: 1 baris di desktop, maks. 2 baris di HP; detail booking sudah terlihat di belakang */}
                     <AlertDialogDescription className="text-balance">Jadwalnya dilepas untuk orang lain. Tidak ada biaya.</AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Kembali</AlertDialogCancel>
-                    <AlertDialogAction variant="destructive" onClick={batalkan}>
+                <AlertDialogFooter className="sm:flex-col-reverse">
+                    <AlertDialogCancel className="h-10 w-full">Kembali</AlertDialogCancel>
+                    <AlertDialogAction variant="destructive" className="h-10 w-full" onClick={batalkan}>
                         Ya, batalkan
                     </AlertDialogAction>
                 </AlertDialogFooter>
