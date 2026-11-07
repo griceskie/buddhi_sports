@@ -155,7 +155,15 @@ export default function DateStrip({
                             )}
                         >
                             <span className="text-caption-1 whitespace-nowrap text-muted-foreground">{nama}</span>
-                            <span className="text-callout font-semibold tabular-nums">{h.tanggal.getDate()}</span>
+                            <span
+                                className={cn(
+                                    'text-callout font-semibold tabular-nums',
+                                    // tanggal penuh: angkanya dicoret, tidak cuma diabukan
+                                    status === 'Penuh' && 'line-through decoration-muted-foreground/70 decoration-[1.5px]',
+                                )}
+                            >
+                                {h.tanggal.getDate()}
+                            </span>
                             <span
                                 className={cn(
                                     'min-h-4 text-caption-1 font-medium whitespace-nowrap',

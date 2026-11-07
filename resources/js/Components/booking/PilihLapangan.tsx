@@ -16,12 +16,15 @@ export default function PilihLapangan({
     value,
     onChange,
     jamKosong,
+    ikon,
 }: {
     lapangan: Lapangan[];
     value: number | null;
     onChange: (idLapangan: number) => void;
     /** Jam kosong per lapangan di tanggal terpilih. */
     jamKosong: (l: Lapangan) => number;
+    /** Ikon pengganti foto di kiri tiap lapangan (ikon lapangan 3D di Home). */
+    ikon?: string;
 }) {
     const listRef = useRef<HTMLDivElement>(null);
     const [posisi, setPosisi] = useState<Posisi | null>(null);
@@ -71,7 +74,9 @@ export default function PilihLapangan({
                         disabled={perbaikan}
                         className="relative flex h-14.5 w-56 shrink-0 cursor-pointer items-center gap-3 rounded-2xl border border-transparent py-2 pr-3 pl-2 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 sm:w-full"
                     >
-                        {l.foto[0] ? (
+                        {ikon ? (
+                            <img src={ikon} alt="" className="h-10 w-12 shrink-0 object-contain" />
+                        ) : l.foto[0] ? (
                             <img src={l.foto[0]} alt="" className="size-10 shrink-0 rounded-[10px] object-cover" />
                         ) : (
                             <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[color-mix(in_oklab,var(--foreground)_7%,var(--canvas))] text-muted-foreground">
