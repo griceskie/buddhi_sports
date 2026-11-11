@@ -64,7 +64,25 @@ Sebelum dipakai sungguhan:
 - Pesan validasi framework berbahasa Inggris (`APP_LOCALE=en`) muncul di bawah form berbahasa Indonesia, misalnya "The password is incorrect." di baris Password.
 - `@headlessui/react` di `package.json` tidak dipakai lagi sejak `Profile/Partials` dihapus; belum di-uninstall.
 
-## 5. Verifikasi akhir
+## 5. Bahasa dan teks antarmuka (skill `bahasa-indonesia-plain`, belum diputuskan)
+
+Skill ada di `.claude/skills/bahasa-indonesia-plain/SKILL.md` (2026-11-11). Isinya aturan bahasa polos, EYD dan UI copy. Beberapa aturannya bertabrakan dengan teks app sekarang, jadi perlu keputusan user dulu sebelum teks diubah.
+
+Keputusan yang ditunggu:
+- [ ] Format jam: titik ("08.00", EYD) atau titik dua ("08:00", dipakai sekarang di `BookingTimeline`, `SlotPicker`, tabel booking). Data di kode tetap "HH:MM".
+- [ ] Rentang jam dan tanggal singkat ("18:00–20:00", "Jum, 30 Okt") boleh tetap di tabel dan komponen padat? Skill meminta "hingga"/"sampai" dan tanggal lengkap untuk teks biasa.
+- [ ] Sapaan: app memakai "Anda" (19 tempat, tidak ada "kamu"); contoh di skill memakai "kamu". Tetapkan "Anda" untuk penyewa dan pengelola, atau beda per sisi.
+- [ ] Kata serapan: "Login" atau "Masuk", "Log Out" atau "Keluar", "Profile" atau "Profil", "booking" atau "pemesanan", "Dashboard" tetap?
+- [ ] Teks Login/Register penyewa berbahasa Inggris ("Welcome back👋, mate!", keputusan 2026-10-31) dan `APP_LOCALE=en`: tetap, atau ikut skill ke Bahasa Indonesia? Terkait juga pesan validasi Inggris di form Indonesia (bagian 4).
+
+Setelah diputuskan:
+- [ ] Rapikan skill: contoh tombol "Simpan Dokumen" jadi "Simpan dokumen" (sentence case), placeholder "cth. nama@email.com" jadi "Contoh: nama@email.com" (skill melarang singkatan), salah ketik "30% lebih murah. dari Rp100.000…".
+- [ ] Tambahkan bagian khusus Buddhi Sports ke skill (format jam, sapaan, daftar kata serapan yang tetap dipakai, pengecualian tabel).
+- [ ] Ubah judul menu ke sentence case, misalnya "Laporan Pembayaran" jadi "Laporan pembayaran" (`Components/AdminSidebar.tsx`), lalu sinkronkan design system.
+- [ ] Tinjau pesan error, empty state dan dialog konfirmasi dengan aturan skill, terutama bukti bayar ditolak, batal booking dan booking kedaluwarsa (tidak menyalahkan penyewa, sebut langkah berikutnya).
+- [ ] Sesuaikan test yang memeriksa teks yang berubah.
+
+## 6. Verifikasi akhir
 
 - Cek manual tiap halaman master: tambah → muncul di list → edit → delete (termasuk kasus delete gagal karena FK).
 - `php artisan test` hijau semua.
