@@ -88,11 +88,12 @@ Sumber rancangan: kanvas **"Redesign Dashboard Admin"** (artboard `Admin-Dashboa
 
 ### Cakupan: hanya panel Admin (ditegaskan user 2026-11-13)
 
-Implementasi hanya mengubah **tampilan dan fungsi panel Admin** (`auth:admin`). Yang **tidak disentuh**: panel Manager, sisi penyewa, login pengelola, dan halaman yang sudah tidak terjangkau (`Master/Admin`, `Master/Manager`).
+Implementasi mengubah **tampilan dan fungsi panel Admin** (`auth:admin`) **dan halaman login pengelola** (`/login-pengelola`, ditambahkan user 2026-11-13: "semua yang didesain di artifact, termasuk login"). Yang **tidak disentuh**: panel Manager, sisi penyewa (termasuk `/login` dan `GuestLayout`), dan halaman yang sudah tidak terjangkau (`Master/Admin`, `Master/Manager`).
 
 - `AdminSidebarLayout`, `AdminSidebar` dan `HandleInertiaRequests` dipakai bersama Manager. Setiap perubahan di sana dipagari `pengelola.role === 'admin'` (di sisi PHP untuk prop baru, di sisi TSX untuk tampilan), sehingga Manager tetap persis seperti sekarang: header lama, tema terang, tanpa notifikasi baru.
 - Token tema gelap hanya aktif di dalam pembungkus panel Admin, jadi Manager tidak ikut berubah walau memakai layout yang sama.
 - Fitur Manager (catatan revisi laporan, notifikasi laporan) keluar dari rencana ini.
+- Login pengelola dipakai Admin dan Manager (tab peran). Tampilan barunya tetap berlaku untuk keduanya karena itu satu halaman; yang berubah hanya halaman login, bukan panel Manager setelah masuk.
 
 ### Keputusan desain yang mengikat
 
@@ -111,6 +112,16 @@ Jangan diubah tanpa user; kalau implementasi memaksa berubah, tanya dulu.
 1. Tambah `resources/css/admin.css` dari `tokens.admin.css` design system, tapi penanda temanya **kelas `.dark`**, bukan `[data-theme="dark"]`, supaya sejalan dengan `@custom-variant dark` di `app.css`. → verifikasi: `npm run build` sukses dan tampilan belum berubah (berkas belum diimpor).
 2. Impor dari `app.css` dan daftarkan token ke Tailwind lewat `@theme inline` khusus pengelola. Jangan menimpa token penyewa: periksa setiap nama yang sudah dipakai `app.css` (`--background`, `--card`, `--border`, `--primary`, `--canvas`, `--tabel-header`). Kalau bentrok, beri awalan atau batasi cakupannya ke pembungkus panel pengelola. → verifikasi: satu halaman admin memakai `bg-card`, `text-muted-foreground`, `border` dan warnanya benar di terang dan gelap; halaman penyewa dibandingkan sebelum/sesudah, tidak berubah.
 3. Pengalih tema: simpan pilihan di cookie `tema_pengelola` mengikuti pola `sidebar_state`, kirim lewat prop shared, pasang kelas `.dark` di elemen akar `AdminSidebarLayout`. → verifikasi: pilih gelap, muat ulang, tetap gelap; buka halaman penyewa di tab sama, tetap terang.
+
+### Tahap A2 — Login pengelola (branch `feat/admin-login`, dikerjakan sebelum header)
+
+Rancangan: artboard **"Admin — Login pengelola (gaya panel Admin)"** dan versi HP di kanvas (berkas `Admin-Login.dc.html`). Draft B lama dipertahankan sebagai arsip, tidak dipakai.
+
+1. Buat `Layouts/PengelolaGuestLayout.tsx`: dua kolom (form di kiri, panel pratinjau `bg-muted` di kanan, panel disembunyikan di bawah 900px), header berisi logo + "Panel pengelola" + tombol mode terang/gelap. `GuestLayout` penyewa dan `AuthScene` **tidak diubah**. → verifikasi: `/login` penyewa sebelum/sesudah identik.
+2. Ubah `Pages/Auth/LoginPengelola.tsx` ke layout baru: tab peran sebagai `Tabs` shadcn (`bg-muted`, tab aktif `bg-background`, tanpa ikon 3D), field Username dan Password (`PasswordInput` yang sudah ada), tombol "Login sebagai Admin/Manager". Logika `useForm`, rute `login.pengelola` dan validasi server tidak berubah. Pesan galat lewat `InputError` di bawah field. → verifikasi: login Admin dan Manager berhasil, salah password menampilkan galat, tab tidak mengosongkan username.
+3. Pengalih tema membaca dan menulis cookie `tema_pengelola` yang sama dengan panel (tahap A), jadi pilihan di login terbawa ke dashboard. Prop tema dikirim untuk rute login pengelola juga. → verifikasi: pilih gelap di login, masuk, dashboard tetap gelap; `/login` penyewa tetap terang.
+4. Panel pratinjau: isi mengikuti peran terpilih (judul, dua kartu hitungan, satu kartu tugas). Lihat keputusan tentang sumber datanya di bawah. → verifikasi: ganti tab mengganti isi panel; cek 1440, 1024 dan 390 tanpa geser mendatar.
+5. Tes feature: halaman login memuat tab peran dan `tema` dari cookie; tes login yang sudah ada tetap hijau.
 
 ### Tahap B — Header pengelola (branch `feat/admin-header`)
 
@@ -148,7 +159,7 @@ Menunggu keputusan user; tanpa itu, kerjakan tahap B dengan versi yang lebih kec
 
 - `php artisan test` hijau untuk tes yang sudah ada, kecuali 8 tes Breeze yang memang masih merah (bagian 3).
 - Tes baru: prop notifikasi, angka KPI, urutan FIFO, dan cookie tema.
-- Cek browser pada 1280 dan 1440, terang dan gelap, sidebar terbuka dan menciut, dengan akun Admin. Dengan akun Manager hanya cek regresi: header, warna dan menu sama seperti sebelum perubahan.
+- Cek browser pada 1280 dan 1440, terang dan gelap, sidebar terbuka dan menciut, dengan akun Admin; halaman login pengelola juga pada 390. Dengan akun Manager hanya cek regresi: header, warna dan menu sama seperti sebelum perubahan.
 - Tes baru: prop `notifikasi` dan cookie tema tidak muncul untuk Manager.
 
 ### Tahap G — Sinkron dokumen
@@ -161,7 +172,8 @@ Perbarui `CLAUDE.md` (ringkasan progres), `panduan.md` (lapisan warna baru untuk
 - [ ] **Status notifikasi dibaca**: disimpan per akun di database, atau cukup per perangkat?
 - [ ] **Mode gelap**: pilihan per perangkat (cookie) atau per akun (kolom di `admins`/`managers`)?
 - [ ] **Dashboard lama**: `Pages/Dashboard/Admin.tsx` diganti langsung oleh v2, atau v2 dipasang berdampingan dulu untuk dibandingkan?
-- ~~Login pengelola~~: di luar cakupan, tetap `GuestLayout` seperti sekarang.
+- [ ] **Panel pratinjau login**: isinya statis (angka contoh, tidak mencerminkan data), atau data asli berupa hitungan saja lewat endpoint publik? Data asli berarti orang yang belum login bisa melihat jumlah antrean; statis lebih aman. Saran saya: statis.
+- [ ] **Draft B**: boleh diarsipkan (tetap di kanvas, tidak dipakai)?
 
 ## 7. Verifikasi akhir
 
