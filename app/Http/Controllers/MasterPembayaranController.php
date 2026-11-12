@@ -96,6 +96,9 @@ class MasterPembayaranController extends Controller
             'status' => $request->txtstatus,
             'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
         ];
+        if ($data['status'] === 'Terverifikasi') {
+            $data['diverifikasiPada'] = now();
+        }
         DB::transaction(function () use ($data) {
             DB::table('pembayarans')->insert($data);
             LogAktivitas::catat('tambah', 'Pembayaran', Pemesanan::kode((int) $data['idBooking']), LogAktivitas::selisih('Pembayaran', null, $data));
@@ -135,6 +138,10 @@ class MasterPembayaranController extends Controller
             'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
         ];
         $lama = (array) DB::table('pembayarans')->where('idPembayaran', $request->txtid)->first();
+        // waktu verifikasi hanya diisi saat status berubah menjadi Terverifikasi (KPI dashboard)
+        if ($data['status'] === 'Terverifikasi' && ($lama['status'] ?? null) !== 'Terverifikasi') {
+            $data['diverifikasiPada'] = now();
+        }
         DB::transaction(function () use ($request, $data, $lama) {
             DB::table('pembayarans')
             -> where('idPembayaran', $request->txtid)

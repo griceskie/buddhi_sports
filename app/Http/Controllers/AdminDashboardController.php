@@ -47,24 +47,82 @@ class AdminDashboardController extends Controller
         $jadwalSampai = $tanggalJadwal->copy()->addDays(Pemesanan::HARI_KE_DEPAN);
         $jadwal = $jadwalAntara($jadwalDari, $jadwalSampai);
 
-        $pendapatan = fn ($awal, $akhir) => (int) DB::table('pembayarans')
-            ->where('status', 'Terverifikasi')
-            ->whereBetween('tglBayar', [$awal->toDateString(), $akhir->toDateString()])
-            ->sum('jumlahBayar');
+        $hariIniIso = $hariIni->toDateString();
+        $bulanLalu = $hariIni->copy()->subMonthNoOverflow()->startOfMonth();
+
+        // Booking yang masuk hari ini (dibuat penyewa; baris yang diisi Admin tidak punya created_at)
+        $masuk = DB::table('bookings')
+            ->leftJoin('pembayarans', 'pembayarans.idBooking', '=', 'bookings.idBooking')
+            ->whereDate('bookings.created_at', $hariIniIso)
+            ->get(['bookings.status', 'pembayarans.idPembayaran']);
+        $verifikasiHariIni = DB::table('pembayarans')->where('status', 'Terverifikasi')->whereDate('diverifikasiPada', $hariIniIso);
+
+        // Antrean verifikasi FIFO: bukti yang paling lama dikirim di atas
+        $antrean = DB::table('pembayarans')
+            ->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')
+            ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
+            ->join('lapangans', 'lapangans.idLapangan', '=', 'bookings.idLapangan')
+            ->where('pembayarans.status', 'Menunggu Verifikasi')
+            ->orderByRaw('pembayarans.dikirimPada IS NULL')->orderBy('pembayarans.dikirimPada')->orderBy('pembayarans.idPembayaran')
+            ->get([
+                'pembayarans.idPembayaran', 'pembayarans.tglBayar', 'pembayarans.jumlahBayar', 'pembayarans.buktiBayar', 'pembayarans.status', 'pembayarans.dikirimPada',
+                'bookings.idBooking', 'bookings.idLapangan', 'bookings.tanggal', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.totalBayar',
+                'penyewas.namaPenyewa', 'lapangans.namaLapangan',
+            ])
+            ->map(function ($p) {
+                // jam yang sudah dikonfirmasi untuk booking lain: Terima dinonaktifkan di drawer
+                $bentrok = DB::table('bookings')
+                    ->where('idLapangan', $p->idLapangan)->where('tanggal', $p->tanggal)->where('idBooking', '!=', $p->idBooking)
+                    ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
+                    ->where('jamMulai', '<', $p->jamSelesai)->where('jamSelesai', '>', $p->jamMulai)
+                    ->value('idBooking');
+
+                return [
+                    'idPembayaran' => $p->idPembayaran,
+                    'idBooking' => $p->idBooking,
+                    'kode' => Pemesanan::kode($p->idBooking),
+                    'namaPenyewa' => $p->namaPenyewa,
+                    'namaLapangan' => $p->namaLapangan,
+                    'tanggal' => $p->tanggal,
+                    'jamMulai' => substr($p->jamMulai, 0, 5),
+                    'jamSelesai' => substr($p->jamSelesai, 0, 5),
+                    'tglBayar' => $p->tglBayar,
+                    'dikirimPada' => $p->dikirimPada ? Carbon::parse($p->dikirimPada)->toIso8601String() : null,
+                    'jumlahBayar' => (int) $p->jumlahBayar,
+                    'totalBayar' => (int) $p->totalBayar,
+                    'buktiBayar' => $p->buktiBayar ? route('pembayaran.bukti', $p->idPembayaran) : null,
+                    'buktiPdf' => str_ends_with(strtolower((string) $p->buktiBayar), '.pdf'),
+                    'status' => $p->status,
+                    'bentrokDengan' => $bentrok ? Pemesanan::kode($bentrok) : null,
+                ];
+            });
 
         return Inertia::render('Dashboard/Admin', [
             'stat' => [
-                'bookingHariIni' => $jadwalHariIni->count(),
-                'menungguVerifikasi' => DB::table('pembayarans')->where('status', 'Menunggu Verifikasi')->count(),
-                'pendapatanBulanIni' => $pendapatan($hariIni->copy()->startOfMonth(), $hariIni->copy()->endOfMonth()),
-                'pendapatanBulanLalu' => $pendapatan($hariIni->copy()->subMonthNoOverflow()->startOfMonth(), $hariIni->copy()->subMonthNoOverflow()->endOfMonth()),
                 'jamTerisi' => $jadwalHariIni->filter(fn ($b) => in_array($b->status, Pemesanan::STATUS_MENAHAN_JAM))->sum($jam),
                 'jamTotal' => $lapangan->count() * (Pemesanan::JAM_TUTUP - Pemesanan::JAM_BUKA),
+                'bookingMasuk' => $masuk->count(),
+                'bookingMasukBatal' => $masuk->where('status', 'Dibatalkan')->count(),
+                'bookingMasukBelumBayar' => $masuk->where('status', 'Dipesan')->whereNull('idPembayaran')->count(),
+                'terverifikasiJumlah' => (int) (clone $verifikasiHariIni)->sum('jumlahBayar'),
+                'terverifikasiN' => (clone $verifikasiHariIni)->count(),
             ],
             'lapangan' => $lapangan,
             'tanggalJadwal' => $tanggalJadwal->toDateString(),
             'jadwalDari' => $jadwalDari->toDateString(),
             'jadwalSampai' => $jadwalSampai->toDateString(),
+            // KPI "Sesi hari ini" selalu dari hari ini, berapa pun tanggal yang tampil di kartu Jadwal
+            'jadwalHariIni' => $jadwalHariIni->map(fn ($b) => [
+                'idBooking' => $b->idBooking,
+                'idLapangan' => $b->idLapangan,
+                'tanggal' => $b->tanggal,
+                'jamMulai' => substr($b->jamMulai, 0, 5),
+                'jamSelesai' => substr($b->jamSelesai, 0, 5),
+                'namaPenyewa' => $b->namaPenyewa,
+                'status' => $b->status,
+                'statusPembayaran' => $b->statusPembayaran,
+                'idPembayaran' => $b->idPembayaran,
+            ]),
             'jadwal' => $jadwal->map(fn ($b) => [
                 'idBooking' => $b->idBooking,
                 'idLapangan' => $b->idLapangan,
@@ -76,56 +134,64 @@ class AdminDashboardController extends Controller
                 'statusPembayaran' => $b->statusPembayaran,
                 'idPembayaran' => $b->idPembayaran,
             ]),
-            'antrean' => DB::table('pembayarans')
-                ->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')
-                ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
-                ->join('lapangans', 'lapangans.idLapangan', '=', 'bookings.idLapangan')
-                ->where('pembayarans.status', 'Menunggu Verifikasi')
-                ->orderBy('pembayarans.idPembayaran')
-                ->get([
-                    'pembayarans.idPembayaran', 'pembayarans.tglBayar', 'pembayarans.jumlahBayar', 'pembayarans.buktiBayar', 'pembayarans.status',
-                    'bookings.idBooking', 'bookings.tanggal', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.totalBayar',
-                    'penyewas.namaPenyewa', 'lapangans.namaLapangan',
-                ])
-                ->map(fn ($p) => [
-                    'idPembayaran' => $p->idPembayaran,
-                    'idBooking' => $p->idBooking,
-                    'kode' => Pemesanan::kode($p->idBooking),
-                    'namaPenyewa' => $p->namaPenyewa,
-                    'namaLapangan' => $p->namaLapangan,
-                    'tanggal' => $p->tanggal,
-                    'jamMulai' => substr($p->jamMulai, 0, 5),
-                    'jamSelesai' => substr($p->jamSelesai, 0, 5),
-                    'tglBayar' => $p->tglBayar,
-                    'jumlahBayar' => (int) $p->jumlahBayar,
-                    'totalBayar' => (int) $p->totalBayar,
-                    'buktiBayar' => $p->buktiBayar ? route('pembayaran.bukti', $p->idPembayaran) : null,
-                    'buktiPdf' => str_ends_with(strtolower((string) $p->buktiBayar), '.pdf'),
-                    'status' => $p->status,
-                ]),
+            'antrean' => $antrean,
+            'tugas' => $this->tugasLain($bulanLalu),
+            // 16 booking terakhir; tab status disaring di browser
             'terbaru' => DB::table('bookings')
                 ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
                 ->join('lapangans', 'lapangans.idLapangan', '=', 'bookings.idLapangan')
                 ->leftJoin('pembayarans', 'pembayarans.idBooking', '=', 'bookings.idBooking')
                 ->orderByDesc('bookings.idBooking')
-                ->limit(6)
+                ->limit(16)
                 ->get([
                     'bookings.idBooking', 'bookings.tanggal', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.totalBayar', 'bookings.status',
-                    'penyewas.namaPenyewa', 'lapangans.namaLapangan', 'pembayarans.status as statusPembayaran',
+                    'penyewas.namaPenyewa', 'penyewas.noHp', 'lapangans.namaLapangan', 'pembayarans.idPembayaran', 'pembayarans.status as statusPembayaran',
                 ])
                 ->map(fn ($b) => [
                     'idBooking' => $b->idBooking,
                     'kode' => Pemesanan::kode($b->idBooking),
                     'namaPenyewa' => $b->namaPenyewa,
+                    'noHp' => $b->noHp,
                     'namaLapangan' => $b->namaLapangan,
                     'tanggal' => $b->tanggal,
                     'jamMulai' => substr($b->jamMulai, 0, 5),
                     'jamSelesai' => substr($b->jamSelesai, 0, 5),
                     'totalBayar' => (int) $b->totalBayar,
                     'status' => $b->status,
+                    'idPembayaran' => $b->idPembayaran,
                     'statusPembayaran' => $b->statusPembayaran,
                 ]),
         ]);
+    }
+
+    /**
+     * "Tugas lain" di kartu Perlu tindakan, hanya yang memang ada: laporan bulan lalu yang belum dibuat
+     * (tertahan bila masih ada bukti bulan itu yang menunggu) dan bukti ditolak yang belum dikirim ulang.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function tugasLain(Carbon $bulanLalu): array
+    {
+        $tugas = [];
+        $namaBulan = $bulanLalu->locale('id')->translatedFormat('F');
+        $adaLaporan = DB::table('laporan_pembayarans')->where('bulan', $bulanLalu->month)->where('tahun', $bulanLalu->year)->whereNotNull('filePdf')->exists();
+        if (! $adaLaporan) {
+            $tertahan = DB::table('pembayarans')->where('status', 'Menunggu Verifikasi')
+                ->whereBetween('tglBayar', [$bulanLalu->toDateString(), $bulanLalu->copy()->endOfMonth()->toDateString()])
+                ->orderBy('idPembayaran')->pluck('idPembayaran');
+            $tugas[] = $tertahan->isNotEmpty()
+                ? ['jenis' => 'tertahan', 'judul' => "Laporan $namaBulan tertahan", 'ket' => $tertahan->count()." bukti $namaBulan belum diverifikasi", 'aksi' => 'Tinjau', 'idPembayaran' => $tertahan->first(), 'href' => null]
+                : ['jenis' => 'siap', 'judul' => "Laporan $namaBulan siap dibuat", 'ket' => "Semua bukti $namaBulan sudah diproses", 'aksi' => 'Buat', 'idPembayaran' => null, 'href' => '/tampilpembayaran?periode='.$bulanLalu->format('Y-m')];
+        }
+
+        $ditolak = DB::table('pembayarans')->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')
+            ->where('pembayarans.status', 'Ditolak')->where('bookings.status', 'Dipesan')
+            ->where('bookings.tanggal', '>=', today()->toDateString())->count();
+        if ($ditolak) {
+            $tugas[] = ['jenis' => 'ditolak', 'judul' => "$ditolak bukti ditolak belum dikirim ulang", 'ket' => 'Booking tetap Dipesan tanpa batas waktu. Hubungi penyewa atau batalkan.', 'aksi' => 'Lihat', 'idPembayaran' => null, 'href' => '/tampilpembayaran'];
+        }
+
+        return $tugas;
     }
 
     public function terima(int $idPembayaran): RedirectResponse
@@ -151,7 +217,7 @@ class AdminDashboardController extends Controller
             }
 
             DB::table('pembayarans')->where('idPembayaran', $idPembayaran)
-                ->update(['status' => 'Terverifikasi', 'alasanTolak' => null, 'idAdmin' => Auth::guard('admin')->id()]);
+                ->update(['status' => 'Terverifikasi', 'alasanTolak' => null, 'idAdmin' => Auth::guard('admin')->id(), 'diverifikasiPada' => now()]);
             DB::table('bookings')->where('idBooking', $p->idBooking)
                 ->update(['status' => 'Dikonfirmasi', 'idAdmin' => Auth::guard('admin')->id()]);
             LogAktivitas::catat('terima', 'Pembayaran', Pemesanan::kode($p->idBooking), [
