@@ -126,13 +126,13 @@ Rancangan: artboard **"Admin — Login pengelola (gaya panel Admin)"** dan versi
 ### Tahap B — Header pengelola (branch `feat/admin-header`)
 
 1. `Components/pengelola/HeaderPengelola.tsx`: judul halaman, lalu notifikasi, mode gelap, menu akun. Dipakai dari `AdminSidebarLayout` hanya saat `pengelola.role === 'admin'`, jadi semua halaman Admin ikut sekaligus dan Manager tetap memakai header lama. Prop `header` yang sudah ada tetap jadi judul.
-2. Menu akun: Profil pengelola (`/profile-pengelola`, sudah ada), Log aktivitas (belum ada halamannya, lihat daftar keputusan), sakelar Mode gelap, Keluar.
+2. Menu akun: Profil pengelola (`/profile-pengelola`, sudah ada), Log aktivitas (halamannya dibangun di Tahap H), sakelar Mode gelap, Keluar.
 3. Notifikasi: tambah `pengelola.notifikasi` di `HandleInertiaRequests` (maksimal 5 baris), isinya gabungan tiga sumber, urut terbaru:
    - `pembayarans` berstatus `Menunggu Verifikasi`, urut `dikirimPada` menurun;
    - `bookings` dengan `dibatalkanPenyewa` hari ini;
    - laporan yang sudah diperiksa Manager (`diperiksaPada`), sebagai kabar saja, tanpa kolom baru.
    Baris bukti bayar membuka drawer verifikasi di tempat; baris lain menautkan ke halamannya. → verifikasi: tes feature yang memeriksa isi dan urutan prop; cek browser di dua halaman berbeda.
-4. Titik merah menyala selama masih ada bukti yang belum dibaca, dan "Tandai sudah dibaca" mematikannya. Tempat menyimpan status dibaca menunggu keputusan (tahap E).
+4. Titik merah menyala selama masih ada bukti yang belum dibaca, dan "Tandai sudah dibaca" mematikannya. Status dibaca disimpan per akun di `admins.notifDibacaPada` (tahap E).
 
 ### Tahap C — Dashboard v2 (branch `feat/admin-dashboard-v2`)
 
@@ -151,9 +151,26 @@ Header ikut otomatis dari layout. Yang perlu diperiksa satu per satu di mode gel
 
 ### Tahap E — Perubahan database yang dibutuhkan
 
-Menunggu keputusan user; tanpa itu, kerjakan tahap B dengan versi yang lebih kecil. Kolom revisi laporan dibatalkan karena itu fungsi Manager.
+Sudah diputuskan. Kolom revisi laporan dibatalkan karena itu fungsi Manager.
 
-- Tandai notifikasi dibaca: perlu `admins.notifDibacaPada` (timestamp, nullable) kalau statusnya harus bertahan antar perangkat. Tanpa kolom ini, statusnya hanya bertahan selama sesi browser.
+- Tandai notifikasi dibaca: `admins.notifDibacaPada` (timestamp, nullable), supaya status bertahan antar perangkat.
+
+### Tahap H — Log aktivitas (branch `feat/admin-log-aktivitas`)
+
+Rancangan halamannya sudah ada di kanvas (`Admin-Aktivitas`). Repo belum punya apa pun untuk riwayat, dan tabel yang ada hanya menyimpan keadaan terakhir, jadi tabel baru dibutuhkan.
+
+Aturan: tidak ada jalur ubah atau hapus untuk peran mana pun; Admin dan Manager hanya membaca.
+
+1. Migrasi `create_log_aktivitas_table`: `id`, `waktu` (waktu server), `idAdmin` dan `namaAdmin` sebagai salinan, `aksi`, `jenisObjek`, `kodeObjek`, `ringkasan`, `hashSebelumnya`, `hash`; **tanpa foreign key** supaya menghapus data tidak mengubah riwayat. Di MySQL migrasi yang sama membuat trigger `BEFORE UPDATE` dan `BEFORE DELETE` yang menolak dengan `SIGNAL`; di SQLite (tes) trigger dilewati. Idealnya aplikasi memakai user database dengan hak `INSERT` dan `SELECT` saja pada tabel ini. → verifikasi: `UPDATE` dan `DELETE` langsung di MySQL ditolak.
+2. `app/Support/LogAktivitas.php`: `catat()` mengunci baris terakhir, menghitung `hash = sha256(hashSebelumnya + isi baris)`, lalu `insert`. Satu-satunya jalan menulis. Dipanggil di dalam transaksi aksinya.
+3. Pasang `catat()` di: terima dan tolak bukti (`AdminDashboardController`), tambah/ubah/hapus di lima `Master*Controller`, `LaporanPembayaranController@buat`. Kesalahan dikoreksi dengan baris baru ("koreksi atas #id"), bukan mengubah baris lama. → verifikasi: aksi yang dibatalkan (rollback) tidak meninggalkan baris log.
+4. `LogAktivitasController`: `tampilData` (baca saja, filter aksi dan tanggal, halaman) dan `periksa` (menelusuri rantai, menampilkan hasil). Rute di grup `auth:admin`; tanpa method simpan, ubah, atau hapus. Memakai `DB::table`.
+5. `Pages/Admin/LogAktivitas/TampilData.tsx` sesuai kanvas, tombol "Periksa keaslian log", dan menu "Log aktivitas" di grup Laporan pada `AdminSidebar.tsx`.
+6. `log:periksa` di `routes/console.php`, dijadwalkan harian; menyimpan titik terakhir yang lolos supaya pemeriksaan berikutnya hanya menelusuri baris baru.
+7. **Jangkar di luar sistem**: hash terakhir bulan itu dicetak di PDF Laporan Pembayaran (`resources/views/pdf/laporan-pembayaran.blade.php`), yang dikunci setelah diperiksa Manager. Opsional: hash harian dikirim ke email Manager.
+8. Tes `tests/Feature/LogAktivitasTest.php`: aksi tercatat dalam transaksi yang sama, rollback tidak meninggalkan log, rantai valid dan rantai rusak terdeteksi, `UPDATE`/`DELETE` ditolak (dilewati di SQLite), Manager tidak punya jalur tulis.
+
+Catatan: tabel ini tidak bisa dibersihkan lewat aplikasi, jadi tes memakai database uji terpisah. Batas jaminan: pemilik server dengan akses penuh bisa melepas trigger dan menghitung ulang rantai; jangkar di PDF yang sudah ditandatangani (butir 7) yang membuat hal itu ketahuan.
 
 ### Tahap F — Tes dan verifikasi akhir
 
@@ -166,14 +183,14 @@ Menunggu keputusan user; tanpa itu, kerjakan tahap B dengan versi yang lebih kec
 
 Perbarui `CLAUDE.md` (ringkasan progres), `panduan.md` (lapisan warna baru untuk panel Admin), dan design system "Design System Administrator" kalau ada komponen yang berubah saat implementasi.
 
-### Menunggu keputusan user
+### Keputusan user (2026-11-13, semua disetujui)
 
-- [ ] **Log aktivitas**: halaman ini ada di kanvas tapi belum ada di aplikasi. Dibangun, atau menunya dan tautan notifikasinya dilepas dulu?
-- [ ] **Status notifikasi dibaca**: disimpan per akun di database, atau cukup per perangkat?
-- [ ] **Mode gelap**: pilihan per perangkat (cookie) atau per akun (kolom di `admins`/`managers`)?
-- [ ] **Dashboard lama**: `Pages/Dashboard/Admin.tsx` diganti langsung oleh v2, atau v2 dipasang berdampingan dulu untuk dibandingkan?
-- [ ] **Panel pratinjau login**: isinya statis (angka contoh, tidak mencerminkan data), atau data asli berupa hitungan saja lewat endpoint publik? Data asli berarti orang yang belum login bisa melihat jumlah antrean; statis lebih aman. Saran saya: statis.
-- [ ] **Draft B**: boleh diarsipkan (tetap di kanvas, tidak dipakai)?
+- **Log aktivitas**: dibangun (Tahap H). Hanya bisa ditambah, tidak bisa diubah atau dihapus siapa pun, termasuk Manager.
+- **Status notifikasi dibaca**: per akun di database (`admins.notifDibacaPada`, migrasi di Tahap E).
+- **Mode gelap**: per perangkat lewat cookie `tema_pengelola`; kunjungan pertama mengikuti pengaturan sistem (OS).
+- **Dashboard lama**: `Pages/Dashboard/Admin.tsx` diganti langsung oleh v2.
+- **Panel pratinjau login**: dinamis tapi **tanpa angka**. Endpoint publik hanya mengembalikan tiga tingkat per peran (tidak ada / ada / banyak) dan kalimatnya tanpa jumlah, misalnya "Ada pembayaran yang menunggu Anda". Tanpa nama atau nominal; cache beberapa menit dan batas laju per IP. Artboard kanvas masih memakai angka dan perlu disesuaikan sebelum Tahap A2.
+- **Draft B**: tetap di kanvas sebagai arsip, tidak dipakai.
 
 ## 7. Verifikasi akhir
 
