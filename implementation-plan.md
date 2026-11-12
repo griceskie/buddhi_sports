@@ -82,7 +82,81 @@ Setelah diputuskan:
 - [ ] Tinjau pesan error, empty state dan dialog konfirmasi dengan aturan skill, terutama bukti bayar ditolak, batal booking dan booking kedaluwarsa (tidak menyalahkan penyewa, sebut langkah berikutnya).
 - [ ] Sesuaikan test yang memeriksa teks yang berubah.
 
-## 6. Verifikasi akhir
+## 6. Redesign panel pengelola (rancangan beku 2026-11-12)
+
+Sumber rancangan: kanvas **"Redesign Dashboard Admin"** (artboard `Admin-Dashboard-v2` dan tujuh halaman `Admin-*`) dan design system **"Design System Administrator"** (token, 10 komponen, README). Salinan token siap pakai ada di berkas `tokens.admin.css` dari design system itu. Rancangan sudah disetujui user; yang belum ada di aplikasi adalah penerapannya.
+
+### Keputusan desain yang mengikat
+
+Jangan diubah tanpa user; kalau implementasi memaksa berubah, tanya dulu.
+
+- KPI dashboard **hanya "hari ini"**: Sesi hari ini, Keterisian hari ini, Booking masuk hari ini, Terverifikasi hari ini. Tanpa perbandingan minggu/bulan lalu dan tanpa lencana naik-turun. Setiap angka wajib punya satu baris keterangan yang menyebut asalnya.
+- **Perlu tindakan FIFO**: bukti bayar yang paling lama dikirim ada di atas, bukan yang jam mainnya paling dekat atau yang nominalnya paling besar.
+- **Nominal tidak tampil di daftar Perlu tindakan**. Pencocokan uang terjadi di drawer verifikasi, dan drawer **tidak menyimpulkan selisih**: hanya menampilkan Total booking dan Jumlah dibayar berdampingan, karena sistem tidak tahu nominal yang benar-benar ditransfer.
+- **Jadwal**: satu jam selebar 100px (total 1.400px untuk 08:00–22:00), kartu selebar halaman, isinya digeser. Cara geser: seret jalur, seret thumb penggeser, klik trek, usap mendatar trackpad, tombol satu jam, panah keyboard. Baris dengan booking bertumpuk jadi dua lajur dan tingginya 112px (dari 84px).
+- **Header pengelola** berisi tiga kontrol, urutannya tetap: notifikasi, mode gelap, menu akun.
+- **Mode gelap hanya untuk panel pengelola.** Sisi penyewa tetap tanpa mode gelap (keputusan 2026-11-07).
+- Design system pengelola **terpisah** dari design system penyewa. Kalau sebuah pola dipakai di kedua sisi, salin polanya, jangan token-nya.
+
+### Tahap A — Token dan tema (branch `feat/admin-tema`)
+
+1. Tambah `resources/css/admin.css` dari `tokens.admin.css` design system, tapi penanda temanya **kelas `.dark`**, bukan `[data-theme="dark"]`, supaya sejalan dengan `@custom-variant dark` di `app.css`. → verifikasi: `npm run build` sukses dan tampilan belum berubah (berkas belum diimpor).
+2. Impor dari `app.css` dan daftarkan token ke Tailwind lewat `@theme inline` khusus pengelola. Jangan menimpa token penyewa: periksa setiap nama yang sudah dipakai `app.css` (`--background`, `--card`, `--border`, `--primary`, `--canvas`, `--tabel-header`). Kalau bentrok, beri awalan atau batasi cakupannya ke pembungkus panel pengelola. → verifikasi: satu halaman admin memakai `bg-card`, `text-muted-foreground`, `border` dan warnanya benar di terang dan gelap; halaman penyewa dibandingkan sebelum/sesudah, tidak berubah.
+3. Pengalih tema: simpan pilihan di cookie `tema_pengelola` mengikuti pola `sidebar_state`, kirim lewat prop shared, pasang kelas `.dark` di elemen akar `AdminSidebarLayout`. → verifikasi: pilih gelap, muat ulang, tetap gelap; buka halaman penyewa di tab sama, tetap terang.
+
+### Tahap B — Header pengelola (branch `feat/admin-header`)
+
+1. `Components/pengelola/HeaderPengelola.tsx`: judul halaman, lalu notifikasi, mode gelap, menu akun. Dipakai dari `AdminSidebarLayout`, jadi semua halaman Admin dan Manager ikut sekaligus. Prop `header` yang sudah ada tetap jadi judul.
+2. Menu akun: Profil pengelola (`/profile-pengelola`, sudah ada), Log aktivitas (belum ada halamannya, lihat daftar keputusan), sakelar Mode gelap, Keluar.
+3. Notifikasi: tambah `pengelola.notifikasi` di `HandleInertiaRequests` (maksimal 5 baris), isinya gabungan tiga sumber, urut terbaru:
+   - `pembayarans` berstatus `Menunggu Verifikasi`, urut `dikirimPada` menurun;
+   - `bookings` dengan `dibatalkanPenyewa` hari ini;
+   - laporan yang perlu direvisi (butuh kolom baru, lihat tahap E).
+   Baris bukti bayar membuka drawer verifikasi di tempat; baris lain menautkan ke halamannya. → verifikasi: tes feature yang memeriksa isi dan urutan prop; cek browser di dua halaman berbeda.
+4. Titik merah menyala selama masih ada bukti yang belum dibaca, dan "Tandai sudah dibaca" mematikannya. Tempat menyimpan status dibaca menunggu keputusan (tahap E).
+
+### Tahap C — Dashboard v2 (branch `feat/admin-dashboard-v2`)
+
+Kerjakan berurutan, satu bagian satu commit, masing-masing diverifikasi sebelum lanjut.
+
+1. **Sapaan dan ringkasan.** Satu kalimat di bawah sapaan: tanggal, jumlah sesi hari ini, dan berapa bukti yang harus dicek sebelum sesi terdekat. → verifikasi: kalimatnya benar saat tidak ada sesi dan saat semua bukti sudah dicek.
+2. **StatRow.** Empat angka hari ini dalam satu kartu. Keterisian = jam terisi dibagi (jumlah lapangan × 14 jam). Hanya booking `Dikonfirmasi` yang dihitung terisi; `Dipesan` tanpa bukti tidak menahan jam. → verifikasi: tes feature yang membandingkan angka dengan data seeder.
+3. **Jadwal.** Perluas `ui/booking-timeline.tsx` atau buat `Components/admin/JadwalGeser.tsx` sesuai rancangan (kolom 100px, penggeser, lajur bertumpuk). Pertahankan perilaku yang sudah ada: server mengirim rentang tanggal −7 sampai +30 hari dan penggantian hari terjadi di browser. → verifikasi: cek browser 1440 dan 1280, blok tidak terpotong, semua cara geser bekerja, blok "Tinjau bukti" tetap membuka drawer.
+4. **Perlu tindakan.** Antrean FIFO (`ORDER BY dikirimPada, idPembayaran`) plus bagian Tugas lain yang hanya muncul kalau ada. Keadaan kosong: "Semua beres". → verifikasi: tes feature untuk urutan; cek keadaan kosong dengan database bersih.
+5. **Booking terbaru.** Tab Semua/Dipesan/Dikonfirmasi/Dibatalkan dengan hitungan, kolom Pembayaran, satu tombol kontekstual per baris, menu titik tiga. → verifikasi: tiap tab memuat baris yang benar.
+6. **Drawer verifikasi.** Tambah pager "n dari N" dan tombol "Terima & berikutnya" yang membuka bukti berikutnya dalam urutan antrean. Tombol Terima dinonaktifkan (bukan disembunyikan) saat jamnya bentrok dengan booking yang sudah dikonfirmasi, dengan sebab yang tertulis. → verifikasi: tes feature untuk penolakan karena bentrok; cek browser untuk alur terima berurutan.
+
+### Tahap D — Halaman lain
+
+Header ikut otomatis dari layout. Yang perlu diperiksa satu per satu di mode gelap: tabel master, badge status, kartu ringkasan pembayaran, grafik Manager (`IncomeChart`, warnanya dari token), kalender `DateInput`, sheet form, dan PDF laporan (PDF tetap terang, tidak ikut tema). → verifikasi: buka tujuh halaman di terang dan gelap, catat yang warnanya salah.
+
+### Tahap E — Perubahan database yang dibutuhkan
+
+Keduanya menunggu keputusan user; tanpa itu, kerjakan tahap B dengan versi yang lebih kecil.
+
+- Laporan "perlu revisi": sekarang `laporan_pembayarans` hanya punya `diperiksaPada`. Untuk catatan Manager perlu `catatanRevisi` (text, nullable) dan `direvisiPada` (timestamp, nullable).
+- Tandai notifikasi dibaca: perlu `admins.notifDibacaPada` (timestamp, nullable) kalau statusnya harus bertahan antar perangkat. Tanpa kolom ini, statusnya hanya bertahan selama sesi browser.
+
+### Tahap F — Tes dan verifikasi akhir
+
+- `php artisan test` hijau untuk tes yang sudah ada, kecuali 8 tes Breeze yang memang masih merah (bagian 3).
+- Tes baru: prop notifikasi, angka KPI, urutan FIFO, dan cookie tema.
+- Cek browser pada 1280 dan 1440, terang dan gelap, sidebar terbuka dan menciut, dengan akun Admin dan Manager.
+
+### Tahap G — Sinkron dokumen
+
+Perbarui `CLAUDE.md` (ringkasan progres), `panduan.md` (lapisan warna baru untuk pengelola), dan design system "Design System Administrator" kalau ada komponen yang berubah saat implementasi.
+
+### Menunggu keputusan user
+
+- [ ] **Log aktivitas**: halaman ini ada di kanvas tapi belum ada di aplikasi. Dibangun, atau menunya dan tautan notifikasinya dilepas dulu?
+- [ ] **Laporan perlu revisi**: tambah kolom catatan Manager, atau cukup status sudah/belum diperiksa seperti sekarang?
+- [ ] **Status notifikasi dibaca**: disimpan per akun di database, atau cukup per perangkat?
+- [ ] **Mode gelap**: pilihan per perangkat (cookie) atau per akun (kolom di `admins`/`managers`)?
+- [ ] **Dashboard lama**: `Pages/Dashboard/Admin.tsx` diganti langsung oleh v2, atau v2 dipasang berdampingan dulu untuk dibandingkan?
+- [ ] **Login pengelola**: ikut gaya panel (shadcn netral), atau tetap memakai `GuestLayout` yang sama dengan penyewa?
+
+## 7. Verifikasi akhir
 
 - Cek manual tiap halaman master: tambah → muncul di list → edit → delete (termasuk kasus delete gagal karena FK).
 - `php artisan test` hijau semua.
