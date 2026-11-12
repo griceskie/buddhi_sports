@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\LogAktivitas;
 use App\Support\Pemesanan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -84,6 +85,7 @@ class LaporanPembayaranController extends Controller
             ])->all(),
             'total' => $rupiah($total),
             'tandaTangan' => $data['tandaTangan'],
+            'jangkarLog' => LogAktivitas::jangkar(),
         ])->setPaper('a4')
             // tanpa subsetting, seluruh font DejaVu (±800 KB) ikut tertanam di tiap PDF
             ->setOption('isFontSubsettingEnabled', true);
@@ -101,11 +103,17 @@ class LaporanPembayaranController extends Controller
             'filePdf' => $path,
         ];
         $ada = DB::table('laporan_pembayarans')->where('bulan', $bulan)->where('tahun', $tahun)->value('idLaporan');
-        if ($ada) {
-            DB::table('laporan_pembayarans')->where('idLaporan', $ada)->update($baris);
-        } else {
-            DB::table('laporan_pembayarans')->insert($baris + ['bulan' => $bulan, 'tahun' => $tahun]);
-        }
+        DB::transaction(function () use ($ada, $baris, $bulan, $tahun, $nama, $total, $rupiah, $pembayaran) {
+            if ($ada) {
+                DB::table('laporan_pembayarans')->where('idLaporan', $ada)->update($baris);
+            } else {
+                DB::table('laporan_pembayarans')->insert($baris + ['bulan' => $bulan, 'tahun' => $tahun]);
+            }
+            LogAktivitas::catat('buat', 'Laporan', $nama, [
+                ['Total pemasukan', '—', $rupiah($total)],
+                ['Pembayaran terverifikasi', '—', (string) $pembayaran->count()],
+            ], $ada ? 'Membuat ulang laporan periode ini (PDF lama diganti).' : null);
+        });
 
         return back()->with('success', $nama.' berhasil dibuat dan tersimpan di Laporan Pembayaran.');
     }

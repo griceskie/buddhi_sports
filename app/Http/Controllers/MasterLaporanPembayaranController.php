@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Support\LogAktivitas;
 use App\Support\Pemesanan;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class MasterLaporanPembayaranController extends Controller
             'txtpembayaran' => 'nullable|integer',
         ]);
 
-        DB::table('laporan_pembayarans') -> insert ([
+        $data = [
             'idAdmin' => $request->txtadmin,
             'idManager' => $request->txtmanager,
             'bulan' => $request->txtbulan,
@@ -49,7 +50,11 @@ class MasterLaporanPembayaranController extends Controller
             'totalPemasukan' => $request->txttotal,
             'tglLaporan' => $request->txttgllaporan,
             'idPembayaran' => $request->txtpembayaran,
-        ]);
+        ];
+        DB::transaction(function () use ($data) {
+            DB::table('laporan_pembayarans')->insert($data);
+            LogAktivitas::catat('tambah', 'Laporan', LaporanPembayaranController::namaLaporan((int) $data['bulan'], (int) $data['tahun']), LogAktivitas::selisih('Laporan', null, $data));
+        });
 
         return redirect('/tampillaporanpembayaran');
     }
@@ -70,9 +75,7 @@ class MasterLaporanPembayaranController extends Controller
             return back()->with('error', 'Laporan ini sudah diperiksa Manager, jadi tidak bisa diubah.');
         }
 
-        DB::table('laporan_pembayarans')
-        -> where('idLaporan', $request->txtid)
-        ->update([
+        $data = [
             'idAdmin' => $request->txtadmin,
             'idManager' => $request->txtmanager,
             'bulan' => $request->txtbulan,
@@ -80,7 +83,14 @@ class MasterLaporanPembayaranController extends Controller
             'totalPemasukan' => $request->txttotal,
             'tglLaporan' => $request->txttgllaporan,
             'idPembayaran' => $request->txtpembayaran,
-        ]);
+        ];
+        $lama = (array) DB::table('laporan_pembayarans')->where('idLaporan', $request->txtid)->first();
+        DB::transaction(function () use ($request, $data, $lama) {
+            DB::table('laporan_pembayarans')
+            -> where('idLaporan', $request->txtid)
+            ->update($data);
+            LogAktivitas::catat('ubah', 'Laporan', LaporanPembayaranController::namaLaporan((int) $data['bulan'], (int) $data['tahun']), LogAktivitas::selisih('Laporan', $lama, $data));
+        });
 
         return redirect('/tampillaporanpembayaran');
     }
@@ -92,7 +102,11 @@ class MasterLaporanPembayaranController extends Controller
 
         $pdf = DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->value('filePdf');
         try {
-            DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->delete();
+            $lama = (array) DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->first();
+            DB::transaction(function () use ($idhapus, $lama) {
+                DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->delete();
+                LogAktivitas::catat('hapus', 'Laporan', LaporanPembayaranController::namaLaporan((int) ($lama['bulan'] ?? 1), (int) ($lama['tahun'] ?? 0)), LogAktivitas::selisih('Laporan', $lama, null));
+            });
         } catch (QueryException $e) {
             return redirect('/tampillaporanpembayaran')->with('error', 'Laporan tidak bisa dihapus.');
         }

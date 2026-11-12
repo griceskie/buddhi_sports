@@ -21,6 +21,7 @@
     .kosong { padding: 16px 5px; text-align: center; color: #6c6c70; }
     .ttd { margin-top: 32px; width: 220px; float: right; text-align: center; }
     .ttd img { width: 200px; height: auto; border-bottom: 1px solid #111; }
+    .jejak { clear: both; padding-top: 28px; font-size: 8px; color: #6c6c70; word-break: break-all; }
 </style>
 </head>
 <body>
@@ -73,5 +74,10 @@
         <div>{{ $admin }}</div>
         <div class="muted">Admin Buddhi Sports</div>
     </div>
+
+    {{-- Jangkar log aktivitas: kalau log kemudian ditulis ulang, hash ini tidak akan cocok lagi (App\Support\LogAktivitas) --}}
+    @if (!empty($jangkarLog))
+        <div class="jejak">Jejak log aktivitas saat laporan dibuat: entri #{{ $jangkarLog['id'] }} · SHA-256 {{ $jangkarLog['hash'] }}</div>
+    @endif
 </body>
 </html>

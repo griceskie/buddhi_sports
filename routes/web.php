@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PengelolaProfileController;
 use App\Http\Controllers\BookingPenyewaController;
 use App\Http\Controllers\BuktiBayarController;
 use App\Http\Controllers\LaporanPembayaranController;
+use App\Http\Controllers\LogAktivitasController;
 use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\MasterBookingController;
 use App\Http\Controllers\MasterLapanganController;
@@ -76,6 +77,9 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('/verifikasi/{idPembayaran}/terima', [AdminDashboardController::class, 'terima'])->whereNumber('idPembayaran')->name('verifikasi.terima');
     Route::post('/verifikasi/{idPembayaran}/tolak', [AdminDashboardController::class, 'tolak'])->whereNumber('idPembayaran')->name('verifikasi.tolak');
     Route::post('/notifikasi/dibaca', [AdminDashboardController::class, 'tandaiNotifikasiDibaca'])->name('notifikasi.dibaca');
+    // Log aktivitas: hanya baca dan periksa keaslian; tidak ada rute ubah atau hapus
+    Route::get('/log-aktivitas', [LogAktivitasController::class, 'tampilData'])->name('log.aktivitas');
+    Route::post('/log-aktivitas/periksa', [LogAktivitasController::class, 'periksa'])->name('log.aktivitas.periksa');
     Route::post('/laporanpembayaran/buat', [LaporanPembayaranController::class, 'buat'])->name('laporan.buat');
 
     Route::get('/tampilpenyewa', [MasterPenyewaController::class, 'tampilData']);
