@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 /**
  * Tema panel pengelola (Admin dan login pengelola). Pilihan per perangkat di cookie `tema_pengelola`
@@ -24,14 +24,22 @@ export function sinkronTemaPanel(aktif: boolean) {
     terapkan(aktif && temaGelapTersimpan());
 }
 
-/** Status mode gelap dan pengubahnya (untuk tombol di header dan halaman login). */
+// Semua tombol tema (header, menu akun, login) membaca status yang sama
+const pendengar = new Set<() => void>();
+const langganan = (f: () => void) => {
+    pendengar.add(f);
+    return () => pendengar.delete(f);
+};
+const ambil = () => document.documentElement.classList.contains('dark');
+
+/** Status mode gelap dan pengubahnya (untuk tombol di header, menu akun dan halaman login). */
 export function useModeGelap(): [boolean, (gelap: boolean) => void] {
-    const [gelap, setGelap] = useState(() => (typeof document === 'undefined' ? false : temaGelapTersimpan()));
+    const gelap = useSyncExternalStore(langganan, ambil, () => false);
 
     const ubah = (baru: boolean) => {
         document.cookie = `${COOKIE}=${baru ? 'gelap' : 'terang'}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
         terapkan(baru);
-        setGelap(baru);
+        pendengar.forEach((f) => f());
     };
 
     return [gelap, ubah];
