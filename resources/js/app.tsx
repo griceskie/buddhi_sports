@@ -1,6 +1,7 @@
 import '../css/app.css';
 import './bootstrap';
 
+import { sinkronTemaPanel } from '@/Components/pengelola/tema';
 import { Toaster, toast } from '@/Components/ui/toast';
 import { PageProps } from '@/types';
 import { createInertiaApp, router } from '@inertiajs/react';
@@ -33,6 +34,9 @@ createInertiaApp({
         );
         tampilkanFlash((props.initialPage.props as unknown as PageProps).flash);
         router.on('success', (event) => tampilkanFlash((event.detail.page.props as unknown as PageProps).flash));
+        // Tema panel pengelola hanya untuk Admin dan login pengelola; dilepas saat pindah ke halaman Manager atau penyewa.
+        sinkronTemaPanel(!!(props.initialPage.props as unknown as PageProps).temaPanel);
+        router.on('navigate', (event) => sinkronTemaPanel(!!(event.detail.page.props as unknown as PageProps).temaPanel));
     },
     progress: {
         color: '#4B5563',

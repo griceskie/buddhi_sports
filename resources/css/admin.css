@@ -1,0 +1,91 @@
+/* Tema panel pengelola (Design System Administrator, tokens.admin.css).
+   Hanya berlaku saat <html> memiliki kelas .tema-pengelola: dipasang untuk halaman Admin dan login pengelola
+   (prop shared `temaPanel`, app.blade.php dan Components/pengelola/tema.ts). Penyewa dan Manager tidak terkena.
+   Selektor diawali `html` supaya menang atas :root, .dark dan blok squircle di app.css tanpa bergantung urutan impor.
+   Mode gelap = kelas .dark di <html>, sama dengan @custom-variant dark di app.css. */
+
+@theme inline {
+  --color-tabel-header: var(--tabel-header);
+}
+
+@layer base {
+  html.tema-pengelola {
+    --background: #ffffff;
+    --foreground: hsl(222.2 84% 4.9%);
+    --canvas: #ffffff;
+    --card: #ffffff;
+    --card-foreground: hsl(222.2 84% 4.9%);
+    --popover: #ffffff;
+    --popover-foreground: hsl(222.2 84% 4.9%);
+    --primary: hsl(221.2 83.2% 53.3%);
+    --primary-foreground: hsl(210 40% 98%);
+    --secondary: hsl(210 40% 96.1%);
+    --secondary-foreground: hsl(222.2 47.4% 11.2%);
+    --muted: hsl(210 40% 96.1%);
+    --muted-foreground: hsl(215.4 16.3% 46.9%);
+    --accent: hsl(210 40% 96.1%);
+    --accent-foreground: hsl(222.2 47.4% 11.2%);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: hsl(221.2 83.2% 53.3%);
+    --tabel-header: oklch(0.97 0 0);
+    --destructive: hsl(0 84.2% 60.2%);
+    --destructive-foreground: hsl(210 40% 98%);
+    --success: #008932;
+    --success-foreground: #ffffff;
+    --accessible-green: #008932;
+    --accessible-orange: #c55300;
+    --accessible-red: #e9152d;
+    --accessible-blue: #1e6ef4;
+    --accessible-gray: #6c6c70;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: hsl(221.2 83.2% 53.3%);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+    --radius: 0.5rem;
+  }
+
+  html.tema-pengelola.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --canvas: oklch(0.145 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.623 0.214 259.815);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.623 0.214 259.815);
+    --tabel-header: oklch(0.245 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.985 0 0);
+    --success: oklch(0.792 0.17 152);
+    --success-foreground: oklch(0.145 0 0);
+    --accessible-green: oklch(0.792 0.17 152);
+    --accessible-orange: oklch(0.79 0.15 70);
+    --accessible-red: oklch(0.71 0.17 22);
+    --accessible-blue: oklch(0.72 0.13 255);
+    --accessible-gray: oklch(0.708 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.623 0.214 259.815);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+    color-scheme: dark;
+  }
+}

@@ -24,6 +24,8 @@ export type PageProps<
     pengelola: Pengelola | null;
     /** Penyewa: booking mendatang yang belum dibayar atau buktinya ditolak (0 untuk akun lain). */
     perluTindakan: number;
+    /** Halaman memakai tema panel pengelola (Admin dan login pengelola). */
+    temaPanel: boolean;
     flash: {
         error?: string;
         success?: string;

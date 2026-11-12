@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+/* Tema panel pengelola (Admin dan login pengelola), aktif lewat html.tema-pengelola. */
+@import "./admin.css";
 
 /* dark: ikut class .dark, sama seperti token warna; tanpa ini Tailwind memakai mode gelap OS dan menimpa warna terang. */
 @custom-variant dark (&:is(.dark, .dark *));

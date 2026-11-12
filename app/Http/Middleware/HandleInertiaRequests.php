@@ -63,6 +63,8 @@ class HandleInertiaRequests extends Middleware
 
                 return null;
             },
+            // Tema panel pengelola (Design System Administrator) hanya untuk Admin dan halaman login pengelola; Manager dan penyewa tidak
+            'temaPanel' => fn () => $request->user() instanceof Admin || $request->routeIs('login.pengelola'),
             // Penyewa: jumlah booking mendatang yang menunggu tindakannya (belum bayar atau bukti ditolak), untuk titik merah di menu akun
             'perluTindakan' => function () use ($request) {
                 $user = $request->user();
