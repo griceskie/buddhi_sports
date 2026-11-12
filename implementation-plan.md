@@ -86,6 +86,14 @@ Setelah diputuskan:
 
 Sumber rancangan: kanvas **"Redesign Dashboard Admin"** (artboard `Admin-Dashboard-v2` dan tujuh halaman `Admin-*`) dan design system **"Design System Administrator"** (token, 10 komponen, README). Salinan token siap pakai ada di berkas `tokens.admin.css` dari design system itu. Rancangan sudah disetujui user; yang belum ada di aplikasi adalah penerapannya.
 
+### Cakupan: hanya panel Admin (ditegaskan user 2026-11-13)
+
+Implementasi hanya mengubah **tampilan dan fungsi panel Admin** (`auth:admin`). Yang **tidak disentuh**: panel Manager, sisi penyewa, login pengelola, dan halaman yang sudah tidak terjangkau (`Master/Admin`, `Master/Manager`).
+
+- `AdminSidebarLayout`, `AdminSidebar` dan `HandleInertiaRequests` dipakai bersama Manager. Setiap perubahan di sana dipagari `pengelola.role === 'admin'` (di sisi PHP untuk prop baru, di sisi TSX untuk tampilan), sehingga Manager tetap persis seperti sekarang: header lama, tema terang, tanpa notifikasi baru.
+- Token tema gelap hanya aktif di dalam pembungkus panel Admin, jadi Manager tidak ikut berubah walau memakai layout yang sama.
+- Fitur Manager (catatan revisi laporan, notifikasi laporan) keluar dari rencana ini.
+
 ### Keputusan desain yang mengikat
 
 Jangan diubah tanpa user; kalau implementasi memaksa berubah, tanya dulu.
@@ -106,12 +114,12 @@ Jangan diubah tanpa user; kalau implementasi memaksa berubah, tanya dulu.
 
 ### Tahap B — Header pengelola (branch `feat/admin-header`)
 
-1. `Components/pengelola/HeaderPengelola.tsx`: judul halaman, lalu notifikasi, mode gelap, menu akun. Dipakai dari `AdminSidebarLayout`, jadi semua halaman Admin dan Manager ikut sekaligus. Prop `header` yang sudah ada tetap jadi judul.
+1. `Components/pengelola/HeaderPengelola.tsx`: judul halaman, lalu notifikasi, mode gelap, menu akun. Dipakai dari `AdminSidebarLayout` hanya saat `pengelola.role === 'admin'`, jadi semua halaman Admin ikut sekaligus dan Manager tetap memakai header lama. Prop `header` yang sudah ada tetap jadi judul.
 2. Menu akun: Profil pengelola (`/profile-pengelola`, sudah ada), Log aktivitas (belum ada halamannya, lihat daftar keputusan), sakelar Mode gelap, Keluar.
 3. Notifikasi: tambah `pengelola.notifikasi` di `HandleInertiaRequests` (maksimal 5 baris), isinya gabungan tiga sumber, urut terbaru:
    - `pembayarans` berstatus `Menunggu Verifikasi`, urut `dikirimPada` menurun;
    - `bookings` dengan `dibatalkanPenyewa` hari ini;
-   - laporan yang perlu direvisi (butuh kolom baru, lihat tahap E).
+   - laporan yang sudah diperiksa Manager (`diperiksaPada`), sebagai kabar saja, tanpa kolom baru.
    Baris bukti bayar membuka drawer verifikasi di tempat; baris lain menautkan ke halamannya. → verifikasi: tes feature yang memeriksa isi dan urutan prop; cek browser di dua halaman berbeda.
 4. Titik merah menyala selama masih ada bukti yang belum dibaca, dan "Tandai sudah dibaca" mematikannya. Tempat menyimpan status dibaca menunggu keputusan (tahap E).
 
@@ -128,33 +136,32 @@ Kerjakan berurutan, satu bagian satu commit, masing-masing diverifikasi sebelum 
 
 ### Tahap D — Halaman lain
 
-Header ikut otomatis dari layout. Yang perlu diperiksa satu per satu di mode gelap: tabel master, badge status, kartu ringkasan pembayaran, grafik Manager (`IncomeChart`, warnanya dari token), kalender `DateInput`, sheet form, dan PDF laporan (PDF tetap terang, tidak ikut tema). → verifikasi: buka tujuh halaman di terang dan gelap, catat yang warnanya salah.
+Header ikut otomatis dari layout. Yang perlu diperiksa satu per satu di mode gelap, hanya halaman Admin: tabel master, badge status, kartu ringkasan pembayaran, kalender `DateInput`, sheet form, dan PDF laporan (PDF tetap terang, tidak ikut tema). Halaman Manager tidak diperiksa selain memastikan tampilannya tidak berubah. → verifikasi: buka halaman Admin di terang dan gelap, catat yang warnanya salah.
 
 ### Tahap E — Perubahan database yang dibutuhkan
 
-Keduanya menunggu keputusan user; tanpa itu, kerjakan tahap B dengan versi yang lebih kecil.
+Menunggu keputusan user; tanpa itu, kerjakan tahap B dengan versi yang lebih kecil. Kolom revisi laporan dibatalkan karena itu fungsi Manager.
 
-- Laporan "perlu revisi": sekarang `laporan_pembayarans` hanya punya `diperiksaPada`. Untuk catatan Manager perlu `catatanRevisi` (text, nullable) dan `direvisiPada` (timestamp, nullable).
 - Tandai notifikasi dibaca: perlu `admins.notifDibacaPada` (timestamp, nullable) kalau statusnya harus bertahan antar perangkat. Tanpa kolom ini, statusnya hanya bertahan selama sesi browser.
 
 ### Tahap F — Tes dan verifikasi akhir
 
 - `php artisan test` hijau untuk tes yang sudah ada, kecuali 8 tes Breeze yang memang masih merah (bagian 3).
 - Tes baru: prop notifikasi, angka KPI, urutan FIFO, dan cookie tema.
-- Cek browser pada 1280 dan 1440, terang dan gelap, sidebar terbuka dan menciut, dengan akun Admin dan Manager.
+- Cek browser pada 1280 dan 1440, terang dan gelap, sidebar terbuka dan menciut, dengan akun Admin. Dengan akun Manager hanya cek regresi: header, warna dan menu sama seperti sebelum perubahan.
+- Tes baru: prop `notifikasi` dan cookie tema tidak muncul untuk Manager.
 
 ### Tahap G — Sinkron dokumen
 
-Perbarui `CLAUDE.md` (ringkasan progres), `panduan.md` (lapisan warna baru untuk pengelola), dan design system "Design System Administrator" kalau ada komponen yang berubah saat implementasi.
+Perbarui `CLAUDE.md` (ringkasan progres), `panduan.md` (lapisan warna baru untuk panel Admin), dan design system "Design System Administrator" kalau ada komponen yang berubah saat implementasi.
 
 ### Menunggu keputusan user
 
 - [ ] **Log aktivitas**: halaman ini ada di kanvas tapi belum ada di aplikasi. Dibangun, atau menunya dan tautan notifikasinya dilepas dulu?
-- [ ] **Laporan perlu revisi**: tambah kolom catatan Manager, atau cukup status sudah/belum diperiksa seperti sekarang?
 - [ ] **Status notifikasi dibaca**: disimpan per akun di database, atau cukup per perangkat?
 - [ ] **Mode gelap**: pilihan per perangkat (cookie) atau per akun (kolom di `admins`/`managers`)?
 - [ ] **Dashboard lama**: `Pages/Dashboard/Admin.tsx` diganti langsung oleh v2, atau v2 dipasang berdampingan dulu untuk dibandingkan?
-- [ ] **Login pengelola**: ikut gaya panel (shadcn netral), atau tetap memakai `GuestLayout` yang sama dengan penyewa?
+- ~~Login pengelola~~: di luar cakupan, tetap `GuestLayout` seperti sekarang.
 
 ## 7. Verifikasi akhir
 
