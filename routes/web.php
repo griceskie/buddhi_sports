@@ -52,6 +52,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/login-pengelola', [PengelolaAuthenticatedSessionController::class, 'create'])->name('login.pengelola');
     Route::post('/login-pengelola', [PengelolaAuthenticatedSessionController::class, 'store']);
 });
+// Status panel pratinjau login (publik): hanya tingkat tanpa angka, dibatasi 30 permintaan per menit per IP
+Route::get('/login-pengelola/status', [PengelolaAuthenticatedSessionController::class, 'status'])
+    ->middleware('throttle:30,1')->name('login.pengelola.status');
 Route::post('/logout-pengelola', [PengelolaAuthenticatedSessionController::class, 'destroy'])->name('logout.pengelola');
 
 // bukti transfer privat: penyewa pemilik, Admin, atau Manager (dicek di controller)
