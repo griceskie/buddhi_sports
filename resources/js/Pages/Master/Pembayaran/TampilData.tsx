@@ -225,6 +225,8 @@ function FormPembayaran({
     databooking: Booking[];
     dataadmin: Admin[];
 }) {
+    // pembayaran yang sudah terverifikasi bersifat final (server menolak perubahan status)
+    const final = row?.status === 'Terverifikasi';
     const { data, setData, post, processing, errors } = useForm({
         txtid: row?.idPembayaran ?? '',
         txtadmin: row?.idAdmin ? String(row.idAdmin) : '',
@@ -330,17 +332,28 @@ function FormPembayaran({
 
             <div>
                 <Label htmlFor="txtstatus">Status</Label>
-                <FormSelect
-                    id="txtstatus"
-                    className="mt-1"
-                    value={data.txtstatus}
-                    onChange={(v) => setData('txtstatus', v)}
-                    options={[
-                        { value: 'Menunggu Verifikasi', label: 'Menunggu Verifikasi' },
-                        { value: 'Terverifikasi', label: 'Terverifikasi' },
-                        { value: 'Ditolak', label: 'Ditolak' },
-                    ]}
-                />
+                {final ? (
+                    <>
+                        <p id="txtstatus" className="mt-1 flex h-10 items-center rounded-md border bg-muted px-3 text-base text-muted-foreground">
+                            Terverifikasi
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Pembayaran yang sudah terverifikasi tidak bisa diubah statusnya. Untuk membatalkan, ubah status booking menjadi Dibatalkan.
+                        </p>
+                    </>
+                ) : (
+                    <FormSelect
+                        id="txtstatus"
+                        className="mt-1"
+                        value={data.txtstatus}
+                        onChange={(v) => setData('txtstatus', v)}
+                        options={[
+                            { value: 'Menunggu Verifikasi', label: 'Menunggu Verifikasi' },
+                            { value: 'Terverifikasi', label: 'Terverifikasi' },
+                            { value: 'Ditolak', label: 'Ditolak' },
+                        ]}
+                    />
+                )}
                 <InputError message={errors.txtstatus} className="mt-1" />
             </div>
 

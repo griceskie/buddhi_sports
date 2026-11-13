@@ -82,6 +82,21 @@ class MasterDataSheetTest extends TestCase
         ])->assertRedirect('/tampilbooking')->assertSessionHasErrors('txtlapangan');
     }
 
+    public function test_pembayaran_terverifikasi_tidak_bisa_diubah_ke_ditolak(): void
+    {
+        $id = DB::table('pembayarans')->insertGetId(['idBooking' => $this->booking, 'tglBayar' => '2026-10-23', 'jumlahBayar' => 100000, 'status' => 'Terverifikasi']);
+        $kirim = fn (string $status) => $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran')->post('/updatepembayaran', [
+            'txtid' => $id, 'txtbooking' => $this->booking, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 100000,
+            'txtstatus' => $status, 'txtalasan' => 'Nominal kurang.',
+        ]);
+
+        $kirim('Ditolak')->assertSessionHasErrors('txtstatus');
+        $this->assertDatabaseHas('pembayarans', ['idPembayaran' => $id, 'status' => 'Terverifikasi']);
+
+        // menyimpan tanpa mengubah status tetap boleh
+        $kirim('Terverifikasi')->assertSessionHasNoErrors();
+    }
+
     public function test_simpan_pembayaran_kembali_ke_periode_yang_dibuka(): void
     {
         $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran?periode=2026-10')->post('/insertpembayaran', [

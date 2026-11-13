@@ -153,6 +153,10 @@ class MasterPembayaranController extends Controller
             'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
         ];
         $lama = (array) DB::table('pembayarans')->where('idPembayaran', $request->txtid)->first();
+        // terverifikasi bersifat final: booking-nya menahan jam, jadi status tidak boleh diubah diam-diam dari sini
+        if (($lama['status'] ?? null) === 'Terverifikasi' && $data['status'] !== 'Terverifikasi') {
+            return back()->withErrors(['txtstatus' => 'Pembayaran yang sudah terverifikasi tidak bisa diubah statusnya. Untuk membatalkan, ubah status booking menjadi Dibatalkan.']);
+        }
         // waktu verifikasi hanya diisi saat status berubah menjadi Terverifikasi (KPI dashboard)
         if ($data['status'] === 'Terverifikasi' && ($lama['status'] ?? null) !== 'Terverifikasi') {
             $data['diverifikasiPada'] = now();
