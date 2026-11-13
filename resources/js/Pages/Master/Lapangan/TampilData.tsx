@@ -76,7 +76,7 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
                                         {row.foto[0] ? (
                                             <img src={row.foto[0].url} alt="" className="h-9 w-12 shrink-0 rounded-md object-cover" />
                                         ) : (
-                                            <div className="h-9 w-12 shrink-0 rounded-md bg-canvas" />
+                                            <div className="h-9 w-12 shrink-0 rounded-md bg-muted" />
                                         )}
                                         {row.namaLapangan}
                                     </div>
@@ -210,7 +210,7 @@ function FormLapangan({ row, onDone }: { row: Lapangan | null; onDone: () => voi
                 </p>
                 <div className="mt-2 grid grid-cols-3 gap-2">
                     {lama.map((f) => (
-                        <div key={f.path} className="relative aspect-4/3 overflow-hidden rounded-md bg-canvas">
+                        <div key={f.path} className="relative aspect-4/3 overflow-hidden rounded-md bg-muted">
                             <img src={f.url} alt="" className="size-full object-cover" />
                             <Button
                                 type="button"
@@ -225,7 +225,7 @@ function FormLapangan({ row, onDone }: { row: Lapangan | null; onDone: () => voi
                         </div>
                     ))}
                     {pratinjau.map((u, i) => (
-                        <div key={u} className="relative aspect-4/3 overflow-hidden rounded-md bg-canvas">
+                        <div key={u} className="relative aspect-4/3 overflow-hidden rounded-md bg-muted">
                             <img src={u} alt="" className="size-full object-cover" />
                             <Button
                                 type="button"
