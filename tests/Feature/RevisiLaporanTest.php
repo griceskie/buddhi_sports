@@ -106,6 +106,14 @@ class RevisiLaporanTest extends TestCase
             ->where('pengelola.notifikasi.daftar.0.judul', 'Laporan perlu revisi'));
     }
 
+    public function test_halaman_laporan_membuka_bulan_ini_secara_bawaan(): void
+    {
+        $this->actingAs($this->admin, 'admin')->get('/tampillaporanpembayaran')->assertInertia(fn (Assert $p) => $p
+            ->where('tinjauan.periode.bulan', today()->month)
+            ->where('tinjauan.periode.tahun', today()->year)
+            ->where('tinjauan.keadaan', 'berjalan'));
+    }
+
     public function test_halaman_laporan_mengirim_catatan_revisi_dan_analitik(): void
     {
         $this->revisi();

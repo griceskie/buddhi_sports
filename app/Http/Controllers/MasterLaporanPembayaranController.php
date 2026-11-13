@@ -23,11 +23,11 @@ class MasterLaporanPembayaranController extends Controller
 
         $varlaporan = DB::table('laporan_pembayarans')->get();
 
-        // periode yang dilihat: ?periode=YYYY-MM, bawaannya bulan terakhir yang sudah selesai
+        // periode yang dilihat: ?periode=YYYY-MM, bawaannya bulan ini (sama seperti halaman Pembayaran)
         $periode = $request->query('periode');
         $awal = is_string($periode) && preg_match('/^(\d{4})-(0[1-9]|1[0-2])$/', $periode, $m)
             ? Carbon::create((int) $m[1], (int) $m[2], 1)
-            : today()->startOfMonth()->subMonth();
+            : today()->startOfMonth();
 
         $laporan = $varlaporan->first(fn ($l) => (int) $l->bulan === $awal->month && (int) $l->tahun === $awal->year);
         $menunggu = DB::table('pembayarans')->where('status', 'Menunggu Verifikasi')
