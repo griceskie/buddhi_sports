@@ -1,3 +1,4 @@
+import { Badge } from '@/Components/ui/badge';
 import { formatRupiah } from '@/Components/ui/format';
 import { cn } from 'cn';
 import { CalendarCheck, Gauge, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
@@ -33,10 +34,16 @@ const angka = (n: number) => n.toLocaleString('id-ID');
  * Isi kartu analitik halaman Laporan pembayaran (kanvas "Redesign Dashboard Admin", artboard Admin-Laporan):
  * tiga angka utama dibanding bulan lalu, lalu empat grafik 2 x 2 dalam satu kartu.
  */
-export default function AnalitikLaporan({ kini, lalu, bulan, tahun }: { kini: Analitik; lalu: Analitik; bulan: number; tahun: number }) {
+export default function AnalitikLaporan({ kini, lalu, bulan, tahun, sementara = false }: { kini: Analitik; lalu: Analitik; bulan: number; tahun: number; sementara?: boolean }) {
     return (
         <div className="flex flex-col gap-6 rounded-xl border bg-card px-4 py-6 text-card-foreground shadow-sm sm:px-6">
-            <AngkaUtama kini={kini} lalu={lalu} bulan={bulan} tahun={tahun} />
+            {sementara && (
+                <p className="-mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge data-nada="oranye">Sementara</Badge>
+                    Bulan ini masih berjalan, jadi angkanya terus bertambah dan belum dibandingkan dengan bulan lalu.
+                </p>
+            )}
+            <AngkaUtama kini={kini} lalu={lalu} bulan={bulan} tahun={tahun} sementara={sementara} />
             <div className="grid gap-4 lg:grid-cols-2">
                 <GrafikPemasukan key={`${tahun}-${bulan}`} data={kini} bulan={bulan} tahun={tahun} />
                 <PetaJam data={kini} bulan={bulan} />
@@ -81,7 +88,7 @@ function TipGelap({ t1, t2, t3, className }: { t1: string; t2: string; t3?: stri
 
 // ---------------------------------------------------------------- tiga angka utama
 
-function AngkaUtama({ kini, lalu, bulan, tahun }: { kini: Analitik; lalu: Analitik; bulan: number; tahun: number }) {
+function AngkaUtama({ kini, lalu, bulan, tahun, sementara }: { kini: Analitik; lalu: Analitik; bulan: number; tahun: number; sementara: boolean }) {
     const terisi = (a: Analitik) => (a.kapasitas ? a.jamTerisi / a.kapasitas : 0);
     const banding = `Dibanding ${bulan === 1 ? `Desember ${tahun - 1}` : `${NAMA_BULAN[bulan - 2]} ${tahun}`}`;
     const item = [
@@ -99,8 +106,8 @@ function AngkaUtama({ kini, lalu, bulan, tahun }: { kini: Analitik; lalu: Analit
     return (
         <div className="grid gap-6 md:grid-cols-3">
             {item.map((m, i) => {
-                // bulan lalu tanpa data: tidak ada pembanding
-                const pct = m.b ? Math.round(((m.a - m.b) / m.b) * 100) : null;
+                // bulan lalu tanpa data, atau bulan ini belum selesai: tidak ada pembanding
+                const pct = m.b && !sementara ? Math.round(((m.a - m.b) / m.b) * 100) : null;
                 return (
                     <div key={m.judul} className={cn('flex min-w-0 flex-col gap-1.5', i > 0 && 'md:border-l md:pl-6')}>
                         <div className="flex items-center justify-between gap-2">

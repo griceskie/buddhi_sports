@@ -23,7 +23,7 @@ import {
     useSidebar,
 } from '@/Components/ui/sidebar';
 import { PageProps } from '@/types';
-import { inisial } from '@/Components/pengelola/MenuAkunPengelola';
+import { IsiMenuAkunPengelola, inisial } from '@/Components/pengelola/MenuAkunPengelola';
 import { Link, usePage } from '@inertiajs/react';
 import { cn } from 'cn';
 import {
@@ -121,24 +121,28 @@ function PenggunaMenu() {
                         </div>
                         <ChevronsUpDown className={cn('ml-auto size-4', admin && 'text-muted-foreground')} />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="min-w-56" side={isMobile ? 'top' : 'right'} align="end" sideOffset={8}>
-                        <DropdownMenuGroup>
-                            <DropdownMenuLabel>
-                                {pengelola.username} · {pengelola.role === 'admin' ? 'Admin' : 'Manager'}
-                            </DropdownMenuLabel>
-                            <DropdownMenuItem render={<Link href={route('profile.pengelola')} />}>
-                                <User />
-                                Profile
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem render={<Link href={route('logout.pengelola')} method="post" as="button" />}>
-                                <LogOut />
-                                Log Out
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                    </DropdownMenuContent>
+                    {admin ? (
+                        <IsiMenuAkunPengelola pengelola={pengelola} side={isMobile ? 'top' : 'right'} align="end" sideOffset={8} />
+                    ) : (
+                        <DropdownMenuContent className="min-w-56" side={isMobile ? 'top' : 'right'} align="end" sideOffset={8}>
+                            <DropdownMenuGroup>
+                                <DropdownMenuLabel>
+                                    {pengelola.username} · {pengelola.role === 'admin' ? 'Admin' : 'Manager'}
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem render={<Link href={route('profile.pengelola')} />}>
+                                    <User />
+                                    Profile
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem render={<Link href={route('logout.pengelola')} method="post" as="button" />}>
+                                    <LogOut />
+                                    Log Out
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                    )}
                 </DropdownMenu>
             </SidebarMenuItem>
         </SidebarMenu>

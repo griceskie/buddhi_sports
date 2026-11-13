@@ -93,7 +93,7 @@ export default function TampilData({
     const sheet = useFormSheet<Laporan>();
     const [buat, setBuat] = useState(false);
     const { periode, keadaan, laporan, namaLaporan, menunggu } = tinjauan;
-    const adaData = keadaan !== 'kosong' && keadaan !== 'depan' && keadaan !== 'berjalan';
+    const adaData = keadaan !== 'kosong' && keadaan !== 'depan';
     const terlambat = (keadaan === 'siap' || keadaan === 'tertahan') && tinjauan.hariTerlambat > 0;
     const admin = new Map(pilihan.dataadmin.map((a) => [a.idAdmin, a.namaAdmin]));
     const manager = new Map(pilihan.datamanager.map((m) => [m.idManager, m.namaManager]));
@@ -186,7 +186,7 @@ export default function TampilData({
                 </div>
             )}
 
-            {adaData && <AnalitikLaporan kini={tinjauan.kini} lalu={tinjauan.lalu} bulan={periode.bulan} tahun={periode.tahun} />}
+            {adaData && <AnalitikLaporan kini={tinjauan.kini} lalu={tinjauan.lalu} bulan={periode.bulan} tahun={periode.tahun} sementara={keadaan === 'berjalan'} />}
 
             <DataTable
                 baris={datalaporan}
