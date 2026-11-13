@@ -1,14 +1,12 @@
 import DrawerVerifikasi, { BuktiAntrean } from '@/Components/admin/DrawerVerifikasi';
-import DeleteButton from '@/Components/DeleteButton';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
-import RingkasanPembayaran, { Ringkasan } from '@/Components/RingkasanPembayaran';
 import InputError from '@/Components/InputError';
+import AksiBaris from '@/Components/pengelola/AksiBaris';
 import DataTable, { NilaiFilter } from '@/Components/pengelola/DataTable';
-import DialogLaporan from '@/Components/pengelola/DialogLaporan';
+import JudulHalaman from '@/Components/pengelola/JudulHalaman';
 import { PaymentStatusBadge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Card, CardContent } from '@/Components/ui/card';
 import { CurrencyInput } from '@/Components/ui/currency-input';
 import { DateInput } from '@/Components/ui/date-input';
 import { formatRupiah, formatTanggal } from '@/Components/ui/format';
@@ -20,7 +18,7 @@ import { ProofPreview } from '@/Components/ui/proof-review';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { cn } from 'cn';
-import { FileText, Pencil, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 type Pembayaran = {
@@ -34,14 +32,6 @@ type Pembayaran = {
     alasanTolak: string | null;
 };
 
-type Laporan = {
-    idLaporan: number;
-    namaLaporan: string | null;
-    tglLaporan: string;
-    filePdf: string | null;
-    diperiksaPada: string | null;
-};
-type Manager = { idManager: number; namaManager: string };
 type Booking = { idBooking: number; kode: string; tanggal: string; namaPenyewa: string; namaLapangan: string };
 type Admin = { idAdmin: number; namaAdmin: string };
 
@@ -49,10 +39,6 @@ type Props = {
     datapembayaran: Pembayaran[];
     bukti: BuktiAntrean[];
     periode: Period;
-    namaLaporan: string;
-    ringkasan: Ringkasan;
-    laporan: Laporan | null;
-    datamanager: Manager[];
     databooking: Booking[];
     dataadmin: Admin[];
 };
@@ -64,18 +50,7 @@ const TAB = [
     { id: 'Ditolak', label: 'Ditolak' },
 ];
 
-export default function TampilData({
-    datapembayaran,
-    bukti,
-    periode,
-    namaLaporan,
-    ringkasan,
-    laporan,
-    datamanager,
-    databooking,
-    dataadmin,
-}: Props) {
-    const [buatLaporan, setBuatLaporan] = useState(false);
+export default function TampilData({ datapembayaran, bukti, periode, databooking, dataadmin }: Props) {
     const sheet = useFormSheet<Pembayaran>();
     const booking = new Map(databooking.map((b) => [b.idBooking, b]));
 
@@ -116,111 +91,80 @@ export default function TampilData({
     return (
         <AdminSidebarLayout
             header={
-                <h2 className="text-xl leading-tight font-semibold text-foreground">
-                    Data Pembayaran
-                </h2>
+                <JudulHalaman judul="Data pembayaran" deskripsi="Bukti transfer dari penyewa per periode. Klik baris untuk memverifikasi.">
+                    <Label>Periode</Label>
+                    <PeriodPicker value={periode} onValueChange={ubahPeriode} />
+                </JudulHalaman>
             }
         >
             <Head title="Data Pembayaran" />
 
-            <Card className="mb-4">
-                <CardContent className="grid gap-4">
-                    <div className="flex flex-wrap items-end justify-between gap-3">
-                        <div className="grid gap-1.5">
-                            <Label>Periode</Label>
-                            <PeriodPicker value={periode} onValueChange={ubahPeriode} />
-                        </div>
-                        {/* laporan yang sudah diperiksa Manager terkunci */}
-                        {!laporan?.diperiksaPada && (
-                            <Button onClick={() => setBuatLaporan(true)}>
-                                <FileText />
-                                {laporan ? 'Buat ulang laporan' : 'Buat laporan'}
-                            </Button>
-                        )}
-                    </div>
-
-                    <RingkasanPembayaran ringkasan={ringkasan} />
-
-                    {laporan?.filePdf && (
-                        <p className="text-sm text-muted-foreground">
-                            {laporan.namaLaporan} dibuat {formatTanggal(laporan.tglLaporan, 'd MMMM yyyy')} ·{' '}
-                            <a
-                                href={route('laporan.pdf', laporan.idLaporan)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-medium text-primary hover:underline"
-                            >
-                                Buka PDF
-                            </a>
-                            {laporan.diperiksaPada &&
-                                ` · Sudah diperiksa Manager ${formatTanggal(laporan.diperiksaPada, 'd MMMM yyyy')}, tidak bisa dibuat ulang.`}
-                        </p>
-                    )}
-                </CardContent>
-            </Card>
+            {/* tab status bernomor (kanvas), sekaligus filter tabel */}
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="tablist" aria-label="Status pembayaran">
+                {TAB.map((t) => {
+                    const aktif = (filterStatus.status?.[0] ?? 'semua') === t.id;
+                    const n = t.id === 'semua' ? datapembayaran.length : datapembayaran.filter((r) => r.status === t.id).length;
+                    return (
+                        <button
+                            key={t.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={aktif}
+                            onClick={() => setFilterStatus(t.id === 'semua' ? {} : { status: [t.id] })}
+                            className={cn(
+                                'flex cursor-pointer flex-col items-start gap-0.5 rounded-lg border bg-background px-3.5 py-2.5 text-left transition-colors hover:bg-muted',
+                                aktif && 'border-primary ring-1 ring-primary',
+                            )}
+                        >
+                            <span className={cn('text-[13px] font-medium', aktif ? 'text-primary' : 'text-muted-foreground')}>{t.label}</span>
+                            <span className="text-lg leading-[26px] font-semibold tabular-nums">{n}</span>
+                        </button>
+                    );
+                })}
+            </div>
 
             <DataTable
                 baris={datapembayaran}
                 kunci={(r) => r.idPembayaran}
                 satuan="pembayaran"
                 cari={(r) => `${booking.get(r.idBooking)?.kode ?? ''} ${booking.get(r.idBooking)?.namaPenyewa ?? ''}`}
-                placeholderCari="Cari kode atau nama penyewa…"
+                placeholderCari="Cari kode booking atau penyewa…"
                 nilaiFilter={filterStatus}
                 onNilaiFilter={setFilterStatus}
                 bukaBaris={(r) => tinjau(r.idPembayaran)}
-                atas={
-                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" role="tablist" aria-label="Status pembayaran">
-                        {TAB.map((t) => {
-                            const aktif = (filterStatus.status?.[0] ?? 'semua') === t.id;
-                            const n = t.id === 'semua' ? datapembayaran.length : datapembayaran.filter((r) => r.status === t.id).length;
-                            return (
-                                <button
-                                    key={t.id}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={aktif}
-                                    onClick={() => setFilterStatus(t.id === 'semua' ? {} : { status: [t.id] })}
-                                    className={cn(
-                                        'flex cursor-pointer flex-col items-start gap-1 rounded-lg border bg-card px-4 py-3 text-left shadow-xs transition-colors hover:bg-muted',
-                                        aktif && 'border-primary ring-1 ring-primary',
-                                    )}
-                                >
-                                    <span className={cn('text-sm', aktif ? 'text-primary' : 'text-muted-foreground')}>{t.label}</span>
-                                    <span className="text-2xl leading-8 font-semibold tabular-nums">{n}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                }
                 filter={[
                     {
                         id: 'status',
                         label: 'Status',
                         nilai: (r) => r.status,
+                        tersembunyi: true,
                         opsi: TAB.filter((t) => t.id !== 'semua').map((t) => ({ id: t.id, label: t.label })),
                     },
                 ]}
                 kolom={[
                     {
                         id: 'kode',
-                        label: 'Booking',
+                        label: 'Kode',
                         tetap: true,
+                        className: 'tabular-nums',
                         urut: (r) => booking.get(r.idBooking)?.kode ?? '',
-                        render: (r) => (
-                            <>
-                                <div className="font-medium tabular-nums">{booking.get(r.idBooking)?.kode ?? r.idBooking}</div>
-                                <div className="text-muted-foreground">{booking.get(r.idBooking)?.namaPenyewa}</div>
-                            </>
-                        ),
+                        render: (r) => booking.get(r.idBooking)?.kode ?? r.idBooking,
+                    },
+                    {
+                        id: 'penyewa',
+                        label: 'Penyewa',
+                        className: 'font-medium',
+                        urut: (r) => booking.get(r.idBooking)?.namaPenyewa ?? '',
+                        render: (r) => booking.get(r.idBooking)?.namaPenyewa ?? '-',
                     },
                     {
                         id: 'tgl',
-                        label: 'Tgl bayar',
+                        label: 'Tanggal bayar',
+                        className: 'text-muted-foreground tabular-nums',
                         urut: (r) => r.tglBayar,
                         render: (r) => formatTanggal(r.tglBayar, 'EEE, d MMM yyyy'),
                     },
-                    { id: 'jumlah', label: 'Jumlah', urut: (r) => r.jumlahBayar, render: (r) => formatRupiah(r.jumlahBayar) },
-                    { id: 'bukti', label: 'Bukti', render: (r) => r.buktiBayar ?? '-' },
+                    { id: 'jumlah', label: 'Jumlah', className: 'tabular-nums', urut: (r) => r.jumlahBayar, render: (r) => formatRupiah(r.jumlahBayar) },
                     {
                         id: 'status',
                         label: 'Status',
@@ -229,13 +173,11 @@ export default function TampilData({
                     },
                 ]}
                 aksi={(r) => (
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => sheet.buka(r)}>
-                            <Pencil />
-                            Edit
-                        </Button>
-                        <DeleteButton href={`/deletepembayaran/${r.idPembayaran}`} />
-                    </div>
+                    <AksiBaris
+                        nama={booking.get(r.idBooking)?.kode ?? String(r.idPembayaran)}
+                        onEdit={() => sheet.buka(r)}
+                        hapus={`/deletepembayaran/${r.idPembayaran}`}
+                    />
                 )}
                 toolbarKanan={
                     <Button onClick={() => sheet.buka()}>
@@ -268,16 +210,6 @@ export default function TampilData({
                     dataadmin={dataadmin}
                 />
             </FormSheet>
-
-            <DialogLaporan
-                key={`${periode.tahun}-${periode.bulan}`}
-                buka={buatLaporan}
-                onClose={() => setBuatLaporan(false)}
-                periode={periode}
-                namaLaporan={namaLaporan}
-                ringkasan={ringkasan}
-                datamanager={datamanager}
-            />
         </AdminSidebarLayout>
     );
 }

@@ -1,10 +1,11 @@
-import DeleteButton from '@/Components/DeleteButton';
-import { jam, JAM_BUKA, JAM_TUTUP } from '@/Components/booking/jadwal';
+import { IKON_JENIS, jam, JAM_BUKA, JAM_TUTUP } from '@/Components/booking/jadwal';
 import FormCombobox from '@/Components/FormCombobox';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
+import AksiBaris from '@/Components/pengelola/AksiBaris';
 import DataTable from '@/Components/pengelola/DataTable';
+import JudulHalaman from '@/Components/pengelola/JudulHalaman';
 import { BookingStatusBadge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { CurrencyInput } from '@/Components/ui/currency-input';
@@ -13,7 +14,7 @@ import { bookingTotal, formatRupiah, formatTanggal } from '@/Components/ui/forma
 import { Label } from '@/Components/ui/label';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { Pencil, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { FormEventHandler, useEffect } from 'react';
 
 type Booking = {
@@ -32,7 +33,7 @@ const rentangJam = (dari: number, sampai: number) =>
     Array.from({ length: sampai - dari + 1 }, (_, i) => ({ value: jam(dari + i), label: jam(dari + i) }));
 const angkaJam = (j: string) => Number(j.slice(0, 2));
 type Penyewa = { idPenyewa: number; namaPenyewa: string; email: string };
-type Lapangan = { idLapangan: number; namaLapangan: string; tarifPerJam: number };
+type Lapangan = { idLapangan: number; namaLapangan: string; jenisLapangan: string; tarifPerJam: number };
 type Admin = { idAdmin: number; namaAdmin: string };
 type Pilihan = { datapenyewa: Penyewa[]; datalapangan: Lapangan[]; dataadmin: Admin[]; idAdminLogin: number | null };
 
@@ -40,7 +41,7 @@ export default function TampilData({ databooking, ...pilihan }: { databooking: B
     const sheet = useFormSheet<Booking>();
     const { url } = usePage();
     const namaPenyewa = new Map(pilihan.datapenyewa.map((p) => [p.idPenyewa, p.namaPenyewa]));
-    const namaLapangan = new Map(pilihan.datalapangan.map((l) => [l.idLapangan, l.namaLapangan]));
+    const lapangan = new Map(pilihan.datalapangan.map((l) => [l.idLapangan, l]));
 
     // "Tambah booking" di dashboard Admin membuka halaman ini dengan ?tambah
     useEffect(() => {
@@ -48,25 +49,15 @@ export default function TampilData({ databooking, ...pilihan }: { databooking: B
     }, []);
 
     return (
-        <AdminSidebarLayout
-            header={
-                <h2 className="text-xl leading-tight font-semibold text-foreground">
-                    Data Booking
-                </h2>
-            }
-        >
+        <AdminSidebarLayout header={<JudulHalaman judul="Data booking" deskripsi="Semua booking dari penyewa dan yang dibuat admin." />}>
             <Head title="Data Booking" />
-
-            <div className="mb-6">
-                <p className="text-muted-foreground">Semua pemesanan lapangan, dari penyewa maupun yang dicatat Admin.</p>
-            </div>
 
             <DataTable
                 baris={databooking}
                 kunci={(r) => r.idBooking}
                 satuan="booking"
                 cari={(r) => `BK-${String(r.idBooking).padStart(4, '0')} ${namaPenyewa.get(r.idPenyewa) ?? ''}`}
-                placeholderCari="Cari kode atau nama penyewa…"
+                placeholderCari="Cari kode atau penyewa…"
                 filter={[
                     {
                         id: 'status',
@@ -86,28 +77,43 @@ export default function TampilData({ databooking, ...pilihan }: { databooking: B
                     },
                 ]}
                 kolom={[
+                    { id: 'kode', label: 'Kode', tetap: true, className: 'tabular-nums', render: (r) => `BK-${String(r.idBooking).padStart(4, '0')}` },
                     {
                         id: 'penyewa',
                         label: 'Penyewa',
-                        tetap: true,
                         className: 'font-medium',
                         urut: (r) => namaPenyewa.get(r.idPenyewa) ?? '',
                         render: (r) => namaPenyewa.get(r.idPenyewa) ?? '-',
                     },
-                    { id: 'lapangan', label: 'Lapangan', render: (r) => namaLapangan.get(r.idLapangan) ?? '-' },
+                    {
+                        id: 'lapangan',
+                        label: 'Lapangan',
+                        render: (r) => {
+                            const l = lapangan.get(r.idLapangan);
+                            return l ? (
+                                <span className="flex items-center gap-2">
+                                    <img src={IKON_JENIS[l.jenisLapangan]} alt={l.jenisLapangan} title={l.jenisLapangan} width={20} height={20} className="size-5 shrink-0 object-contain" />
+                                    {l.namaLapangan}
+                                </span>
+                            ) : (
+                                '-'
+                            );
+                        },
+                    },
                     {
                         id: 'tanggal',
                         label: 'Tanggal',
+                        className: 'text-muted-foreground tabular-nums',
                         urut: (r) => r.tanggal + r.jamMulai,
                         render: (r) => formatTanggal(r.tanggal, 'EEE, d MMM yyyy'),
                     },
                     {
                         id: 'jam',
                         label: 'Jam',
-                        className: 'tabular-nums',
+                        className: 'text-muted-foreground tabular-nums',
                         render: (r) => `${r.jamMulai.slice(0, 5)}–${r.jamSelesai.slice(0, 5)}`,
                     },
-                    { id: 'total', label: 'Total', urut: (r) => r.totalBayar, render: (r) => formatRupiah(r.totalBayar) },
+                    { id: 'total', label: 'Total', className: 'tabular-nums', urut: (r) => r.totalBayar, render: (r) => formatRupiah(r.totalBayar) },
                     {
                         id: 'status',
                         label: 'Status',
@@ -115,15 +121,10 @@ export default function TampilData({ databooking, ...pilihan }: { databooking: B
                         render: (r) => <BookingStatusBadge status={r.status} />,
                     },
                 ]}
-                aksi={(r) => (
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => sheet.buka(r)}>
-                            <Pencil />
-                            Edit
-                        </Button>
-                        <DeleteButton href={`/deletebooking/${r.idBooking}`} />
-                    </div>
-                )}
+                aksi={(r) => {
+                    const kode = `BK-${String(r.idBooking).padStart(4, '0')}`;
+                    return <AksiBaris nama={kode} onEdit={() => sheet.buka(r)} hapus={`/deletebooking/${r.idBooking}`} />;
+                }}
                 toolbarKanan={
                     <Button onClick={() => sheet.buka()}>
                         <Plus />

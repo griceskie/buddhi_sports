@@ -25,8 +25,9 @@ export default function AdminSidebarLayout({ header, children }: PropsWithChildr
                         <Wordmark />
                     </header>
                 )}
-                <main className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
-                    {header && <div className="mb-6">{header}</div>}
+                {/* Admin mengikuti kanvas: padding 24px dan jarak 24px antar-bagian; Manager tetap seperti sebelumnya */}
+                <main className={admin ? 'flex w-full flex-col gap-6 p-4 text-sm sm:p-6' : 'mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8'}>
+                    {header && <div className={admin ? undefined : 'mb-6'}>{header}</div>}
                     {children}
                 </main>
             </SidebarInset>

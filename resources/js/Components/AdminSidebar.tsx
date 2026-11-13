@@ -23,7 +23,9 @@ import {
     useSidebar,
 } from '@/Components/ui/sidebar';
 import { PageProps } from '@/types';
+import { inisial } from '@/Components/pengelola/MenuAkunPengelola';
 import { Link, usePage } from '@inertiajs/react';
+import { cn } from 'cn';
 import {
     CalendarDays,
     ChevronsUpDown,
@@ -46,7 +48,7 @@ type Kelompok = { label?: string; menu: Menu[] };
 
 // Data Admin dan Manager sengaja tidak ada: Admin tidak boleh mengelola akun Admin lain maupun Manager.
 const MENU_ADMIN: Kelompok[] = [
-    { menu: [{ href: '/dashboard-admin', label: 'Dashboard', icon: LayoutDashboard }] },
+    { label: 'Utama', menu: [{ href: '/dashboard-admin', label: 'Dashboard', icon: LayoutDashboard }] },
     {
         label: 'Penyewaan',
         menu: [
@@ -58,11 +60,9 @@ const MENU_ADMIN: Kelompok[] = [
     },
     {
         label: 'Laporan',
-        menu: [
-            { href: '/tampillaporanpembayaran', label: 'Laporan pembayaran', icon: FileText },
-            { href: '/log-aktivitas', label: 'Log aktivitas', icon: History },
-        ],
+        menu: [{ href: '/tampillaporanpembayaran', label: 'Laporan pembayaran', icon: FileText }],
     },
+    { label: 'Pengawasan', menu: [{ href: '/log-aktivitas', label: 'Log aktivitas', icon: History }] },
 ];
 
 /** Judul header panel Admin: label menu yang aktif. */
@@ -92,6 +92,7 @@ function PenggunaMenu() {
     const pengelola = usePage<PageProps>().props.pengelola;
 
     if (!pengelola) return null;
+    const admin = pengelola.role === 'admin';
 
     return (
         <SidebarMenu>
@@ -105,14 +106,20 @@ function PenggunaMenu() {
                             />
                         }
                     >
-                        <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
-                            <User className="size-4" />
-                        </div>
+                        {admin ? (
+                            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-foreground">
+                                {inisial(pengelola.nama)}
+                            </div>
+                        ) : (
+                            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
+                                <User className="size-4" />
+                            </div>
+                        )}
                         <div className="grid flex-1 text-left text-sm leading-tight">
                             <span className="truncate font-medium">{pengelola.nama}</span>
-                            <span className="truncate text-xs text-muted-foreground">{pengelola.username}</span>
+                            <span className="truncate text-xs text-muted-foreground">{admin ? 'admin' : pengelola.username}</span>
                         </div>
-                        <ChevronsUpDown className="ml-auto size-4" />
+                        <ChevronsUpDown className={cn('ml-auto size-4', admin && 'text-muted-foreground')} />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="min-w-56" side={isMobile ? 'top' : 'right'} align="end" sideOffset={8}>
                         <DropdownMenuGroup>
@@ -153,7 +160,12 @@ export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
 
     return (
         <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader className="flex-row items-center gap-1 group-data-[collapsible=icon]:flex-col">
+            <SidebarHeader
+                className={cn(
+                    'flex-row items-center gap-1 group-data-[collapsible=icon]:flex-col',
+                    !manager && 'h-14 justify-center border-b border-sidebar-border',
+                )}
+            >
                 <SidebarMenu className="min-w-0 flex-1">
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" render={<Link href={beranda} />}>
@@ -162,7 +174,7 @@ export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate font-semibold">Buddhi Sports</span>
-                                <span className="truncate text-xs text-muted-foreground">{manager ? 'Panel Manager' : 'Panel Admin'}</span>
+                                <span className="truncate text-xs text-muted-foreground">{manager ? 'Panel Manager' : 'Panel admin'}</span>
                             </div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -198,12 +210,10 @@ export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
                 ))}
             </SidebarContent>
 
-            {/* Admin: menu akun ada di header (HeaderPengelola), jadi tidak diulang di sini */}
-            {manager && (
-                <SidebarFooter>
-                    <PenggunaMenu />
-                </SidebarFooter>
-            )}
+            {/* Admin juga punya menu akun di header (HeaderPengelola); kanvas tetap menampilkan profil di bawah sidebar */}
+            <SidebarFooter>
+                <PenggunaMenu />
+            </SidebarFooter>
 
             <SidebarRail />
         </Sidebar>

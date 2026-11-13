@@ -8,12 +8,12 @@ import { cn } from 'cn';
 import {
     ArrowDown,
     ArrowUp,
-    ArrowUpDown,
     Check,
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    ChevronsUpDown,
     CirclePlus,
     EyeOff,
     SlidersHorizontal,
@@ -37,6 +37,8 @@ export type FilterTabel<T> = {
     label: string;
     nilai: (baris: T) => string;
     opsi: { id: string; label: string }[];
+    /** Tanpa tombol di toolbar: filter diatur dari luar lewat `nilaiFilter` (mis. kartu status Pembayaran). */
+    tersembunyi?: boolean;
 };
 
 type Urutan = { kolom: string; arah: 'asc' | 'desc' } | null;
@@ -71,7 +73,7 @@ type Props<T> = {
 const PER_HALAMAN = [5, 10, 20];
 
 function tombolKecil(className?: string) {
-    return cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8', className);
+    return cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 text-sm', className);
 }
 
 /**
@@ -173,9 +175,9 @@ export default function DataTable<T>({
                         }}
                         placeholder={placeholderCari}
                         aria-label={placeholderCari}
-                        className="w-[250px]"
+                        className="w-[250px] [&_input]:h-8 [&_input]:text-sm"
                     />
-                    {filter.map((f) => (
+                    {filter.filter((f) => !f.tersembunyi).map((f) => (
                         <FilterFacet
                             key={f.id}
                             f={f}
@@ -234,7 +236,7 @@ export default function DataTable<T>({
                     <TableHeader className="bg-tabel-header">
                         <TableRow className="hover:bg-transparent">
                             {bisaPilih && (
-                                <TableHead className="w-10 pr-0">
+                                <TableHead className="w-11 pr-0 pl-3">
                                     <Checkbox
                                         className="flex"
                                         aria-label="Pilih semua di halaman ini"
@@ -245,7 +247,7 @@ export default function DataTable<T>({
                                 </TableHead>
                             )}
                             {kolomTampil.map((k) => (
-                                <TableHead key={k.id} className={k.className}>
+                                <TableHead key={k.id} className={cn('px-2', k.className, 'text-foreground')}>
                                     {k.urut ? (
                                         <KepalaUrut
                                             label={k.label}
@@ -261,7 +263,11 @@ export default function DataTable<T>({
                                     )}
                                 </TableHead>
                             ))}
-                            {aksi && <TableHead className="text-right">Aksi</TableHead>}
+                            {aksi && (
+                                <TableHead className="w-0 px-2">
+                                    <span className="sr-only">Aksi</span>
+                                </TableHead>
+                            )}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -276,17 +282,17 @@ export default function DataTable<T>({
                                     onClick={bukaBaris ? () => bukaBaris(b) : undefined}
                                 >
                                     {bisaPilih && (
-                                        <TableCell className="pr-0" onClick={(e) => e.stopPropagation()}>
+                                        <TableCell className="h-[49px] py-0 pr-0 pl-3" onClick={(e) => e.stopPropagation()}>
                                             <Checkbox className="flex" aria-label="Pilih baris" checked={on} onCheckedChange={() => togglePilih(k)} />
                                         </TableCell>
                                     )}
                                     {kolomTampil.map((c) => (
-                                        <TableCell key={c.id} className={c.className}>
+                                        <TableCell key={c.id} className={cn('h-[49px] px-2 py-0', c.className)}>
                                             {c.render(b)}
                                         </TableCell>
                                     ))}
                                     {aksi && (
-                                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                        <TableCell className="h-[49px] px-2 py-1 text-right" onClick={(e) => e.stopPropagation()}>
                                             {aksi(b)}
                                         </TableCell>
                                     )}
@@ -429,17 +435,17 @@ function KepalaUrut({
     urut: (arah: 'asc' | 'desc') => void;
     sembunyi?: () => void;
 }) {
-    const Ikon = arah === 'asc' ? ArrowUp : arah === 'desc' ? ArrowDown : ArrowUpDown;
+    const Ikon = arah === 'asc' ? ArrowUp : arah === 'desc' ? ArrowDown : ChevronsUpDown;
     return (
         <DropdownMenu>
             <DropdownMenuTrigger
                 className={cn(
                     buttonVariants({ variant: 'ghost', size: 'sm' }),
-                    '-ml-2 h-8 gap-1.5 px-2 font-medium data-popup-open:bg-accent',
+                    '-ml-2 h-8 gap-1.5 px-2 text-sm font-medium text-foreground data-popup-open:bg-accent',
                 )}
             >
                 {label}
-                <Ikon className="size-4 text-muted-foreground" />
+                <Ikon className="size-3.5 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-[160px]">
                 <DropdownMenuItem onClick={() => urut('asc')}>

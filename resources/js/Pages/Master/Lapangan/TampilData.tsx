@@ -1,8 +1,10 @@
-import DeleteButton from '@/Components/DeleteButton';
+import { IKON_JENIS } from '@/Components/booking/jadwal';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
+import AksiBaris from '@/Components/pengelola/AksiBaris';
 import DataTable from '@/Components/pengelola/DataTable';
+import JudulHalaman from '@/Components/pengelola/JudulHalaman';
 import { CourtStatusBadge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { CurrencyInput } from '@/Components/ui/currency-input';
@@ -11,7 +13,7 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { ImagePlus, Pencil, Plus, X } from 'lucide-react';
+import { ImagePlus, Plus, X } from 'lucide-react';
 import { FormEventHandler, useEffect, useMemo } from 'react';
 
 // harus sama dengan FotoLapangan::MAKS di server
@@ -32,18 +34,8 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
     const sheet = useFormSheet<Lapangan>();
 
     return (
-        <AdminSidebarLayout
-            header={
-                <h2 className="text-xl leading-tight font-semibold text-foreground">
-                    Data Lapangan
-                </h2>
-            }
-        >
+        <AdminSidebarLayout header={<JudulHalaman judul="Data lapangan" deskripsi="Lapangan GOR, tarif per jam dan statusnya." />}>
             <Head title="Data Lapangan" />
-
-            <div className="mb-6">
-                <p className="text-muted-foreground">Lapangan GOR, tarif per jam dan statusnya.</p>
-            </div>
 
             <DataTable
                 baris={datalapangan}
@@ -77,30 +69,19 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
                         label: 'Nama',
                         tetap: true,
                         urut: (r) => r.namaLapangan,
+                        // kanvas: ikon olahraga 20px, bukan foto (foto tetap bisa dilihat dan diubah di sheet Edit)
                         render: (r) => (
-                            <div className="flex items-center gap-3">
-                                {r.foto[0] ? (
-                                    <img src={r.foto[0].url} alt="" className="h-9 w-12 shrink-0 rounded-md object-cover" />
-                                ) : (
-                                    <div className="h-9 w-12 shrink-0 rounded-md bg-muted" />
-                                )}
-                                {r.namaLapangan}
-                            </div>
+                            <span className="flex items-center gap-2">
+                                <img src={IKON_JENIS[r.jenisLapangan]} alt={r.jenisLapangan} width={20} height={20} className="size-5 shrink-0 object-contain" />
+                                <span className="font-medium">{r.namaLapangan}</span>
+                            </span>
                         ),
                     },
                     { id: 'jenis', label: 'Jenis', render: (r) => r.jenisLapangan },
                     { id: 'tarif', label: 'Tarif per jam', urut: (r) => r.tarifPerJam, render: (r) => formatRupiah(r.tarifPerJam) },
                     { id: 'status', label: 'Status', render: (r) => <CourtStatusBadge status={r.status} /> },
                 ]}
-                aksi={(r) => (
-                    <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => sheet.buka(r)}>
-                            <Pencil />
-                            Edit
-                        </Button>
-                        <DeleteButton href={`/deletelapangan/${r.idLapangan}`} />
-                    </div>
-                )}
+                aksi={(r) => <AksiBaris nama={r.namaLapangan} onEdit={() => sheet.buka(r)} hapus={`/deletelapangan/${r.idLapangan}`} />}
                 toolbarKanan={
                     <Button onClick={() => sheet.buka()}>
                         <Plus />

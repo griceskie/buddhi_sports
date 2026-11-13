@@ -24,6 +24,7 @@ import {
     Copy,
     FileCheck,
     FileLock,
+    FileText,
     MessageCircle,
     MoreHorizontal,
     Plus,
@@ -43,7 +44,7 @@ type Stat = {
     terverifikasiN: number;
 };
 
-type Tugas = { jenis: 'tertahan' | 'siap' | 'ditolak'; judul: string; ket: string; aksi: string; idPembayaran: number | null; href: string | null };
+type Tugas = { jenis: 'revisi' | 'tertahan' | 'siap' | 'ditolak'; judul: string; ket: string; aksi: string; idPembayaran: number | null; href: string | null };
 
 type Terbaru = {
     idBooking: number;
@@ -226,8 +227,8 @@ export default function AdminDashboard({
         );
     };
     const nTindakan = antrean.length + tugas.length;
-    const IKON_TUGAS = { tertahan: FileLock, siap: FileCheck, ditolak: CircleX };
-    const WARNA_TUGAS = { tertahan: 'text-accessible-orange', siap: 'text-accessible-green', ditolak: 'text-muted-foreground' };
+    const IKON_TUGAS = { revisi: FileText, tertahan: FileLock, siap: FileCheck, ditolak: CircleX };
+    const WARNA_TUGAS = { revisi: 'text-accessible-red', tertahan: 'text-accessible-orange', siap: 'text-accessible-green', ditolak: 'text-muted-foreground' };
 
     // ---------- booking terbaru: tab status
     const [tab, setTab] = useState<'semua' | 'Dipesan' | 'Dikonfirmasi' | 'Dibatalkan'>('semua');
@@ -398,20 +399,23 @@ export default function AdminDashboard({
                                 {tugas.map((g) => {
                                     const Ikon = IKON_TUGAS[g.jenis];
                                     return (
-                                        <li key={g.jenis} className="flex items-center gap-3 px-4 py-3">
-                                            <Ikon className={cn('size-4 shrink-0', WARNA_TUGAS[g.jenis])} aria-hidden />
+                                        <li key={`${g.jenis}-${g.href}`} className="flex items-center gap-3 px-4 py-2.5">
+                                            {/* kotak ikon berwarna 12% seperti kanvas */}
+                                            <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg bg-current/12', WARNA_TUGAS[g.jenis])}>
+                                                <Ikon className="size-4" aria-hidden />
+                                            </span>
                                             <div className="flex min-w-0 flex-1 flex-col">
-                                                <span className="font-medium">{g.judul}</span>
+                                                <span className="truncate font-medium">{g.judul}</span>
                                                 <span className="truncate text-xs text-muted-foreground" title={g.ket}>
                                                     {g.ket}
                                                 </span>
                                             </div>
                                             {g.href ? (
-                                                <Link href={g.href} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+                                                <Link href={g.href} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 shrink-0 px-2.5 text-[13px]')}>
                                                     {g.aksi}
                                                 </Link>
                                             ) : (
-                                                <Button size="sm" variant="outline" onClick={() => g.idPembayaran && tinjau(g.idPembayaran)}>
+                                                <Button size="sm" variant="outline" className="h-7 shrink-0 px-2.5 text-[13px]" onClick={() => g.idPembayaran && tinjau(g.idPembayaran)}>
                                                     {g.aksi}
                                                 </Button>
                                             )}

@@ -1,12 +1,12 @@
-import { Analitik, AngkaUtama, BookingDanBatal, GrafikPemasukan, KeterisianLapangan, PetaJam } from '@/Components/admin/AnalitikLaporan';
-import DeleteButton from '@/Components/DeleteButton';
+import AnalitikLaporan, { Analitik } from '@/Components/admin/AnalitikLaporan';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
+import AksiBaris from '@/Components/pengelola/AksiBaris';
 import DataTable from '@/Components/pengelola/DataTable';
+import JudulHalaman from '@/Components/pengelola/JudulHalaman';
 import DialogLaporan from '@/Components/pengelola/DialogLaporan';
 import { Ringkasan } from '@/Components/RingkasanPembayaran';
-import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/alert';
 import { Period, PeriodPicker } from '@/Components/ui/period-picker';
 import { Badge } from '@/Components/ui/badge';
 import { Button, buttonVariants } from '@/Components/ui/button';
@@ -18,7 +18,7 @@ import { Label } from '@/Components/ui/label';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { cn } from 'cn';
-import { CircleAlert, CircleCheck, FileText, Lock, MessageSquareWarning, Pencil } from 'lucide-react';
+import { CircleAlert, CircleCheck, Clock, FileText, Lock } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 type Laporan = {
@@ -55,6 +55,7 @@ type Tinjauan = {
         revisiPada: string | null;
         catatanRevisi: string | null;
         idManager: number;
+        idAdmin: number;
     } | null;
     awalBerikut: string;
     batasSerah: string;
@@ -64,19 +65,25 @@ type Tinjauan = {
     lalu: Analitik;
 };
 
-const BADGE: Record<Keadaan, { teks: string; kelas: string }> = {
-    kosong: { teks: 'Tidak ada data', kelas: 'text-muted-foreground' },
-    depan: { teks: 'Belum dimulai', kelas: 'text-muted-foreground' },
-    berjalan: { teks: 'Berjalan', kelas: 'text-primary' },
-    tertahan: { teks: 'Belum bisa dibuat', kelas: 'text-accessible-orange' },
-    siap: { teks: 'Siap dibuat', kelas: 'text-primary' },
-    belum: { teks: 'Menunggu diperiksa', kelas: 'text-muted-foreground' },
-    revisi: { teks: 'Perlu revisi', kelas: 'text-accessible-orange' },
-    cek: { teks: 'Sudah diperiksa', kelas: 'text-accessible-green' },
+// warna mengikuti data-nada badge di admin.css
+const BADGE: Record<Keadaan, { teks: string; nada: 'abu' | 'biru' | 'oranye' | 'hijau' }> = {
+    kosong: { teks: 'Tidak ada data', nada: 'abu' },
+    depan: { teks: 'Belum dimulai', nada: 'abu' },
+    berjalan: { teks: 'Berjalan', nada: 'biru' },
+    tertahan: { teks: 'Belum bisa dibuat', nada: 'oranye' },
+    siap: { teks: 'Siap dibuat', nada: 'biru' },
+    belum: { teks: 'Menunggu diperiksa', nada: 'abu' },
+    revisi: { teks: 'Perlu revisi', nada: 'oranye' },
+    cek: { teks: 'Sudah diperiksa', nada: 'hijau' },
 };
+const STATUS_BARIS = {
+    belum: { teks: 'Menunggu diperiksa', nada: 'abu', Ikon: Clock },
+    revisi: { teks: 'Perlu revisi', nada: 'oranye', Ikon: CircleAlert },
+    cek: { teks: 'Sudah diperiksa', nada: 'hijau', Ikon: CircleCheck },
+} as const;
 
 const statusBaris = (l: Laporan): 'belum' | 'revisi' | 'cek' => (l.diperiksaPada ? 'cek' : l.revisiPada ? 'revisi' : 'belum');
-const tgl = (iso: string) => formatTanggal(iso, 'EEEE, d MMMM yyyy');
+const tgl = (iso: string) => formatTanggal(iso, 'EEE, d MMM yyyy');
 
 export default function TampilData({
     datalaporan,
@@ -89,6 +96,9 @@ export default function TampilData({
     const adaData = keadaan !== 'kosong' && keadaan !== 'depan' && keadaan !== 'berjalan';
     const terlambat = (keadaan === 'siap' || keadaan === 'tertahan') && tinjauan.hariTerlambat > 0;
     const admin = new Map(pilihan.dataadmin.map((a) => [a.idAdmin, a.namaAdmin]));
+    const manager = new Map(pilihan.datamanager.map((m) => [m.idManager, m.namaManager]));
+    const namaAdmin = laporan ? (admin.get(laporan.idAdmin) ?? 'Admin') : '';
+    const namaManager = laporan ? (manager.get(laporan.idManager) ?? 'Manager') : '';
     const bisaBuat = keadaan === 'siap' || keadaan === 'belum' || keadaan === 'revisi';
     const mati = keadaan === 'berjalan' || keadaan === 'tertahan';
     const kodePeriode = `${periode.tahun}-${String(periode.bulan).padStart(2, '0')}`;
@@ -101,10 +111,16 @@ export default function TampilData({
         siap: terlambat
             ? `Periode sudah selesai, tetapi batas penyerahan ${tgl(tinjauan.batasSerah)} sudah lewat. Buat dan serahkan sekarang.`
             : `Periode sudah selesai. Serahkan ke Manager paling lambat ${tgl(tinjauan.batasSerah)}.`,
-        belum: laporan ? `Diserahkan ${tgl(laporan.tglLaporan)}, menunggu diperiksa Manager.` : '',
-        revisi: laporan?.revisiPada ? `Manager meminta revisi pada ${tgl(laporan.revisiPada)}. Perbaiki datanya, lalu buat ulang laporan.` : '',
-        cek: laporan?.diperiksaPada ? `Diperiksa Manager pada ${tgl(laporan.diperiksaPada)}. Laporan terkunci.` : '',
+        belum: laporan ? `Diserahkan ${tgl(laporan.tglLaporan)} oleh ${namaAdmin}, menunggu diperiksa ${namaManager}.` : '',
+        revisi: laporan?.revisiPada ? `${namaManager} meminta revisi pada ${tgl(laporan.revisiPada)}. Perbaiki datanya, lalu buat ulang laporan.` : '',
+        cek: laporan?.diperiksaPada ? `Diperiksa ${namaManager} pada ${tgl(laporan.diperiksaPada)}. Laporan terkunci.` : '',
     };
+    const peringatan =
+        keadaan === 'revisi' && laporan?.catatanRevisi
+            ? { judul: `Catatan revisi dari ${namaManager}`, teks: laporan.catatanRevisi, tombol: false }
+            : keadaan === 'tertahan'
+              ? { judul: `${menunggu} pembayaran ${BULAN[periode.bulan - 1]} menunggu verifikasi`, teks: 'Terima atau tolak semua bukti bayar dulu. Setelah itu laporan bisa dibuat.', tombol: true }
+              : null;
 
     const ubahPeriode = (p: Period) =>
         router.get('/tampillaporanpembayaran', { periode: `${p.tahun}-${String(p.bulan).padStart(2, '0')}` }, { preserveScroll: true, preserveState: true, replace: true });
@@ -112,173 +128,142 @@ export default function TampilData({
     return (
         <AdminSidebarLayout
             header={
-                <h2 className="text-xl leading-tight font-semibold text-foreground">
-                    Laporan Pembayaran
-                </h2>
+                <JudulHalaman
+                    judul={
+                        <>
+                            Laporan {BULAN[periode.bulan - 1]} {periode.tahun}
+                            <Badge data-nada={BADGE[keadaan].nada} className="ml-2.5 h-[22px] align-[3px]">
+                                {BADGE[keadaan].teks}
+                            </Badge>
+                            {terlambat && (
+                                <span className="ml-1.5 inline-flex h-[22px] items-center rounded-full border border-accessible-red/40 px-2 align-[3px] text-xs font-medium text-accessible-red">
+                                    Terlambat {tinjauan.hariTerlambat} hari
+                                </span>
+                            )}
+                        </>
+                    }
+                    deskripsi={desk[keadaan]}
+                >
+                    <Label>Periode</Label>
+                    <PeriodPicker value={periode} onValueChange={ubahPeriode} />
+                    {laporan?.filePdf && (
+                        <a href={route('laporan.pdf', laporan.idLaporan)} target="_blank" rel="noreferrer" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+                            <FileText />
+                            Buka PDF
+                        </a>
+                    )}
+                    {bisaBuat && (
+                        <Button size="sm" onClick={() => setBuat(true)}>
+                            <FileText />
+                            {laporan ? 'Buat ulang laporan' : 'Buat laporan'}
+                        </Button>
+                    )}
+                    {mati && (
+                        <span className="inline-flex cursor-not-allowed" title={keadaan === 'berjalan' ? `Bisa dibuat mulai ${tgl(tinjauan.awalBerikut)}` : `Masih ada ${menunggu} pembayaran menunggu verifikasi`}>
+                            <Button size="sm" disabled>
+                                <FileText />
+                                Buat laporan
+                            </Button>
+                        </span>
+                    )}
+                </JudulHalaman>
             }
         >
             <Head title="Laporan Pembayaran" />
 
-            <div className="flex flex-col gap-6">
-                <section className="flex flex-col gap-4 rounded-lg border bg-card p-5 shadow-xs">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="flex min-w-0 flex-1 basis-80 flex-col gap-1.5">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-lg leading-7 font-medium">Laporan {BULAN[periode.bulan - 1]} {periode.tahun}</h3>
-                                <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', BADGE[keadaan].kelas)}>
-                                    <span className="size-1.5 rounded-full bg-current" />
-                                    {BADGE[keadaan].teks}
-                                </span>
-                                {terlambat && (
-                                    <span className="inline-flex rounded-full bg-accessible-red/10 px-2.5 py-0.5 text-xs font-medium text-accessible-red">
-                                        Terlambat {tinjauan.hariTerlambat} hari
-                                    </span>
-                                )}
-                            </div>
-                            <p className="max-w-prose text-muted-foreground">{desk[keadaan]}</p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <PeriodPicker value={periode} onValueChange={ubahPeriode} />
-                            {laporan?.filePdf && (
-                                <a href={route('laporan.pdf', laporan.idLaporan)} target="_blank" rel="noreferrer" className={buttonVariants({ variant: 'outline' })}>
-                                    <FileText />
-                                    Buka PDF
-                                </a>
-                            )}
-                            {bisaBuat && (
-                                <Button variant="elevated" onClick={() => setBuat(true)}>
-                                    <FileText />
-                                    {laporan ? 'Buat ulang laporan' : 'Buat laporan'}
-                                </Button>
-                            )}
-                            {mati && (
-                                <Button disabled title={keadaan === 'berjalan' ? `Bisa dibuat mulai ${tgl(tinjauan.awalBerikut)}` : `Masih ada ${menunggu} pembayaran menunggu verifikasi`}>
-                                    <FileText />
-                                    Buat laporan
-                                </Button>
-                            )}
-                        </div>
+            {peringatan && (
+                <div role="alert" className="grid grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-3 rounded-lg border bg-card px-4 py-3">
+                    <CircleAlert className="mt-0.5 size-4 text-accessible-orange" aria-hidden />
+                    <div className="flex min-w-0 flex-col gap-1">
+                        <span className="font-medium">{peringatan.judul}</span>
+                        <span className="text-muted-foreground">{peringatan.teks}</span>
                     </div>
-
-                    {keadaan === 'revisi' && laporan?.catatanRevisi && (
-                        <Alert variant="warning">
-                            <MessageSquareWarning />
-                            <AlertTitle>Catatan revisi dari Manager</AlertTitle>
-                            <AlertDescription>{laporan.catatanRevisi}</AlertDescription>
-                        </Alert>
+                    {peringatan.tombol && (
+                        <Link href={`/tampilpembayaran?periode=${kodePeriode}`} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'self-center')}>
+                            Buka pembayaran
+                        </Link>
                     )}
-                    {keadaan === 'tertahan' && (
-                        <Alert variant="warning">
-                            <CircleAlert />
-                            <AlertTitle>
-                                {menunggu} pembayaran {BULAN[periode.bulan - 1]} menunggu verifikasi
-                            </AlertTitle>
-                            <AlertDescription className="flex flex-wrap items-center gap-3">
-                                Terima atau tolak semua bukti bayar dulu. Setelah itu laporan bisa dibuat.
-                                <Link href={`/tampilpembayaran?periode=${kodePeriode}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-                                    Buka pembayaran
-                                </Link>
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                </section>
+                </div>
+            )}
 
-                {adaData && (
-                    <>
-                        <AngkaUtama kini={tinjauan.kini} lalu={tinjauan.lalu} />
-                        <GrafikPemasukan key={kodePeriode} data={tinjauan.kini} bulan={periode.bulan} tahun={periode.tahun} />
-                        <div className="grid gap-6 lg:grid-cols-2">
-                            <PetaJam data={tinjauan.kini} />
-                            <KeterisianLapangan data={tinjauan.kini} />
-                        </div>
-                        <BookingDanBatal data={tinjauan.kini} bulan={periode.bulan} />
-                    </>
+            {adaData && <AnalitikLaporan kini={tinjauan.kini} lalu={tinjauan.lalu} bulan={periode.bulan} tahun={periode.tahun} />}
+
+            <DataTable
+                baris={datalaporan}
+                kunci={(r) => r.idLaporan}
+                satuan="laporan"
+                cari={(r) => r.namaLaporan ?? ''}
+                placeholderCari="Cari nama laporan…"
+                perHalaman={10}
+                filter={[
+                    {
+                        id: 'status',
+                        label: 'Status',
+                        nilai: statusBaris,
+                        opsi: [
+                            { id: 'belum', label: 'Menunggu diperiksa' },
+                            { id: 'revisi', label: 'Perlu revisi' },
+                            { id: 'cek', label: 'Sudah diperiksa' },
+                        ],
+                    },
+                    {
+                        id: 'tahun',
+                        label: 'Tahun',
+                        nilai: (r) => String(r.tahun),
+                        opsi: [...new Set(datalaporan.map((r) => r.tahun))].sort((a, b) => b - a).map((t) => ({ id: String(t), label: String(t) })),
+                    },
+                ]}
+                kolom={[
+                    {
+                        id: 'periode',
+                        label: 'Nama laporan',
+                        tetap: true,
+                        className: 'font-medium',
+                        urut: (r) => r.tahun * 12 + r.bulan,
+                        render: (r) => r.namaLaporan ?? `Laporan ${BULAN[r.bulan - 1]} ${r.tahun}`,
+                    },
+                    { id: 'total', label: 'Total pemasukan', className: 'tabular-nums', urut: (r) => r.totalPemasukan, render: (r) => formatRupiah(r.totalPemasukan) },
+                    { id: 'admin', label: 'Dibuat oleh', render: (r) => admin.get(r.idAdmin) ?? '-' },
+                    { id: 'tgl', label: 'Tanggal laporan', className: 'text-muted-foreground tabular-nums', render: (r) => tgl(r.tglLaporan) },
+                    {
+                        id: 'status',
+                        label: 'Status',
+                        urut: (r) => ['revisi', 'belum', 'cek'].indexOf(statusBaris(r)),
+                        render: (r) => {
+                            const st = STATUS_BARIS[statusBaris(r)];
+                            return (
+                                <Badge data-nada={st.nada}>
+                                    <st.Ikon aria-hidden="true" />
+                                    {st.teks}
+                                </Badge>
+                            );
+                        },
+                    },
+                ]}
+                aksi={(r) => (
+                    <span className="inline-flex items-center gap-0.5">
+                        {r.filePdf && (
+                            <a
+                                href={route('laporan.pdf', r.idLaporan)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'mr-1 h-7 px-2 text-[13px]')}
+                            >
+                                <FileText />
+                                PDF
+                            </a>
+                        )}
+                        {/* sudah diperiksa Manager: terkunci */}
+                        {r.diperiksaPada ? (
+                            <span title="Sudah diperiksa Manager, laporan terkunci" className="inline-flex size-8 items-center justify-center text-muted-foreground">
+                                <Lock className="size-4" aria-label="Terkunci" />
+                            </span>
+                        ) : (
+                            <AksiBaris nama={r.namaLaporan ?? 'laporan'} onEdit={() => sheet.buka(r)} hapus={`/deletelaporanpembayaran/${r.idLaporan}`} />
+                        )}
+                    </span>
                 )}
-
-                <DataTable
-                    baris={datalaporan}
-                    kunci={(r) => r.idLaporan}
-                    satuan="laporan"
-                    cari={(r) => r.namaLaporan ?? ''}
-                    placeholderCari="Cari laporan…"
-                    perHalaman={10}
-                    bisaPilih={false}
-                    filter={[
-                        {
-                            id: 'status',
-                            label: 'Status',
-                            nilai: statusBaris,
-                            opsi: [
-                                { id: 'belum', label: 'Menunggu diperiksa' },
-                                { id: 'revisi', label: 'Perlu revisi' },
-                                { id: 'cek', label: 'Sudah diperiksa' },
-                            ],
-                        },
-                        {
-                            id: 'tahun',
-                            label: 'Tahun',
-                            nilai: (r) => String(r.tahun),
-                            opsi: [...new Set(datalaporan.map((r) => r.tahun))].sort((a, b) => b - a).map((t) => ({ id: String(t), label: String(t) })),
-                        },
-                    ]}
-                    kolom={[
-                        {
-                            id: 'periode',
-                            label: 'Nama laporan',
-                            tetap: true,
-                            className: 'font-medium',
-                            urut: (r) => r.tahun * 12 + r.bulan,
-                            render: (r) => r.namaLaporan ?? `Laporan ${BULAN[r.bulan - 1]} ${r.tahun}`,
-                        },
-                        { id: 'total', label: 'Total pemasukan', className: 'tabular-nums', urut: (r) => r.totalPemasukan, render: (r) => formatRupiah(r.totalPemasukan) },
-                        { id: 'admin', label: 'Dibuat oleh', render: (r) => admin.get(r.idAdmin) ?? '-' },
-                        { id: 'tgl', label: 'Tanggal laporan', render: (r) => formatTanggal(r.tglLaporan, 'EEE, d MMM yyyy') },
-                        {
-                            id: 'status',
-                            label: 'Status',
-                            urut: (r) => ['revisi', 'belum', 'cek'].indexOf(statusBaris(r)),
-                            render: (r) => {
-                                const st = statusBaris(r);
-                                return st === 'cek' ? (
-                                    <Badge variant="success">
-                                        <CircleCheck aria-hidden="true" />
-                                        Sudah diperiksa
-                                    </Badge>
-                                ) : st === 'revisi' ? (
-                                    <Badge variant="outline" className="border-accessible-orange/40 text-accessible-orange">Perlu revisi</Badge>
-                                ) : (
-                                    <Badge variant="outline">Menunggu diperiksa</Badge>
-                                );
-                            },
-                        },
-                    ]}
-                    aksi={(r) => (
-                        <div className="flex justify-end gap-2">
-                            {r.filePdf && (
-                                <a href={route('laporan.pdf', r.idLaporan)} target="_blank" rel="noreferrer" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
-                                    <FileText />
-                                    PDF
-                                </a>
-                            )}
-                            {/* sudah diperiksa Manager: terkunci */}
-                            {r.diperiksaPada ? (
-                                <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                                    <Lock className="size-3.5" />
-                                    Terkunci
-                                </span>
-                            ) : (
-                                <>
-                                    <Button variant="outline" size="sm" onClick={() => sheet.buka(r)}>
-                                        <Pencil />
-                                        Edit
-                                    </Button>
-                                    <DeleteButton href={`/deletelaporanpembayaran/${r.idLaporan}`} />
-                                </>
-                            )}
-                        </div>
-                    )}
-                />
-            </div>
+            />
 
             <FormSheet open={sheet.open} onClose={sheet.tutup}>
                 <FormLaporan key={sheet.versi} row={sheet.row} onDone={sheet.tutup} {...pilihan} />
