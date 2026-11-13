@@ -11,6 +11,7 @@ import {
 import { Switch } from '@/Components/ui/switch';
 import { Pengelola } from '@/types';
 import { Link } from '@inertiajs/react';
+import { ComponentProps } from 'react';
 import { ChevronDown, History, LogOut, Moon, User } from 'lucide-react';
 
 export function inisial(nama: string) {
@@ -33,10 +34,52 @@ function Avatar({ nama, besar = false }: { nama: string; besar?: boolean }) {
     );
 }
 
-/** Menu akun di header Admin: profil, mode gelap, keluar. */
-export default function MenuAkunPengelola({ pengelola }: { pengelola: Pengelola }) {
+/** Isi menu akun Admin (profil, log aktivitas, mode gelap, keluar); dipakai di header dan di sidebar bawah. */
+export function IsiMenuAkunPengelola({ pengelola, ...props }: { pengelola: Pengelola } & ComponentProps<typeof DropdownMenuContent>) {
     const [gelap, setGelap] = useModeGelap();
 
+    return (
+        <DropdownMenuContent className="min-w-60" {...props}>
+            <DropdownMenuGroup>
+                <DropdownMenuLabel className="flex items-center gap-2 py-2 font-normal">
+                    <Avatar nama={pengelola.nama} besar />
+                    <span className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm font-medium text-foreground">{pengelola.nama}</span>
+                        <span className="truncate text-xs text-muted-foreground">Admin · {pengelola.username}</span>
+                    </span>
+                </DropdownMenuLabel>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+                <DropdownMenuItem render={<Link href={route('profile.pengelola')} />}>
+                    <User />
+                    Profil pengelola
+                </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href={route('log.aktivitas')} />}>
+                    <History />
+                    Log aktivitas
+                </DropdownMenuItem>
+                <DropdownMenuItem closeOnClick={false} onClick={() => setGelap(!gelap)} className="justify-between">
+                    <span className="flex items-center gap-2">
+                        <Moon />
+                        Mode gelap
+                    </span>
+                    <Switch size="sm" checked={gelap} tabIndex={-1} aria-hidden className="pointer-events-none" />
+                </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+                <DropdownMenuItem render={<Link href={route('logout.pengelola')} method="post" as="button" className="w-full" />}>
+                    <LogOut />
+                    Keluar
+                </DropdownMenuItem>
+            </DropdownMenuGroup>
+        </DropdownMenuContent>
+    );
+}
+
+/** Menu akun di header Admin. */
+export default function MenuAkunPengelola({ pengelola }: { pengelola: Pengelola }) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger
@@ -46,42 +89,7 @@ export default function MenuAkunPengelola({ pengelola }: { pengelola: Pengelola 
                 <Avatar nama={pengelola.nama} />
                 <ChevronDown className="size-3.5 text-muted-foreground" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" sideOffset={6} className="min-w-60">
-                <DropdownMenuGroup>
-                    <DropdownMenuLabel className="flex items-center gap-2 py-2 font-normal">
-                        <Avatar nama={pengelola.nama} besar />
-                        <span className="flex min-w-0 flex-col">
-                            <span className="truncate text-sm font-medium text-foreground">{pengelola.nama}</span>
-                            <span className="truncate text-xs text-muted-foreground">Admin · {pengelola.username}</span>
-                        </span>
-                    </DropdownMenuLabel>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                    <DropdownMenuItem render={<Link href={route('profile.pengelola')} />}>
-                        <User />
-                        Profil pengelola
-                    </DropdownMenuItem>
-                    <DropdownMenuItem render={<Link href={route('log.aktivitas')} />}>
-                        <History />
-                        Log aktivitas
-                    </DropdownMenuItem>
-                    <DropdownMenuItem closeOnClick={false} onClick={() => setGelap(!gelap)} className="justify-between">
-                        <span className="flex items-center gap-2">
-                            <Moon />
-                            Mode gelap
-                        </span>
-                        <Switch size="sm" checked={gelap} tabIndex={-1} aria-hidden className="pointer-events-none" />
-                    </DropdownMenuItem>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                    <DropdownMenuItem render={<Link href={route('logout.pengelola')} method="post" as="button" className="w-full" />}>
-                        <LogOut />
-                        Keluar
-                    </DropdownMenuItem>
-                </DropdownMenuGroup>
-            </DropdownMenuContent>
+            <IsiMenuAkunPengelola pengelola={pengelola} align="end" sideOffset={6} />
         </DropdownMenu>
     );
 }
