@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Support\AnalitikLaporan;
 use App\Support\LogAktivitas;
 use App\Support\Pemesanan;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -14,10 +16,57 @@ use Inertia\Inertia;
 class MasterLaporanPembayaranController extends Controller
 {
 
-    public function tampilData(){
+    /** Laporan diserahkan paling lambat tanggal ini bulan berikutnya. */
+    public const BATAS_SERAH = 5;
+
+    public function tampilData(Request $request){
 
         $varlaporan = DB::table('laporan_pembayarans')->get();
+
+        // periode yang dilihat: ?periode=YYYY-MM, bawaannya bulan terakhir yang sudah selesai
+        $periode = $request->query('periode');
+        $awal = is_string($periode) && preg_match('/^(\d{4})-(0[1-9]|1[0-2])$/', $periode, $m)
+            ? Carbon::create((int) $m[1], (int) $m[2], 1)
+            : today()->startOfMonth()->subMonth();
+
+        $laporan = $varlaporan->first(fn ($l) => (int) $l->bulan === $awal->month && (int) $l->tahun === $awal->year);
+        $menunggu = DB::table('pembayarans')->where('status', 'Menunggu Verifikasi')
+            ->whereBetween('tglBayar', [$awal->toDateString(), $awal->copy()->endOfMonth()->toDateString()])->count();
+        $mulaiCatat = collect([DB::table('pembayarans')->min('tglBayar'), DB::table('bookings')->min('tanggal')])->filter()->min();
+        $kini = today()->startOfMonth();
+        $batas = $awal->copy()->addMonth()->day(self::BATAS_SERAH);
+
+        $keadaan = match (true) {
+            $mulaiCatat && $awal->lt(Carbon::parse($mulaiCatat)->startOfMonth()) => 'kosong',
+            $awal->gt($kini) => 'depan',
+            $awal->eq($kini) => 'berjalan',
+            $laporan && $laporan->diperiksaPada => 'cek',
+            $laporan && $laporan->revisiPada => 'revisi',
+            $laporan && $laporan->filePdf => 'belum',
+            $menunggu > 0 => 'tertahan',
+            default => 'siap',
+        };
+
         return Inertia::render('Master/LaporanPembayaran/TampilData', [
+            'tinjauan' => [
+                'periode' => ['bulan' => $awal->month, 'tahun' => $awal->year],
+                'namaLaporan' => LaporanPembayaranController::namaLaporan($awal->month, $awal->year),
+                'keadaan' => $keadaan,
+                'menunggu' => $menunggu,
+                'laporan' => $laporan ? [
+                    'idLaporan' => $laporan->idLaporan, 'tglLaporan' => $laporan->tglLaporan, 'filePdf' => $laporan->filePdf,
+                    'diperiksaPada' => $laporan->diperiksaPada, 'revisiPada' => $laporan->revisiPada, 'catatanRevisi' => $laporan->catatanRevisi,
+                    'idManager' => $laporan->idManager,
+                ] : null,
+                'awalBerikut' => $awal->copy()->addMonth()->toDateString(),
+                'batasSerah' => $batas->toDateString(),
+                'hariTerlambat' => max(0, (int) $batas->diffInDays(today(), false)),
+                'ringkasan' => MasterPembayaranController::ringkasan(DB::table('pembayarans')
+                    ->whereBetween('tglBayar', [$awal->toDateString(), $awal->copy()->endOfMonth()->toDateString()])->get()),
+                'tahunTersedia' => range($kini->year, min($kini->year, $mulaiCatat ? Carbon::parse($mulaiCatat)->year : $kini->year)),
+                'kini' => AnalitikLaporan::untuk($awal),
+                'lalu' => AnalitikLaporan::untuk($awal->copy()->subMonth()),
+            ],
             'datalaporan' => $varlaporan,
             'dataadmin' => DB::table('admins')->get(),
             'datamanager' => DB::table('managers')->get(),

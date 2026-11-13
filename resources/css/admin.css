@@ -89,3 +89,16 @@
     color-scheme: dark;
   }
 }
+
+/* Batang grafik Laporan pembayaran naik dari dasar (Components/admin/AnalitikLaporan.tsx) */
+@keyframes naik-grafik {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .batang-grafik {
+    animation: none !important;
+  }
+}

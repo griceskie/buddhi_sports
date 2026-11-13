@@ -124,10 +124,32 @@ class ManagerController extends Controller
         }
 
         if (! $laporan->diperiksaPada) {
-            DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->update(['diperiksaPada' => now()]);
+            DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->update(['diperiksaPada' => now(), 'catatanRevisi' => null, 'revisiPada' => null]);
         }
 
         return back()->with('success', "{$laporan->namaLaporan} ditandai sudah diperiksa.");
+    }
+
+    /** Manager meminta Admin memperbaiki laporan; Admin melihat catatannya dan membuat ulang laporan (itu mengosongkan permintaan ini). */
+    public function mintaRevisi(Request $request, int $idLaporan): RedirectResponse
+    {
+        $request->validate(
+            ['catatan' => 'required|string|max:500'],
+            ['catatan.required' => 'Tulis catatan revisi untuk Admin.', 'catatan.max' => 'Catatan maksimal 500 karakter.'],
+        );
+        $laporan = DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->first(['namaLaporan', 'filePdf', 'diperiksaPada']);
+        abort_if($laporan === null, 404);
+
+        if ($laporan->diperiksaPada) {
+            return back()->with('error', 'Laporan ini sudah diperiksa, jadi tidak bisa diminta revisi.');
+        }
+        if (! $laporan->filePdf) {
+            return back()->with('error', 'Laporan ini belum punya PDF.');
+        }
+
+        DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->update(['catatanRevisi' => trim($request->catatan), 'revisiPada' => now()]);
+
+        return back()->with('success', "Permintaan revisi {$laporan->namaLaporan} dikirim ke Admin.");
     }
 
     public function admin(): Response
@@ -187,7 +209,8 @@ class ManagerController extends Controller
             ->select([
                 'laporan_pembayarans.idLaporan', 'laporan_pembayarans.namaLaporan', 'laporan_pembayarans.bulan',
                 'laporan_pembayarans.tahun', 'laporan_pembayarans.totalPemasukan', 'laporan_pembayarans.tglLaporan',
-                'laporan_pembayarans.filePdf', 'laporan_pembayarans.diperiksaPada', 'admins.namaAdmin',
+                'laporan_pembayarans.filePdf', 'laporan_pembayarans.diperiksaPada', 'laporan_pembayarans.catatanRevisi',
+                'laporan_pembayarans.revisiPada', 'admins.namaAdmin',
             ]);
     }
 }
