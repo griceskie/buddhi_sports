@@ -1,9 +1,11 @@
+import DrawerVerifikasi, { BuktiAntrean } from '@/Components/admin/DrawerVerifikasi';
 import { isoTanggal } from '@/Components/booking/jadwal';
 import DeleteButton from '@/Components/DeleteButton';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import RingkasanPembayaran, { Ringkasan } from '@/Components/RingkasanPembayaran';
 import InputError from '@/Components/InputError';
+import DataTable, { NilaiFilter } from '@/Components/pengelola/DataTable';
 import { PaymentStatusBadge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
@@ -25,17 +27,9 @@ import { Textarea } from '@/Components/ui/textarea';
 import { Period, PeriodPicker } from '@/Components/ui/period-picker';
 import { ProofPreview } from '@/Components/ui/proof-review';
 import { SignaturePad } from '@/Components/ui/signature-pad';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableEmpty,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/Components/ui/table';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, router, useForm } from '@inertiajs/react';
+import { cn } from 'cn';
 import { FileText, Pencil, Plus } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
@@ -63,6 +57,7 @@ type Admin = { idAdmin: number; namaAdmin: string };
 
 type Props = {
     datapembayaran: Pembayaran[];
+    bukti: BuktiAntrean[];
     periode: Period;
     namaLaporan: string;
     ringkasan: Ringkasan;
@@ -72,6 +67,13 @@ type Props = {
     dataadmin: Admin[];
 };
 
+const TAB = [
+    { id: 'semua', label: 'Semua' },
+    { id: 'Menunggu Verifikasi', label: 'Menunggu verifikasi' },
+    { id: 'Terverifikasi', label: 'Terverifikasi' },
+    { id: 'Ditolak', label: 'Ditolak' },
+];
+
 const keTanggal = (iso: string) => {
     const [y, m, d] = iso.split('-').map(Number);
     return new Date(y, m - 1, d);
@@ -79,6 +81,7 @@ const keTanggal = (iso: string) => {
 
 export default function TampilData({
     datapembayaran,
+    bukti,
     periode,
     namaLaporan,
     ringkasan,
@@ -90,6 +93,33 @@ export default function TampilData({
     const [buatLaporan, setBuatLaporan] = useState(false);
     const sheet = useFormSheet<Pembayaran>();
     const booking = new Map(databooking.map((b) => [b.idBooking, b]));
+
+    // klik baris membuka drawer verifikasi; antrean di drawer = bukti periode ini yang masih menunggu (terlama dikirim di atas)
+    const [filterStatus, setFilterStatus] = useState<NilaiFilter>({});
+    const [ditinjau, setDitinjau] = useState<number | null>(null);
+    const [memproses, setMemproses] = useState(false);
+    const [galatAlasan, setGalatAlasan] = useState<string>();
+    const menunggu = bukti.filter((b) => b.status === 'Menunggu Verifikasi');
+    const buktiDitinjau = bukti.find((b) => b.idPembayaran === ditinjau) ?? null;
+    const posisi = buktiDitinjau ? menunggu.findIndex((b) => b.idPembayaran === buktiDitinjau.idPembayaran) : -1;
+    const tinjau = (id: number) => {
+        setGalatAlasan(undefined);
+        setDitinjau(id);
+    };
+    const putuskan = (aksi: 'terima' | 'tolak', alasan?: string) => {
+        if (!buktiDitinjau) return;
+        const lanjut = posisi >= 0 ? (menunggu[posisi + 1] ?? (posisi > 0 ? menunggu[0] : null)) : null;
+        router.post(route(`verifikasi.${aksi}`, buktiDitinjau.idPembayaran), aksi === 'tolak' ? { alasan } : {}, {
+            preserveScroll: true,
+            onStart: () => setMemproses(true),
+            onFinish: () => setMemproses(false),
+            onError: (e) => setGalatAlasan(e.alasan),
+            onSuccess: () => {
+                setGalatAlasan(undefined);
+                setDitinjau(lanjut?.idPembayaran ?? null);
+            },
+        });
+    };
 
     const ubahPeriode = (p: Period) =>
         router.get(
@@ -144,51 +174,105 @@ export default function TampilData({
                 </CardContent>
             </Card>
 
-            <div className="mb-4">
-                <Button onClick={() => sheet.buka()}>
-                    <Plus />
-                    Tambah Pembayaran
-                </Button>
-            </div>
+            <DataTable
+                baris={datapembayaran}
+                kunci={(r) => r.idPembayaran}
+                satuan="pembayaran"
+                cari={(r) => `${booking.get(r.idBooking)?.kode ?? ''} ${booking.get(r.idBooking)?.namaPenyewa ?? ''}`}
+                placeholderCari="Cari kode atau nama penyewa…"
+                nilaiFilter={filterStatus}
+                onNilaiFilter={setFilterStatus}
+                bukaBaris={(r) => tinjau(r.idPembayaran)}
+                atas={
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" role="tablist" aria-label="Status pembayaran">
+                        {TAB.map((t) => {
+                            const aktif = (filterStatus.status?.[0] ?? 'semua') === t.id;
+                            const n = t.id === 'semua' ? datapembayaran.length : datapembayaran.filter((r) => r.status === t.id).length;
+                            return (
+                                <button
+                                    key={t.id}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={aktif}
+                                    onClick={() => setFilterStatus(t.id === 'semua' ? {} : { status: [t.id] })}
+                                    className={cn(
+                                        'flex cursor-pointer flex-col items-start gap-1 rounded-lg border bg-card px-4 py-3 text-left shadow-xs transition-colors hover:bg-muted',
+                                        aktif && 'border-primary ring-1 ring-primary',
+                                    )}
+                                >
+                                    <span className={cn('text-sm', aktif ? 'text-primary' : 'text-muted-foreground')}>{t.label}</span>
+                                    <span className="text-2xl leading-8 font-semibold tabular-nums">{n}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                }
+                filter={[
+                    {
+                        id: 'status',
+                        label: 'Status',
+                        nilai: (r) => r.status,
+                        opsi: TAB.filter((t) => t.id !== 'semua').map((t) => ({ id: t.id, label: t.label })),
+                    },
+                ]}
+                kolom={[
+                    {
+                        id: 'kode',
+                        label: 'Booking',
+                        tetap: true,
+                        urut: (r) => booking.get(r.idBooking)?.kode ?? '',
+                        render: (r) => (
+                            <>
+                                <div className="font-medium tabular-nums">{booking.get(r.idBooking)?.kode ?? r.idBooking}</div>
+                                <div className="text-muted-foreground">{booking.get(r.idBooking)?.namaPenyewa}</div>
+                            </>
+                        ),
+                    },
+                    {
+                        id: 'tgl',
+                        label: 'Tgl bayar',
+                        urut: (r) => r.tglBayar,
+                        render: (r) => formatTanggal(r.tglBayar, 'EEE, d MMM yyyy'),
+                    },
+                    { id: 'jumlah', label: 'Jumlah', urut: (r) => r.jumlahBayar, render: (r) => formatRupiah(r.jumlahBayar) },
+                    { id: 'bukti', label: 'Bukti', render: (r) => r.buktiBayar ?? '-' },
+                    {
+                        id: 'status',
+                        label: 'Status',
+                        urut: (r) => TAB.findIndex((t) => t.id === r.status),
+                        render: (r) => <PaymentStatusBadge status={r.status} />,
+                    },
+                ]}
+                aksi={(r) => (
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => sheet.buka(r)}>
+                            <Pencil />
+                            Edit
+                        </Button>
+                        <DeleteButton href={`/deletepembayaran/${r.idPembayaran}`} />
+                    </div>
+                )}
+                toolbarKanan={
+                    <Button onClick={() => sheet.buka()}>
+                        <Plus />
+                        Tambah pembayaran
+                    </Button>
+                }
+            />
 
-            <Card className="gap-0 overflow-hidden py-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Booking</TableHead>
-                            <TableHead>Tgl Bayar</TableHead>
-                            <TableHead>Jumlah</TableHead>
-                            <TableHead>Bukti</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {datapembayaran.map((row) => (
-                            <TableRow key={row.idPembayaran}>
-                                <TableCell>
-                                    <div className="font-medium tabular-nums">{booking.get(row.idBooking)?.kode ?? row.idBooking}</div>
-                                    <div className="text-muted-foreground">{booking.get(row.idBooking)?.namaPenyewa}</div>
-                                </TableCell>
-                                <TableCell>{formatTanggal(row.tglBayar, 'EEE, d MMM yyyy')}</TableCell>
-                                <TableCell>{formatRupiah(row.jumlahBayar)}</TableCell>
-                                <TableCell>{row.buktiBayar ?? '-'}</TableCell>
-                                <TableCell><PaymentStatusBadge status={row.status} /></TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => sheet.buka(row)}>
-                                            <Pencil />
-                                            Edit
-                                        </Button>
-                                        <DeleteButton href={`/deletepembayaran/${row.idPembayaran}`} />
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {datapembayaran.length === 0 && <TableEmpty colSpan={6} />}
-                    </TableBody>
-                </Table>
-            </Card>
+            <DrawerVerifikasi
+                bukti={buktiDitinjau}
+                posisi={posisi}
+                jumlah={menunggu.length}
+                adaBerikutnya={posisi >= 0 && menunggu.length > 1}
+                onSebelum={() => posisi > 0 && tinjau(menunggu[posisi - 1].idPembayaran)}
+                onBerikut={() => posisi >= 0 && posisi < menunggu.length - 1 && tinjau(menunggu[posisi + 1].idPembayaran)}
+                onTutup={() => setDitinjau(null)}
+                onTerima={() => putuskan('terima')}
+                onTolak={(alasan) => putuskan('tolak', alasan)}
+                galatAlasan={galatAlasan}
+                memproses={memproses}
+            />
 
             <FormSheet open={sheet.open} onClose={sheet.tutup} className="sm:max-w-lg">
                 <FormPembayaran

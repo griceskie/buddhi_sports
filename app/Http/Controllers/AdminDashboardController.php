@@ -69,33 +69,7 @@ class AdminDashboardController extends Controller
                 'bookings.idBooking', 'bookings.idLapangan', 'bookings.tanggal', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.totalBayar',
                 'penyewas.namaPenyewa', 'lapangans.namaLapangan',
             ])
-            ->map(function ($p) {
-                // jam yang sudah dikonfirmasi untuk booking lain: Terima dinonaktifkan di drawer
-                $bentrok = DB::table('bookings')
-                    ->where('idLapangan', $p->idLapangan)->where('tanggal', $p->tanggal)->where('idBooking', '!=', $p->idBooking)
-                    ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
-                    ->where('jamMulai', '<', $p->jamSelesai)->where('jamSelesai', '>', $p->jamMulai)
-                    ->value('idBooking');
-
-                return [
-                    'idPembayaran' => $p->idPembayaran,
-                    'idBooking' => $p->idBooking,
-                    'kode' => Pemesanan::kode($p->idBooking),
-                    'namaPenyewa' => $p->namaPenyewa,
-                    'namaLapangan' => $p->namaLapangan,
-                    'tanggal' => $p->tanggal,
-                    'jamMulai' => substr($p->jamMulai, 0, 5),
-                    'jamSelesai' => substr($p->jamSelesai, 0, 5),
-                    'tglBayar' => $p->tglBayar,
-                    'dikirimPada' => $p->dikirimPada ? Carbon::parse($p->dikirimPada)->toIso8601String() : null,
-                    'jumlahBayar' => (int) $p->jumlahBayar,
-                    'totalBayar' => (int) $p->totalBayar,
-                    'buktiBayar' => $p->buktiBayar ? route('pembayaran.bukti', $p->idPembayaran) : null,
-                    'buktiPdf' => str_ends_with(strtolower((string) $p->buktiBayar), '.pdf'),
-                    'status' => $p->status,
-                    'bentrokDengan' => $bentrok ? Pemesanan::kode($bentrok) : null,
-                ];
-            });
+            ->map(fn ($p) => self::bukti($p));
 
         return Inertia::render('Dashboard/Admin', [
             'stat' => [
@@ -170,6 +144,39 @@ class AdminDashboardController extends Controller
      *
      * @return list<array<string, mixed>>
      */
+    /**
+     * Satu baris bukti bayar untuk DrawerVerifikasi (dipakai dashboard dan halaman Pembayaran).
+     * $p harus memuat kolom pembayaran, booking (incl. idLapangan, totalBayar), namaPenyewa dan namaLapangan.
+     */
+    public static function bukti(object $p): array
+    {
+        // jam yang sudah dikonfirmasi untuk booking lain: Terima dinonaktifkan di drawer
+        $bentrok = DB::table('bookings')
+            ->where('idLapangan', $p->idLapangan)->where('tanggal', $p->tanggal)->where('idBooking', '!=', $p->idBooking)
+            ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
+            ->where('jamMulai', '<', $p->jamSelesai)->where('jamSelesai', '>', $p->jamMulai)
+            ->value('idBooking');
+
+        return [
+            'idPembayaran' => $p->idPembayaran,
+            'idBooking' => $p->idBooking,
+            'kode' => Pemesanan::kode($p->idBooking),
+            'namaPenyewa' => $p->namaPenyewa,
+            'namaLapangan' => $p->namaLapangan,
+            'tanggal' => $p->tanggal,
+            'jamMulai' => substr($p->jamMulai, 0, 5),
+            'jamSelesai' => substr($p->jamSelesai, 0, 5),
+            'tglBayar' => $p->tglBayar,
+            'dikirimPada' => $p->dikirimPada ? Carbon::parse($p->dikirimPada)->toIso8601String() : null,
+            'jumlahBayar' => (int) $p->jumlahBayar,
+            'totalBayar' => (int) $p->totalBayar,
+            'buktiBayar' => $p->buktiBayar ? route('pembayaran.bukti', $p->idPembayaran) : null,
+            'buktiPdf' => str_ends_with(strtolower((string) $p->buktiBayar), '.pdf'),
+            'status' => $p->status,
+            'bentrokDengan' => $bentrok ? Pemesanan::kode($bentrok) : null,
+        ];
+    }
+
     private function tugasLain(Carbon $bulanLalu): array
     {
         $tugas = [];
