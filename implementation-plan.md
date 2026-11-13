@@ -209,3 +209,46 @@ Perbarui `CLAUDE.md` (ringkasan progres), `panduan.md` (lapisan warna baru untuk
 
 - Cek manual tiap halaman master: tambah → muncul di list → edit → delete (termasuk kasus delete gagal karena FK).
 - `php artisan test` hijau semua.
+
+## 8. Celah panel Admin (audit 2026-11-13)
+
+Audit setelah PR #35–#39. Bukan daftar tugas yang sudah diputuskan: semua butir berstatus **belum diputuskan** dan keputusannya di tangan user. "Terbukti" = dicoba dengan tes sementara (sudah dihapus); "Dari kode" = disimpulkan dari membaca kode, belum dicoba.
+
+### Tinggi
+
+| # | Celah | Bukti | Usulan perbaikan |
+|---|-------|-------|------------------|
+| 8.1 | `POST /login-pengelola` tidak dibatasi percobaan. Sandi dev masih `Admin123` / `Manager123`. Login penyewa sudah punya throttle, pengelola belum. | Terbukti: 12 percobaan salah berturut-turut semuanya 302 (tidak ada 429). | Tambah `throttle` (misalnya 5/menit per username + IP) pada rute login pengelola; catat login gagal ke log aktivitas. |
+| 8.2 | Form Tambah/Edit Pembayaran bisa langsung menyimpan status `Terverifikasi`. Booking tetap `Dipesan` (tidak menahan jam), tidak ada cek bentrok jam, dan jumlah bayar tidak dibandingkan dengan `totalBayar` booking. Pembayaran final (aturan A) tetapi booking-nya tidak ikut berubah. | Terbukti: pembayaran `Terverifikasi` dari form, booking tetap `Dipesan`. | Satu jalur untuk memverifikasi: status `Terverifikasi` hanya lewat `verifikasi.terima`; form hanya boleh `Menunggu Verifikasi` / `Ditolak`. Atau, kalau form tetap boleh, samakan efeknya (booking → `Dikonfirmasi` + cek bentrok). |
+
+### Sedang
+
+| # | Celah | Bukti | Usulan perbaikan |
+|---|-------|-------|------------------|
+| 8.3 | `LaporanPembayaranController@buat` tidak memeriksa apa pun di server: bulan depan / bulan berjalan / bulan kosong, pembayaran yang masih menunggu, dan `tglLaporan` bebas (bisa dimundurkan sehingga laporan tidak tampak terlambat). Bulan berjalan yang dilaporkan ikut terkunci oleh `KunciLaporan`. | Terbukti: laporan bulan depan dan tanggal laporan sembarang diterima. | Server menolak bulan ≥ bulan berjalan, bulan tanpa data, dan bulan yang masih punya bukti menunggu (sama dengan keadaan `depan` / `berjalan` / `kosong` / `tertahan` di UI). `tglLaporan` diisi server (hari ini), bukan dari input. |
+| 8.4 | Form master Laporan (Tambah/Edit) membiarkan Admin mengetik `totalPemasukan`, bulan, dan tahun sendiri. Angka di baris bisa berbeda dari PDF, bulan bisa ganda (tidak ada unique constraint). | Terbukti: total dan periode bisa diisi bebas. | Hitung `totalPemasukan` di server; kunci bulan/tahun saat edit; unique `(bulan, tahun)` (validasi + indeks). Atau hapus Tambah/Edit manual dan hanya pakai "Buat laporan". |
+| 8.5 | Menghapus laporan yang sudah diserahkan tapi belum diperiksa Manager membuka kunci pembayaran bulan itu (kunci B bisa dilewati). | Terbukti dengan tes: setelah hapus, `KunciLaporan::terkunci()` false. | Tolak hapus laporan yang punya `filePdf` kecuali sedang dalam permintaan revisi; atau hanya Manager yang boleh membatalkan. |
+| 8.6 | Semua hapus master adalah rute GET (`/deletepembayaran/{id}`, dst.). Satu tautan atau `<img src>` di halaman lain bisa menghapus data saat Admin sedang login (mirip CSRF). | Dari kode (`routes/web.php`). | Ubah ke `DELETE` dengan token CSRF; `DeleteButton` sudah mendukung `method="delete"`. |
+| 8.7 | Booking dari form Admin tidak memakai kunci baris (`kunciLapangan`) seperti sisi penyewa, jadi dua simpan bersamaan bisa menghasilkan booking ganda di jam yang sama. Admin juga bisa memesan lapangan berstatus `Perbaikan`. | Dari kode (`MasterBookingController`). | Pakai transaksi + `kunciLapangan` + cek bentrok yang sama dengan `Pemesanan`; tolak lapangan `Perbaikan`. |
+| 8.8 | Edit dengan ID yang tidak ada tetap menulis satu baris ke log aktivitas ("hantu"); ID relasi hanya `integer`, tanpa `exists:`, sehingga kesalahan FK berakhir 500 (sudah tercatat di bagian 3). | Terbukti untuk log hantu. | Cari barisnya dulu (404 kalau tidak ada); `exists:` untuk semua ID relasi. |
+
+### Rendah
+
+| # | Celah | Usulan |
+|---|-------|--------|
+| 8.9 | Field bukti di form Pembayaran (`txtbukti`) berupa teks bebas yang dibaca dari disk privat oleh `BuktiBayarController`; Admin (atau data lama) bisa mengarahkannya ke `laporan/*.pdf` sehingga penyewa pemilik booking bisa membukanya. (Dari kode, belum dicoba.) | Validasi awalan `bukti/` dan tolak `..`; atau jangan boleh diedit dari form. |
+| 8.10 | Yang belum masuk log: login dan login gagal, ubah profil, ubah sandi. Ubah sandi tidak mengeluarkan sesi lain. | Catat ke `log_aktivitas`; `Auth::logoutOtherDevices()` / invalidasi sesi lain. |
+| 8.11 | `jenisLapangan` adalah teks bebas di server (form memakai nilai bawaan "Bulu Tangkis"), padahal ikon dan jam ramai bergantung pada dua nilai. | `in:Bulu Tangkis,Basket` di server. |
+| 8.12 | Admin bisa mengubah email dan sandi penyewa (tercatat di log, sandi tidak ditulis). | Pertimbangkan: hanya reset lewat tautan, bukan ketik sandi. |
+| 8.13 | Booking `Dikonfirmasi` dari form Admin tanpa pembayaran memberi okupansi tanpa pemasukan di analitik laporan. | Beri tanda di tabel Booking, atau wajibkan pembayaran. |
+| 8.14 | "Periksa keaslian log" menghitung seluruh rantai secara sinkron; lambat saat log besar. | Periksa bertahap (dari titik terakhir yang lolos) dan jalankan lewat antrean. |
+| 8.15 | PDF laporan ditimpa tanpa arsip, dan file ditulis sebelum transaksi DB selesai (gagal di tengah → file dan baris tidak cocok). | Simpan dengan nama berversi; tulis file setelah commit atau bersihkan saat gagal. |
+| 8.16 | Prop `dataadmin` / `datamanager` di Pembayaran dan Laporan masih mengirim hash sandi (backlog lama). | `select` kolom yang perlu saja. |
+| 8.17 | Konfigurasi: `.env.example` memakai `APP_DEBUG=true` / `APP_ENV=local`, `SESSION_SECURE_COOKIE` belum diatur, sandi dev ada di PRD. | Ubah sebelum aplikasi dipublikasikan (sandi dev sengaja dibiarkan sampai itu, keputusan user 2026-10-25). |
+
+### Urutan yang disarankan (usulan, bukan keputusan)
+
+1. 8.1 dan 8.2 (satu PR keamanan/integritas kecil).
+2. 8.3 – 8.5 (laporan dan kunci periode; saling terkait dengan aturan A dan B).
+3. 8.6 – 8.8 (pengerasan master data).
+4. Sisanya sebelum aplikasi dipublikasikan.
