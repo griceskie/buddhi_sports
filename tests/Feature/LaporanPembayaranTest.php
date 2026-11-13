@@ -111,6 +111,17 @@ class LaporanPembayaranTest extends TestCase
         $this->assertSame('2026-10-30', $l->tglLaporan);
     }
 
+    public function test_buat_ulang_menghapus_permintaan_revisi(): void
+    {
+        $this->buat();
+        DB::table('laporan_pembayarans')->update(['catatanRevisi' => 'Cek lagi totalnya.', 'revisiPada' => now()]);
+        $this->buat(['tglLaporan' => '2026-10-30']);
+
+        $l = DB::table('laporan_pembayarans')->first();
+        $this->assertNull($l->catatanRevisi);
+        $this->assertNull($l->revisiPada);
+    }
+
     public function test_tanda_tangan_wajib_dan_harus_jpeg(): void
     {
         $this->buat(['tandaTangan' => ''])->assertSessionHasErrors(['tandaTangan' => 'Tanda tangan wajib diisi.']);
