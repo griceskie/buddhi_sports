@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Support\FotoLapangan;
+use App\Support\LogAktivitas;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,13 +36,17 @@ class MasterLapanganController extends Controller
             'txtstatus' => 'required|in:Tersedia,Perbaikan',
         ] + self::aturanFoto());
 
-        DB::table('lapangans') -> insert ([
+        $data = [
             'namaLapangan' => $request->txtnama,
             'jenisLapangan' => $request->txtjenis,
             'tarifPerJam' => $request->txttarif,
             'status' => $request->txtstatus,
             'foto' => json_encode(self::simpanFoto($request, [])),
-        ]);
+        ];
+        DB::transaction(function () use ($data) {
+            DB::table('lapangans')->insert($data);
+            LogAktivitas::catat('tambah', 'Lapangan', $data['namaLapangan'], LogAktivitas::selisih('Lapangan', null, $data));
+        });
 
         return redirect('/tampillapangan');
     }
@@ -62,15 +67,20 @@ class MasterLapanganController extends Controller
         $tetap = array_values(array_intersect($lama, $request->input('fotoLama', [])));
         $foto = self::simpanFoto($request, $tetap);
 
-        DB::table('lapangans')
-        -> where('idLapangan', $request->txtid)
-        ->update([
+        $data = [
             'namaLapangan' => $request->txtnama,
             'jenisLapangan' => $request->txtjenis,
             'tarifPerJam' => $request->txttarif,
             'status' => $request->txtstatus,
             'foto' => json_encode($foto),
-        ]);
+        ];
+        $barisLama = (array) DB::table('lapangans')->where('idLapangan', $request->txtid)->first();
+        DB::transaction(function () use ($request, $data, $barisLama) {
+            DB::table('lapangans')
+            -> where('idLapangan', $request->txtid)
+            ->update($data);
+            LogAktivitas::catat('ubah', 'Lapangan', $data['namaLapangan'], LogAktivitas::selisih('Lapangan', $barisLama, $data));
+        });
         Storage::disk('public')->delete(array_values(array_diff($lama, $tetap)));
 
         return redirect('/tampillapangan');
@@ -79,7 +89,11 @@ class MasterLapanganController extends Controller
     public function deleteDataLapangan($idhapus){
         $foto = FotoLapangan::paths(DB::table('lapangans')->where('idLapangan', $idhapus)->value('foto'));
         try {
-            DB::table('lapangans')->where('idLapangan', $idhapus)->delete();
+            $barisLama = (array) DB::table('lapangans')->where('idLapangan', $idhapus)->first();
+            DB::transaction(function () use ($idhapus, $barisLama) {
+                DB::table('lapangans')->where('idLapangan', $idhapus)->delete();
+                LogAktivitas::catat('hapus', 'Lapangan', $barisLama['namaLapangan'] ?? '#'.$idhapus, LogAktivitas::selisih('Lapangan', $barisLama, null));
+            });
         } catch (QueryException $e) {
             // masih punya data booking (foreign key)
             return redirect('/tampillapangan')->with('error', 'Lapangan tidak bisa dihapus karena masih memiliki data booking.');

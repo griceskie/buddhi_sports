@@ -11,7 +11,7 @@ import {
 import { Switch } from '@/Components/ui/switch';
 import { Pengelola } from '@/types';
 import { Link } from '@inertiajs/react';
-import { ChevronDown, LogOut, Moon, User } from 'lucide-react';
+import { ChevronDown, History, LogOut, Moon, User } from 'lucide-react';
 
 export function inisial(nama: string) {
     return nama
@@ -61,6 +61,10 @@ export default function MenuAkunPengelola({ pengelola }: { pengelola: Pengelola 
                     <DropdownMenuItem render={<Link href={route('profile.pengelola')} />}>
                         <User />
                         Profil pengelola
+                    </DropdownMenuItem>
+                    <DropdownMenuItem render={<Link href={route('log.aktivitas')} />}>
+                        <History />
+                        Log aktivitas
                     </DropdownMenuItem>
                     <DropdownMenuItem closeOnClick={false} onClick={() => setGelap(!gelap)} className="justify-between">
                         <span className="flex items-center gap-2">

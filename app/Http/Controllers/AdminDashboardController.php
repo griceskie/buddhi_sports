@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\LogAktivitas;
 use App\Support\Pemesanan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -153,6 +154,10 @@ class AdminDashboardController extends Controller
                 ->update(['status' => 'Terverifikasi', 'alasanTolak' => null, 'idAdmin' => Auth::guard('admin')->id()]);
             DB::table('bookings')->where('idBooking', $p->idBooking)
                 ->update(['status' => 'Dikonfirmasi', 'idAdmin' => Auth::guard('admin')->id()]);
+            LogAktivitas::catat('terima', 'Pembayaran', Pemesanan::kode($p->idBooking), [
+                ['Status pembayaran', 'Menunggu Verifikasi', 'Terverifikasi'],
+                ['Status booking', 'Dipesan', 'Dikonfirmasi'],
+            ]);
 
             return ['success' => Pemesanan::kode($p->idBooking).' ('.$p->namaPenyewa.') kini Dikonfirmasi.'];
         });
@@ -172,8 +177,14 @@ class AdminDashboardController extends Controller
             return back()->with('error', $pesan);
         }
 
-        DB::table('pembayarans')->where('idPembayaran', $idPembayaran)
-            ->update(['status' => 'Ditolak', 'alasanTolak' => trim($request->alasan), 'idAdmin' => Auth::guard('admin')->id()]);
+        DB::transaction(function () use ($request, $idPembayaran, $p) {
+            DB::table('pembayarans')->where('idPembayaran', $idPembayaran)
+                ->update(['status' => 'Ditolak', 'alasanTolak' => trim($request->alasan), 'idAdmin' => Auth::guard('admin')->id()]);
+            LogAktivitas::catat('tolak', 'Pembayaran', Pemesanan::kode($p->idBooking), [
+                ['Status pembayaran', 'Menunggu Verifikasi', 'Ditolak'],
+                ['Alasan penolakan', '—', trim($request->alasan)],
+            ]);
+        });
 
         return back()->with('error', 'Bukti '.Pemesanan::kode($p->idBooking).' ('.$p->namaPenyewa.') ditolak. Booking tetap Dipesan, penyewa bisa mengunggah ulang.');
     }

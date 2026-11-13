@@ -28,6 +28,7 @@ import {
     CalendarDays,
     ChevronsUpDown,
     FileText,
+    History,
     LandPlot,
     LayoutDashboard,
     LogOut,
@@ -55,7 +56,13 @@ const MENU_ADMIN: Kelompok[] = [
             { href: '/tampilpembayaran', label: 'Pembayaran', icon: Wallet },
         ],
     },
-    { label: 'Laporan', menu: [{ href: '/tampillaporanpembayaran', label: 'Laporan pembayaran', icon: FileText }] },
+    {
+        label: 'Laporan',
+        menu: [
+            { href: '/tampillaporanpembayaran', label: 'Laporan pembayaran', icon: FileText },
+            { href: '/log-aktivitas', label: 'Log aktivitas', icon: History },
+        ],
+    },
 ];
 
 /** Judul header panel Admin: label menu yang aktif. */

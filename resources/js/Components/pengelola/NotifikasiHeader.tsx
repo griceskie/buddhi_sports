@@ -5,7 +5,7 @@ import { Link, router } from '@inertiajs/react';
 import { cn } from 'cn';
 import { format, isToday, isYesterday } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Bell, CircleX, FileText, Wallet } from 'lucide-react';
+import { Bell, CircleX, FileText, History, Wallet } from 'lucide-react';
 import { useState } from 'react';
 
 const IKON = { bayar: Wallet, laporan: FileText, batal: CircleX };
@@ -73,6 +73,14 @@ export default function NotifikasiHeader({ daftar, baru }: { daftar: NotifikasiP
                         })}
                     </ul>
                 )}
+                <Link
+                    href={route('log.aktivitas')}
+                    onClick={() => setBuka(false)}
+                    className="flex h-9 items-center justify-center gap-1.5 text-[13px] font-medium text-primary hover:bg-muted"
+                >
+                    <History className="size-3.5" aria-hidden />
+                    Lihat semua di Log aktivitas
+                </Link>
             </PopoverContent>
         </Popover>
     );

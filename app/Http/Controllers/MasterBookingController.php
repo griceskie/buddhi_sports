@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Support\Pemesanan;
+use App\Support\LogAktivitas;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -81,7 +82,7 @@ class MasterBookingController extends Controller
             return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
         }
 
-        DB::table('bookings') -> insert ([
+        $data = [
             'idPenyewa' => $request->txtpenyewa,
             'idLapangan' => $request->txtlapangan,
             'idAdmin' => $request->txtadmin,
@@ -90,7 +91,11 @@ class MasterBookingController extends Controller
             'jamSelesai' => $request->txtjamselesai,
             'totalBayar' => $request->txttotal,
             'status' => $request->txtstatus,
-        ]);
+        ];
+        DB::transaction(function () use ($data) {
+            $id = DB::table('bookings')->insertGetId($data, 'idBooking');
+            LogAktivitas::catat('tambah', 'Booking', Pemesanan::kode($id), LogAktivitas::selisih('Booking', null, $data));
+        });
 
         return redirect('/tampilbooking');
     }
@@ -102,9 +107,7 @@ class MasterBookingController extends Controller
             return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
         }
 
-        DB::table('bookings')
-        -> where('idBooking', $request->txtid)
-        ->update([
+        $data = [
             'idPenyewa' => $request->txtpenyewa,
             'idLapangan' => $request->txtlapangan,
             'idAdmin' => $request->txtadmin,
@@ -113,14 +116,25 @@ class MasterBookingController extends Controller
             'jamSelesai' => $request->txtjamselesai,
             'totalBayar' => $request->txttotal,
             'status' => $request->txtstatus,
-        ]);
+        ];
+        $lama = (array) DB::table('bookings')->where('idBooking', $request->txtid)->first();
+        DB::transaction(function () use ($request, $data, $lama) {
+            DB::table('bookings')
+            -> where('idBooking', $request->txtid)
+            ->update($data);
+            LogAktivitas::catat('ubah', 'Booking', Pemesanan::kode((int) $request->txtid), LogAktivitas::selisih('Booking', $lama, $data));
+        });
 
         return redirect('/tampilbooking');
     }
 
     public function deleteDataBooking($idhapus){
         try {
-            DB::table('bookings')->where('idBooking', $idhapus)->delete();
+            $lama = (array) DB::table('bookings')->where('idBooking', $idhapus)->first();
+            DB::transaction(function () use ($idhapus, $lama) {
+                DB::table('bookings')->where('idBooking', $idhapus)->delete();
+                LogAktivitas::catat('hapus', 'Booking', Pemesanan::kode((int) $idhapus), LogAktivitas::selisih('Booking', $lama, null));
+            });
         } catch (QueryException $e) {
             // masih punya data pembayaran (foreign key)
             return redirect('/tampilbooking')->with('error', 'Booking tidak bisa dihapus karena masih memiliki data pembayaran.');

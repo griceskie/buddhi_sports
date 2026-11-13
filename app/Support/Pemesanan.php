@@ -32,7 +32,7 @@ class Pemesanan
      */
     public static function batalkanKedaluwarsa(): int
     {
-        return DB::table('bookings')
+        $ids = DB::table('bookings')
             ->where('status', 'Dipesan')
             ->whereNotNull('created_at')
             ->where('created_at', '<=', now()->subMinutes(config('pembayaran.batas_bayar_menit')))
@@ -41,7 +41,22 @@ class Pemesanan
                     ->from('pembayarans')
                     ->whereColumn('pembayarans.idBooking', 'bookings.idBooking');
             })
-            ->update(['status' => 'Dibatalkan']);
+            ->pluck('idBooking');
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+
+        // setiap pembatalan otomatis tercatat di log aktivitas atas nama "Sistem"
+        return DB::transaction(function () use ($ids) {
+            $jumlah = DB::table('bookings')->whereIn('idBooking', $ids)->where('status', 'Dipesan')->update(['status' => 'Dibatalkan']);
+            foreach ($ids as $id) {
+                LogAktivitas::catat('otomatis', 'Booking', self::kode((int) $id), [['Status', 'Dipesan', 'Dibatalkan']],
+                    'Bukti bayar tidak dikirim dalam '.config('pembayaran.batas_bayar_menit').' menit.', true);
+            }
+
+            return $jumlah;
+        });
     }
 
     public static function kode(int $idBooking): string
