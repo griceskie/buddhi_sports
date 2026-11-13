@@ -56,7 +56,7 @@ class MasterLaporanPembayaranController extends Controller
                 'laporan' => $laporan ? [
                     'idLaporan' => $laporan->idLaporan, 'tglLaporan' => $laporan->tglLaporan, 'filePdf' => $laporan->filePdf,
                     'diperiksaPada' => $laporan->diperiksaPada, 'revisiPada' => $laporan->revisiPada, 'catatanRevisi' => $laporan->catatanRevisi,
-                    'idManager' => $laporan->idManager,
+                    'idManager' => $laporan->idManager, 'idAdmin' => $laporan->idAdmin,
                 ] : null,
                 'awalBerikut' => $awal->copy()->addMonth()->toDateString(),
                 'batasSerah' => $batas->toDateString(),

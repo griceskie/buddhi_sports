@@ -1,9 +1,7 @@
 import { formatRupiah } from '@/Components/ui/format';
 import { cn } from 'cn';
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
+import { CalendarCheck, Gauge, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { ReactNode, useMemo, useState } from 'react';
-
-type Peta = Record<string, number>;
 
 /** Angka satu bulan dari AnalitikLaporan::untuk (server). Peta PHP bisa datang sebagai array atau objek. */
 export type Analitik = {
@@ -31,57 +29,104 @@ const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Jul
 const persen = (x: number) => `${(Math.round(x * 1000) / 10).toLocaleString('id-ID')}%`;
 const angka = (n: number) => n.toLocaleString('id-ID');
 
-function Kartu({ judul, ket, aksi, children, className }: { judul: string; ket?: string; aksi?: ReactNode; children: ReactNode; className?: string }) {
+/**
+ * Isi kartu analitik halaman Laporan pembayaran (kanvas "Redesign Dashboard Admin", artboard Admin-Laporan):
+ * tiga angka utama dibanding bulan lalu, lalu empat grafik 2 x 2 dalam satu kartu.
+ */
+export default function AnalitikLaporan({ kini, lalu, bulan, tahun }: { kini: Analitik; lalu: Analitik; bulan: number; tahun: number }) {
     return (
-        <section className={cn('flex flex-col gap-4 rounded-lg border bg-card p-5 shadow-xs', className)}>
-            <header className="flex flex-wrap items-start justify-between gap-2">
-                <div>
+        <div className="flex flex-col gap-6 rounded-xl border bg-card px-4 py-6 text-card-foreground shadow-sm sm:px-6">
+            <AngkaUtama kini={kini} lalu={lalu} bulan={bulan} tahun={tahun} />
+            <div className="grid gap-4 lg:grid-cols-2">
+                <GrafikPemasukan key={`${tahun}-${bulan}`} data={kini} bulan={bulan} tahun={tahun} />
+                <PetaJam data={kini} bulan={bulan} />
+                <KeterisianLapangan data={kini} />
+                <BookingDanBatal data={kini} bulan={bulan} />
+            </div>
+        </div>
+    );
+}
+
+function Bagian({ judul, ket, aksi, children }: { judul: string; ket: string; aksi?: ReactNode; children: ReactNode }) {
+    return (
+        <section className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-4">
+            <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
                     <h3 className="font-medium">{judul}</h3>
-                    {ket && <p className="text-sm text-muted-foreground">{ket}</p>}
+                    <p className="text-xs text-muted-foreground">{ket}</p>
                 </div>
                 {aksi}
-            </header>
+            </div>
             {children}
         </section>
     );
 }
 
-// ---------------------------------------------------------------- tiga angka utama
-
-function Selisih({ kini, lalu }: { kini: number; lalu: number }) {
-    if (!lalu) return <span className="text-xs text-muted-foreground">Bulan lalu belum ada data</span>;
-    const d = (kini - lalu) / lalu;
-    const Ikon = d > 0.0005 ? ArrowUpRight : d < -0.0005 ? ArrowDownRight : Minus;
+/** Tooltip gelap tiga baris (peta jam dan funnel), muncul saat elemen induk `group` disorot. */
+function TipGelap({ t1, t2, t3, className }: { t1: string; t2: string; t3?: string; className?: string }) {
     return (
-        <span className={cn('inline-flex items-center gap-0.5 text-xs font-medium', d > 0.0005 ? 'text-accessible-green' : d < -0.0005 ? 'text-accessible-red' : 'text-muted-foreground')}>
-            <Ikon className="size-3.5" />
-            {persen(Math.abs(d))} dari bulan lalu
+        <span
+            role="tooltip"
+            className={cn(
+                'pointer-events-none absolute bottom-[calc(100%+6px)] z-20 hidden flex-col gap-0.5 rounded-md bg-foreground px-3 py-1.5 text-left text-xs whitespace-nowrap text-background group-hover:flex',
+                className,
+            )}
+        >
+            <span className="font-semibold">{t1}</span>
+            <span>{t2}</span>
+            {t3 && <span className="text-background/70">{t3}</span>}
         </span>
     );
 }
 
-export function AngkaUtama({ kini, lalu }: { kini: Analitik; lalu: Analitik }) {
+// ---------------------------------------------------------------- tiga angka utama
+
+function AngkaUtama({ kini, lalu, bulan, tahun }: { kini: Analitik; lalu: Analitik; bulan: number; tahun: number }) {
+    const terisi = (a: Analitik) => (a.kapasitas ? a.jamTerisi / a.kapasitas : 0);
+    const banding = `Dibanding ${bulan === 1 ? `Desember ${tahun - 1}` : `${NAMA_BULAN[bulan - 2]} ${tahun}`}`;
     const item = [
-        { judul: 'Pemasukan', nilai: formatRupiah(kini.pemasukan), ket: `Dari ${kini.booking} pembayaran terverifikasi`, a: kini.pemasukan, b: lalu.pemasukan },
+        { judul: 'Pemasukan', Ikon: Wallet, nilai: formatRupiah(kini.pemasukan), ket: `Dari ${kini.booking} pembayaran terverifikasi`, a: kini.pemasukan, b: lalu.pemasukan },
         {
             judul: 'Lapangan terisi',
-            nilai: persen(kini.kapasitas ? kini.jamTerisi / kini.kapasitas : 0),
+            Ikon: Gauge,
+            nilai: persen(terisi(kini)),
             ket: `${angka(kini.jamTerisi)} dari ${angka(kini.kapasitas)} jam terisi`,
-            a: kini.kapasitas ? kini.jamTerisi / kini.kapasitas : 0,
-            b: lalu.kapasitas ? lalu.jamTerisi / lalu.kapasitas : 0,
+            a: terisi(kini),
+            b: terisi(lalu),
         },
-        { judul: 'Total booking', nilai: `${kini.booking} booking`, ket: 'Sudah dibayar dan dikonfirmasi', a: kini.booking, b: lalu.booking },
+        { judul: 'Total booking', Ikon: CalendarCheck, nilai: `${kini.booking} booking`, ket: 'Sudah dibayar dan dikonfirmasi', a: kini.booking, b: lalu.booking },
     ];
     return (
-        <div className="grid gap-4 md:grid-cols-3">
-            {item.map((m) => (
-                <div key={m.judul} className="flex flex-col gap-1 rounded-lg border bg-card p-5 shadow-xs">
-                    <span className="text-sm text-muted-foreground">{m.judul}</span>
-                    <span className="text-2xl leading-8 font-semibold tabular-nums">{m.nilai}</span>
-                    <span className="text-xs text-muted-foreground">{m.ket}</span>
-                    <Selisih kini={m.a} lalu={m.b} />
-                </div>
-            ))}
+        <div className="grid gap-6 md:grid-cols-3">
+            {item.map((m, i) => {
+                // bulan lalu tanpa data: tidak ada pembanding
+                const pct = m.b ? Math.round(((m.a - m.b) / m.b) * 100) : null;
+                return (
+                    <div key={m.judul} className={cn('flex min-w-0 flex-col gap-1.5', i > 0 && 'md:border-l md:pl-6')}>
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5 font-medium">
+                                <m.Ikon className="size-4 text-muted-foreground" aria-hidden />
+                                {m.judul}
+                            </span>
+                            {pct !== null && (
+                                <span
+                                    title={banding}
+                                    className={cn(
+                                        'flex items-center gap-1 text-xs font-medium whitespace-nowrap',
+                                        pct > 0 ? 'text-accessible-green' : pct < 0 ? 'text-accessible-red' : 'text-muted-foreground',
+                                    )}
+                                >
+                                    {pct > 0 && <TrendingUp className="size-3.5" aria-hidden />}
+                                    {pct < 0 && <TrendingDown className="size-3.5" aria-hidden />}
+                                    {pct === 0 ? 'Tetap' : `${pct > 0 ? 'Naik' : 'Turun'} ${Math.abs(pct)}%`}
+                                </span>
+                            )}
+                        </div>
+                        <span className="text-2xl leading-8 font-semibold tracking-tight tabular-nums">{m.nilai}</span>
+                        <span className="text-xs text-muted-foreground">{m.ket}</span>
+                    </div>
+                );
+            })}
         </div>
     );
 }
@@ -90,7 +135,7 @@ export function AngkaUtama({ kini, lalu }: { kini: Analitik; lalu: Analitik }) {
 
 type Kelompok = { dari: number; sampai: number; per: number[]; kali: number[] };
 
-export function GrafikPemasukan({ data, bulan, tahun }: { data: Analitik; bulan: number; tahun: number }) {
+function GrafikPemasukan({ data, bulan, tahun }: { data: Analitik; bulan: number; tahun: number }) {
     const [skala, setSkala] = useState<'minggu' | 'hari'>('minggu');
     const [animKe, setAnimKe] = useState(0);
     const harian = data.harian as Record<string, Record<string, [number, number]>>;
@@ -123,6 +168,7 @@ export function GrafikPemasukan({ data, bulan, tahun }: { data: Analitik; bulan:
     const sumbu = Array.from({ length: Math.round(puncak / langkah) + 1 }, (_, j) => j * langkah);
     const bln3 = NAMA_BULAN[bulan - 1].slice(0, 3);
     const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const hari = skala === 'hari';
 
     const ganti = (k: 'minggu' | 'hari') => {
         if (k === skala) return;
@@ -131,18 +177,23 @@ export function GrafikPemasukan({ data, bulan, tahun }: { data: Analitik; bulan:
     };
 
     return (
-        <Kartu
+        <Bagian
             judul="Pemasukan per lapangan"
             ket={`Per ${skala}, hanya pembayaran terverifikasi`}
             aksi={
-                <div role="group" aria-label="Skala grafik" className="inline-flex rounded-lg bg-muted p-0.5 text-sm">
+                // segmented control = Tabs default di ui/tabs.tsx
+                <div role="tablist" aria-label="Skala grafik pemasukan" className="inline-flex h-8 shrink-0 items-center rounded-lg bg-muted p-[3px] text-muted-foreground">
                     {(['minggu', 'hari'] as const).map((k) => (
                         <button
                             key={k}
                             type="button"
-                            aria-pressed={skala === k}
+                            role="tab"
+                            aria-selected={skala === k}
                             onClick={() => ganti(k)}
-                            className={cn('cursor-pointer rounded-md px-3 py-1 capitalize transition-colors', skala === k ? 'bg-background font-medium shadow-sm' : 'text-foreground/60 hover:text-foreground')}
+                            className={cn(
+                                'h-[calc(100%-1px)] cursor-pointer rounded-md border border-transparent px-3 text-sm font-medium capitalize transition-colors',
+                                skala === k ? 'bg-background text-foreground shadow-sm' : 'hover:text-foreground',
+                            )}
                         >
                             {k}
                         </button>
@@ -150,95 +201,116 @@ export function GrafikPemasukan({ data, bulan, tahun }: { data: Analitik; bulan:
                 </div>
             }
         >
-            <div role="img" aria-label={`Grafik pemasukan per ${skala} ${NAMA_BULAN[bulan - 1]} ${tahun}, bertumpuk per lapangan`} className="flex gap-3">
-                <div className="relative h-56 w-12 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+            <div
+                role="img"
+                aria-label={`Grafik pemasukan per ${skala} ${NAMA_BULAN[bulan - 1]} ${tahun}, bertumpuk per lapangan`}
+                className="grid grid-cols-[48px_minmax(0,1fr)] grid-rows-[228px_auto] text-xs"
+            >
+                <div className="relative">
                     {sumbu.map((v) => (
-                        <span key={v} className="absolute right-0 translate-y-1/2" style={{ bottom: `${(v / puncak) * 100}%` }}>
+                        <span key={v} className="absolute right-2 translate-y-1/2 whitespace-nowrap text-muted-foreground tabular-nums" style={{ bottom: `${(v / puncak) * 100}%` }}>
                             {singkat(v)}
                         </span>
                     ))}
                 </div>
-                <div className="min-w-0 flex-1">
-                    <div className="relative h-56">
-                        {sumbu.map((v) => (
-                            <div key={v} className="absolute inset-x-0 border-t border-dashed border-border" style={{ bottom: `${(v / puncak) * 100}%` }} />
-                        ))}
-                        <div className="relative flex h-full items-end justify-around gap-1">
-                            {kelompok.map((g, i) => {
-                                const total = jumlah(g);
-                                const judul =
-                                    skala === 'hari'
-                                        ? `${HARI[new Date(tahun, bulan - 1, g.dari).getDay()]}, ${g.dari} ${NAMA_BULAN[bulan - 1]} ${tahun}`
-                                        : `${g.dari}–${g.sampai} ${NAMA_BULAN[bulan - 1]} ${tahun}`;
-                                return (
-                                    <div key={`${animKe}-${i}`} className="group relative flex h-full min-w-0 flex-1 items-end justify-center rounded-sm hover:bg-muted" style={{ paddingInline: skala === 'hari' ? 1.5 : 12 }}>
-                                        <div
-                                            className="batang-grafik flex w-full origin-bottom flex-col-reverse overflow-hidden rounded-t-sm"
-                                            style={{ height: `${(total / puncak) * 100}%`, maxWidth: skala === 'hari' ? 16 : 48, animation: `naik-grafik ${animKe ? '.5s' : '.7s'} ${i * (skala === 'hari' ? 12 : 50)}ms cubic-bezier(.2,.7,.2,1) backwards` }}
-                                        >
+                <div className="relative">
+                    {/* garis grid: tipis dan utuh, warna border 50% */}
+                    {sumbu.map((v) => (
+                        <span key={v} aria-hidden className="absolute inset-x-0 border-t border-border/50" style={{ bottom: `${(v / puncak) * 100}%` }} />
+                    ))}
+                    <div className="absolute inset-0 flex items-stretch">
+                        {kelompok.map((g, i) => {
+                            const total = jumlah(g);
+                            const judul = hari
+                                ? `${HARI[new Date(tahun, bulan - 1, g.dari).getDay()]}, ${g.dari} ${NAMA_BULAN[bulan - 1]} ${tahun}`
+                                : `${g.dari}–${g.sampai} ${NAMA_BULAN[bulan - 1]} ${tahun}`;
+                            // kolom paling kanan membuka tooltip ke kiri supaya tidak keluar kartu
+                            const kanan = i >= kelompok.length - (hari ? 8 : 2);
+                            return (
+                                <div
+                                    key={`${animKe}-${i}`}
+                                    className="group relative flex min-w-0 flex-1 items-end justify-center hover:bg-muted"
+                                    style={{ paddingInline: hari ? 1.5 : 12 }}
+                                >
+                                    <div
+                                        className="batang-grafik flex flex-[1_1_0] origin-bottom flex-col-reverse overflow-hidden rounded-t"
+                                        style={{
+                                            height: `${(total / puncak) * 100}%`,
+                                            maxWidth: hari ? 16 : 48,
+                                            animation: `naik-grafik 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) ${i * (hari ? 12 : 50)}ms both`,
+                                        }}
+                                    >
+                                        {data.lapangan.map((l, c) => (
+                                            <div key={l.id} className="flex-none" style={{ height: `${total ? (g.per[c] / total) * 100 : 0}%`, background: warnaLapangan(c) }} />
+                                        ))}
+                                    </div>
+                                    <div
+                                        role="tooltip"
+                                        className={cn(
+                                            'pointer-events-none absolute top-0 z-10 hidden gap-2 rounded-lg border bg-popover px-2.5 py-2 whitespace-nowrap text-popover-foreground shadow-lg group-hover:grid',
+                                            kanan ? (hari ? 'right-[calc(100%+4px)]' : 'right-[calc(50%+32px)]') : hari ? 'left-[calc(100%+4px)]' : 'left-[calc(50%+32px)]',
+                                        )}
+                                    >
+                                        <span className="font-medium">{judul}</span>
+                                        <div className="grid grid-cols-[10px_auto_auto_auto_auto] items-center gap-x-2 gap-y-1.5 tabular-nums">
+                                            <span />
+                                            <span className="text-muted-foreground">Lapangan</span>
+                                            <span className="pl-2 text-right text-muted-foreground">Booking</span>
+                                            <span className="pl-2 text-right text-muted-foreground">Pemasukan</span>
+                                            <span className="pl-1 text-right text-muted-foreground">Porsi</span>
                                             {data.lapangan.map((l, c) => (
-                                                <div key={l.id} style={{ height: `${total ? (g.per[c] / total) * 100 : 0}%`, background: warnaLapangan(c) }} />
+                                                <TipBaris key={l.id} warna={warnaLapangan(c)} nama={l.nama} n={g.kali[c]} rp={g.per[c]} pct={total ? Math.round((g.per[c] / total) * 100) : 0} />
                                             ))}
-                                        </div>
-                                        <div role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden w-60 -translate-x-1/2 rounded-lg border bg-popover p-3 text-xs shadow-lg group-hover:block">
-                                            <p className="mb-2 font-medium">{judul}</p>
-                                            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1 tabular-nums">
-                                                <span className="text-muted-foreground">Lapangan</span>
-                                                <span className="text-right text-muted-foreground">Booking</span>
-                                                <span className="text-right text-muted-foreground">Pemasukan</span>
-                                                <span className="text-right text-muted-foreground">Porsi</span>
-                                                {data.lapangan.map((l, c) => (
-                                                    <TipBaris key={l.id} warna={warnaLapangan(c)} nama={l.nama} n={g.kali[c]} rp={g.per[c]} pct={total ? Math.round((g.per[c] / total) * 100) : 0} />
-                                                ))}
-                                                <span className="border-t pt-1 font-medium">Total</span>
-                                                <span className="border-t pt-1 text-right">{g.kali.reduce((a, v) => a + v, 0)}×</span>
-                                                <span className="border-t pt-1 text-right font-medium">{formatRupiah(total)}</span>
-                                                <span className="border-t pt-1 text-right">100%</span>
-                                            </div>
+                                            <span className="col-span-full h-px bg-border" />
+                                            <span />
+                                            <span className="font-medium">Total</span>
+                                            <span className="text-right font-medium">{g.kali.reduce((a, v) => a + v, 0)}</span>
+                                            <span className="text-right font-semibold">{formatRupiah(total)}</span>
+                                            <span className="text-right text-muted-foreground">100%</span>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                    <div className="mt-2 flex justify-around gap-1 text-xs text-muted-foreground">
-                        {kelompok.map((g, i) => (
-                            <span key={i} className="min-w-0 flex-1 text-center">
-                                {skala === 'hari' ? (g.dari === 1 || g.dari % 5 === 0 ? g.dari : '') : `${g.dari}–${g.sampai} ${bln3}`}
-                            </span>
-                        ))}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
+                <div />
+                <div className="flex items-start pt-2">
+                    {kelompok.map((g, i) => (
+                        // di HP label minggu turun ke dua baris supaya tidak saling menimpa
+                        <span key={i} className="min-w-0 flex-1 text-center leading-tight text-muted-foreground sm:whitespace-nowrap">
+                            {hari ? (g.dari === 1 || g.dari % 5 === 0 ? g.dari : '') : `${g.dari}–${g.sampai} ${bln3}`}
+                        </span>
+                    ))}
+                </div>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 {data.lapangan.map((l, c) => (
                     <span key={l.id} className="inline-flex items-center gap-1.5">
-                        <span className="size-2.5 rounded-sm" style={{ background: warnaLapangan(c) }} />
+                        <span className="size-2.5 rounded-xs" style={{ background: warnaLapangan(c) }} />
                         {l.nama}
                     </span>
                 ))}
             </div>
-        </Kartu>
+        </Bagian>
     );
 }
 
 function TipBaris({ warna, nama, n, rp, pct }: { warna: string; nama: string; n: number; rp: number; pct: number }) {
     return (
         <>
-            <span className="inline-flex items-center gap-1.5">
-                <span className="size-2 rounded-sm" style={{ background: warna }} />
-                {nama}
-            </span>
-            <span className="text-right">{n}×</span>
-            <span className="text-right">{formatRupiah(rp)}</span>
-            <span className="text-right">{pct}%</span>
+            <span className="size-2.5 rounded-xs" style={{ background: warna }} />
+            <span>{nama}</span>
+            <span className="text-right">{n}</span>
+            <span className="text-right font-medium">{formatRupiah(rp)}</span>
+            <span className="text-right text-muted-foreground">{pct}%</span>
         </>
     );
 }
 
 // ---------------------------------------------------------------- jam tersibuk
 
-export function PetaJam({ data }: { data: Analitik }) {
+function PetaJam({ data, bulan }: { data: Analitik; bulan: number }) {
     const HARI = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
     const HARI_PANJANG = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
     const { isi, tanggal, jumlahLapangan } = data.peta;
@@ -247,90 +319,99 @@ export function PetaJam({ data }: { data: Analitik }) {
     const pct = (h: number, j: number) => (sedia(h) ? isi[h][j] / sedia(h) : 0);
     let puncak = { h: 0, j: 0, v: -1 };
     HARI.forEach((_, h) => isi[h].forEach((_, j) => pct(h, j) > puncak.v && (puncak = { h, j, v: pct(h, j) })));
-    const jam = (j: number) => `${String(8 + j).padStart(2, '0')}:00`;
+    const dua = (n: number) => String(n).padStart(2, '0');
+    const bln3 = NAMA_BULAN[bulan - 1].slice(0, 3);
 
     return (
-        <Kartu judul="Jam tersibuk" ket="Rata-rata lapangan terisi per hari dan jam. Arahkan kursor ke kotak untuk rinciannya.">
-            <div className="overflow-x-auto">
-                <div className="grid min-w-[420px] gap-1" style={{ gridTemplateColumns: `40px repeat(${jamBuka}, minmax(0, 1fr))` }}>
-                    <span />
-                    {Array.from({ length: jamBuka }, (_, j) => (
-                        <span key={j} className="text-center text-[10px] text-muted-foreground tabular-nums">
-                            {j % 2 === 0 ? String(8 + j).padStart(2, '0') : ''}
-                        </span>
-                    ))}
-                    {HARI.map((nm, h) => (
-                        <div key={nm} className="contents">
-                            <span className="flex h-6 items-center text-xs text-muted-foreground">{nm}</span>
-                            {isi[h].map((_, j) => {
-                                const p = pct(h, j);
-                                return (
-                                    <span
-                                        key={j}
-                                        title={`${HARI_PANJANG[h]}, ${jam(j)}: ${persen(p)} terisi (${isi[h][j]} dari ${sedia(h)} jam sewa) · tanggal ${tanggal[h].join(', ') || '-'}`}
-                                        className="block h-6 cursor-default rounded-[4px] hover:ring-2 hover:ring-foreground"
-                                        style={{ background: `color-mix(in oklab, var(--primary) ${Math.round(p * 100)}%, var(--muted))` }}
+        <Bagian judul="Jam tersibuk" ket="Rata-rata lapangan terisi per hari dan jam. Arahkan kursor ke kotak untuk rinciannya.">
+            <div role="img" aria-label="Peta keterisian per hari dan jam" className="grid items-center gap-[3px] text-xs" style={{ gridTemplateColumns: `32px repeat(${jamBuka}, minmax(0, 1fr))` }}>
+                {HARI.map((nm, h) => (
+                    <div key={nm} className="contents">
+                        <span className="text-muted-foreground">{nm}</span>
+                        {isi[h].map((_, j) => {
+                            const v = pct(h, j);
+                            // warna penuh pada 80% terisi, supaya jam ramai terlihat jelas
+                            return (
+                                <span
+                                    key={j}
+                                    className="group relative block h-[26px] cursor-default rounded hover:shadow-[inset_0_0_0_1.5px_var(--foreground)]"
+                                    style={{ background: `color-mix(in oklab, var(--primary) ${Math.round(Math.min(1, v / 0.8) * 100)}%, var(--muted))` }}
+                                >
+                                    <TipGelap
+                                        t1={`${HARI_PANJANG[h]}, ${dua(8 + j)}:00–${dua(9 + j)}:00`}
+                                        t2={`${Math.round(v * 100)}% terisi · ${isi[h][j]} dari ${sedia(h)} jam sewa`}
+                                        t3={`${tanggal[h].length} hari ${HARI_PANJANG[h]}: ${tanggal[h].join(', ')} ${bln3}`}
+                                        className={j < 4 ? 'left-0' : j > jamBuka - 5 ? 'right-0' : 'left-1/2 -translate-x-1/2'}
                                     />
-                                );
-                            })}
-                        </div>
-                    ))}
-                </div>
+                                </span>
+                            );
+                        })}
+                    </div>
+                ))}
+                <span />
+                {Array.from({ length: jamBuka }, (_, j) => (
+                    <span key={j} className="text-center text-muted-foreground tabular-nums">
+                        {j % 2 === 0 ? dua(8 + j) : ''}
+                    </span>
+                ))}
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                <span>
-                    {puncak.v > 0 ? `Paling ramai: ${HARI_PANJANG[puncak.h]} pukul ${jam(puncak.j)} (${persen(puncak.v)})` : 'Belum ada booking terkonfirmasi'}
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span className="text-foreground">
+                    {puncak.v > 0
+                        ? `Paling ramai: ${HARI_PANJANG[puncak.h]} ${dua(8 + puncak.j)}:00 (${Math.round(puncak.v * 100)}% terisi)`
+                        : 'Belum ada jam terisi di periode ini.'}
                 </span>
-                <span className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5">
                     Sepi
-                    <span className="h-2 w-24 rounded-full" style={{ background: 'linear-gradient(to right, var(--muted), var(--primary))' }} />
+                    <span className="inline-flex gap-0.5">
+                        {[0, 25, 50, 75, 100].map((p) => (
+                            <span key={p} className="h-2.5 w-3.5 rounded-xs" style={{ background: `color-mix(in oklab, var(--primary) ${p}%, var(--muted))` }} />
+                        ))}
+                    </span>
                     Ramai
                 </span>
             </div>
-        </Kartu>
+        </Bagian>
     );
 }
 
 // ---------------------------------------------------------------- keterisian per lapangan
 
-export function KeterisianLapangan({ data }: { data: Analitik }) {
+function KeterisianLapangan({ data }: { data: Analitik }) {
     const baris = data.perLapangan
         .map((l, i) => ({ ...l, warna: warnaLapangan(i), p: l.kapasitas ? l.jam / l.kapasitas : 0 }))
         .sort((a, b) => b.p - a.p);
     return (
-        <Kartu judul="Keterisian per lapangan" ket="Jam terisi dibanding jam buka (08:00–22:00)">
-            <ul className="flex flex-col gap-4">
+        <Bagian judul="Keterisian per lapangan" ket="Jam terisi dibanding jam buka (08:00–22:00)">
+            <ul className="my-auto flex flex-col gap-3.5">
                 {baris.map((l) => (
                     <li key={l.nama} className="flex flex-col gap-1.5">
-                        <div className="flex items-baseline justify-between gap-2">
-                            <span className="inline-flex items-center gap-2 font-medium">
-                                <span className="size-2.5 rounded-sm" style={{ background: l.warna }} />
-                                {l.nama}
+                        <div className="flex items-baseline gap-2">
+                            <span className="truncate font-medium">{l.nama}</span>
+                            <span className="ml-auto text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                                {l.jam} dari {l.kapasitas} jam · {l.booking} booking
                             </span>
-                            <span className="tabular-nums">{persen(l.p)}</span>
+                            <span className="w-11 text-right font-semibold tabular-nums">{Math.round(l.p * 100)}%</span>
                         </div>
                         <div className="h-2 overflow-hidden rounded-full bg-muted">
                             <div className="h-full rounded-full" style={{ width: `${Math.min(100, l.p * 100)}%`, background: l.warna }} />
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                            {l.jam} dari {l.kapasitas} jam · {l.booking} booking
-                        </span>
                     </li>
                 ))}
             </ul>
-        </Kartu>
+        </Bagian>
     );
 }
 
 // ---------------------------------------------------------------- booking dan pembatalan
 
 const SEBAB = [
-    { k: 'otomatis', nama: 'Tidak dibayar dalam 60 menit', warna: '#f59e0b', kalimat: 'karena tidak dibayar dalam batas waktu' },
+    { k: 'otomatis', nama: 'Tidak dibayar dalam 60 menit', warna: '#f59e0b', kalimat: 'karena tidak dibayar dalam 60 menit' },
     { k: 'penyewa', nama: 'Dibatalkan penyewa', warna: '#0ea5e9', kalimat: 'dibatalkan sendiri oleh penyewa' },
     { k: 'pengelola', nama: 'Dibatalkan pengelola', warna: '#7c3aed', kalimat: 'dibatalkan pengelola' },
 ] as const;
 
-export function BookingDanBatal({ data, bulan }: { data: Analitik; bulan: number }) {
+function BookingDanBatal({ data, bulan }: { data: Analitik; bulan: number }) {
     const f = data.funnel;
     const batalN = SEBAB.reduce((a, s) => a + f.batal[s.k].n, 0);
     const batalRp = SEBAB.reduce((a, s) => a + f.batal[s.k].rp, 0);
@@ -339,47 +420,77 @@ export function BookingDanBatal({ data, bulan }: { data: Analitik; bulan: number
     const terbesar = SEBAB.slice().sort((a, b) => f.batal[b.k].n - f.batal[a.k].n)[0];
     const jt = (v: number) => (v >= 1e6 ? `Rp${(v / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 })} jt` : formatRupiah(v));
 
-    const baris: { label: string; n: number; seg: { lebar: string; warna: string; judul: string }[] }[] = [
-        { label: 'Booking masuk', n: f.masuk, seg: f.masuk ? [{ lebar: '100%', warna: 'color-mix(in oklab, var(--foreground) 22%, var(--muted))', judul: `${f.masuk} booking dengan jadwal main di ${NAMA_BULAN[bulan - 1]}` }] : [] },
-        { label: 'Terkonfirmasi', n: f.terkonfirmasi.n, seg: f.terkonfirmasi.n ? [{ lebar: lebar(f.terkonfirmasi.n), warna: 'var(--primary)', judul: `${f.terkonfirmasi.n} booking · ${formatRupiah(f.terkonfirmasi.rp)}` }] : [] },
-        { label: 'Dibatalkan', n: batalN, seg: SEBAB.filter((s) => f.batal[s.k].n).map((s) => ({ lebar: lebar(f.batal[s.k].n), warna: s.warna, judul: `${s.nama}: ${f.batal[s.k].n} booking · ${formatRupiah(f.batal[s.k].rp)}` })) },
+    type Seg = { lebar: string; warna: string; t1: string; t2: string; t3: string };
+    const baris: { label: string; n: number; seg: Seg[] }[] = [
+        {
+            label: 'Booking masuk',
+            n: f.masuk,
+            seg: f.masuk
+                ? [{ lebar: '100%', warna: 'color-mix(in oklab, var(--foreground) 22%, var(--muted))', t1: 'Booking masuk', t2: `${f.masuk} booking dengan jadwal main di ${NAMA_BULAN[bulan - 1]}`, t3: 'Tanpa yang masih menunggu verifikasi' }]
+                : [],
+        },
+        {
+            label: 'Terkonfirmasi',
+            n: f.terkonfirmasi.n,
+            seg: f.terkonfirmasi.n
+                ? [{ lebar: lebar(f.terkonfirmasi.n), warna: 'var(--primary)', t1: 'Terkonfirmasi', t2: `${f.terkonfirmasi.n} booking · ${pct(f.terkonfirmasi.n)} dari booking masuk`, t3: `${formatRupiah(f.terkonfirmasi.rp)} masuk` }]
+                : [],
+        },
+        {
+            label: 'Dibatalkan',
+            n: batalN,
+            seg: SEBAB.filter((s) => f.batal[s.k].n).map((s) => ({
+                lebar: lebar(f.batal[s.k].n),
+                warna: s.warna,
+                t1: s.nama,
+                t2: `${f.batal[s.k].n} booking · ${pct(f.batal[s.k].n)} dari booking masuk`,
+                t3: `${formatRupiah(f.batal[s.k].rp)} batal`,
+            })),
+        },
     ];
-    if (f.tolak.n) baris.push({ label: 'Bukti ditolak', n: f.tolak.n, seg: [{ lebar: lebar(f.tolak.n), warna: 'var(--muted-foreground)', judul: `${f.tolak.n} booking · penyewa belum mengirim ulang bukti` }] });
+    if (f.tolak.n)
+        baris.push({
+            label: 'Bukti ditolak',
+            n: f.tolak.n,
+            seg: [{ lebar: lebar(f.tolak.n), warna: 'var(--muted-foreground)', t1: 'Bukti ditolak', t2: `${f.tolak.n} booking · penyewa belum mengirim ulang bukti`, t3: `${formatRupiah(f.tolak.rp)} belum dibayar` }],
+        });
 
     return (
-        <Kartu judul="Booking dan pembatalan" ket="Booking dengan jadwal main di periode ini. Bukti yang masih menunggu verifikasi tidak dihitung.">
-            <ul className="flex flex-col gap-3">
+        <Bagian judul="Booking dan pembatalan" ket="Booking dengan jadwal main di periode ini">
+            <div className="my-auto flex flex-col gap-3">
                 {baris.map((b) => (
-                    <li key={b.label} className="grid grid-cols-[110px_minmax(0,1fr)_auto] items-center gap-3 text-sm sm:grid-cols-[130px_minmax(0,1fr)_90px]">
-                        <span>{b.label}</span>
-                        <div className="flex h-6 overflow-hidden rounded-md bg-muted">
-                            {b.seg.map((s, i) => (
-                                <div key={i} title={s.judul} style={{ width: s.lebar, background: s.warna }} />
+                    <div key={b.label} className="grid grid-cols-[104px_minmax(0,1fr)_96px] items-center gap-3">
+                        <span className="font-medium whitespace-nowrap">{b.label}</span>
+                        <div className="flex h-5 gap-0.5 rounded bg-muted">
+                            {b.seg.map((s) => (
+                                <span key={s.t1} className="group relative h-full flex-none cursor-default rounded hover:brightness-90" style={{ width: s.lebar, background: s.warna }}>
+                                    <TipGelap t1={s.t1} t2={s.t2} t3={s.t3} className="left-0" />
+                                </span>
                             ))}
                         </div>
-                        <span className="text-right tabular-nums">
-                            {b.n} <span className="text-muted-foreground">· {pct(b.n)}</span>
+                        <span className="text-right whitespace-nowrap tabular-nums">
+                            <span className="font-semibold">{b.n}</span> <span className="inline-block w-10 text-xs text-muted-foreground">{pct(b.n)}</span>
                         </span>
-                    </li>
+                    </div>
                 ))}
-            </ul>
+            </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 {SEBAB.map((s) => (
                     <span key={s.k} className="inline-flex items-center gap-1.5">
-                        <span className="size-2 rounded-sm" style={{ background: s.warna }} />
+                        <span className="size-2.5 rounded-xs" style={{ background: s.warna }} />
                         {s.nama}
                     </span>
                 ))}
             </div>
-            <div className="rounded-lg bg-muted/60 p-4">
-                <p className="text-sm text-muted-foreground">Pemasukan yang batal</p>
-                <p className="text-xl font-semibold tabular-nums">{jt(batalRp)}</p>
-                <p className="text-sm text-muted-foreground">
-                    {batalN
-                        ? `${f.batal[terbesar.k].n} dari ${batalN} pembatalan ${terbesar.kalimat}.`
-                        : 'Tidak ada booking yang dibatalkan di periode ini.'}
-                </p>
+            <div className="flex flex-col gap-0.5 border-t pt-3">
+                <span className="flex justify-between gap-2">
+                    <span className="text-muted-foreground">Pemasukan yang batal</span>
+                    <span className="font-semibold tabular-nums">{jt(batalRp)}</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                    {batalN ? `${f.batal[terbesar.k].n} dari ${batalN} pembatalan ${terbesar.kalimat}.` : 'Tidak ada booking yang dibatalkan di periode ini.'}
+                </span>
             </div>
-        </Kartu>
+        </Bagian>
     );
 }

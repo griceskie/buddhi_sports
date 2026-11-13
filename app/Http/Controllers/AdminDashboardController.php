@@ -180,6 +180,14 @@ class AdminDashboardController extends Controller
     private function tugasLain(Carbon $bulanLalu): array
     {
         $tugas = [];
+        // laporan yang diminta revisi Manager dan belum dibuat ulang
+        $revisi = DB::table('laporan_pembayarans')->whereNotNull('revisiPada')->whereNull('diperiksaPada')
+            ->orderByDesc('revisiPada')->get(['bulan', 'tahun', 'catatanRevisi']);
+        foreach ($revisi as $r) {
+            $bulanRevisi = Carbon::create((int) $r->tahun, (int) $r->bulan, 1);
+            $tugas[] = ['jenis' => 'revisi', 'judul' => 'Laporan '.$bulanRevisi->locale('id')->translatedFormat('F').' perlu revisi', 'ket' => 'Catatan Manager: '.$r->catatanRevisi, 'aksi' => 'Buka', 'idPembayaran' => null, 'href' => '/tampillaporanpembayaran?periode='.$bulanRevisi->format('Y-m')];
+        }
+
         $namaBulan = $bulanLalu->locale('id')->translatedFormat('F');
         $adaLaporan = DB::table('laporan_pembayarans')->where('bulan', $bulanLalu->month)->where('tahun', $bulanLalu->year)->whereNotNull('filePdf')->exists();
         if (! $adaLaporan) {
@@ -188,7 +196,7 @@ class AdminDashboardController extends Controller
                 ->orderBy('idPembayaran')->pluck('idPembayaran');
             $tugas[] = $tertahan->isNotEmpty()
                 ? ['jenis' => 'tertahan', 'judul' => "Laporan $namaBulan tertahan", 'ket' => $tertahan->count()." bukti $namaBulan belum diverifikasi", 'aksi' => 'Tinjau', 'idPembayaran' => $tertahan->first(), 'href' => null]
-                : ['jenis' => 'siap', 'judul' => "Laporan $namaBulan siap dibuat", 'ket' => "Semua bukti $namaBulan sudah diproses", 'aksi' => 'Buat', 'idPembayaran' => null, 'href' => '/tampilpembayaran?periode='.$bulanLalu->format('Y-m')];
+                : ['jenis' => 'siap', 'judul' => "Laporan $namaBulan siap dibuat", 'ket' => "Semua bukti $namaBulan sudah diproses", 'aksi' => 'Buat', 'idPembayaran' => null, 'href' => '/tampillaporanpembayaran?periode='.$bulanLalu->format('Y-m')];
         }
 
         $ditolak = DB::table('pembayarans')->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')

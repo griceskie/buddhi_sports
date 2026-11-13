@@ -102,3 +102,34 @@
     animation: none !important;
   }
 }
+
+/* Badge status di panel Admin memakai warna subtle seperti kanvas: latar 12% warna status di atas kartu, teks berwarna,
+   bentuk kapsul. Status dibaca dari data-status (PaymentStatusBadge, BookingStatusBadge, CourtStatusBadge) atau
+   data-nada (badge buatan halaman). Sengaja di luar @layer supaya menang atas kelas utilitas varian Badge.
+   Hanya di .tema-pengelola, jadi badge penyewa dan Manager tetap seperti di design system. */
+html.tema-pengelola [data-slot='badge']:is([data-status], [data-nada]) {
+  --nada: var(--muted-foreground);
+  height: 20px;
+  padding: 0 8px;
+  border-color: transparent;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--nada) 12%, var(--card));
+  color: var(--nada);
+}
+html.tema-pengelola [data-slot='badge']:is(
+    [data-status='terverifikasi'],
+    [data-status='dikonfirmasi'],
+    [data-status='tersedia'],
+    [data-nada='hijau']
+  ) {
+  --nada: var(--accessible-green);
+}
+html.tema-pengelola [data-slot='badge']:is([data-status='menunggu verifikasi'], [data-status='perbaikan'], [data-nada='oranye']) {
+  --nada: var(--accessible-orange);
+}
+html.tema-pengelola [data-slot='badge']:is([data-status='ditolak'], [data-status='dibatalkan'], [data-nada='merah']) {
+  --nada: var(--accessible-red);
+}
+html.tema-pengelola [data-slot='badge']:is([data-status='dipesan'], [data-nada='biru']) {
+  --nada: var(--primary);
+}

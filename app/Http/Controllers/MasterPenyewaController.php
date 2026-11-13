@@ -16,7 +16,16 @@ class MasterPenyewaController extends Controller
 
     public function tampilData(){
 
-        $varpenyewa = DB::table('penyewas')->get();
+        // kolom yang dipakai tabel saja (tanpa hash password) plus jumlah booking per penyewa
+        $varpenyewa = DB::table('penyewas')
+            ->select('idPenyewa', 'namaPenyewa', 'noHp', 'email')
+            ->selectSub(DB::table('bookings')->selectRaw('count(*)')->whereColumn('bookings.idPenyewa', 'penyewas.idPenyewa'), 'jumlahBooking')
+            ->get()
+            ->map(function ($p) {
+                $p->jumlahBooking = (int) $p->jumlahBooking; // MySQL mengirim count sebagai teks
+
+                return $p;
+            });
         return Inertia::render('Master/Penyewa/TampilData', ['datapenyewa' => $varpenyewa]);
     }
 

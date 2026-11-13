@@ -228,6 +228,6 @@ class AdminDashboardTest extends TestCase
         $this->post("/verifikasi/$sept/terima");
         $this->get('/dashboard-admin')->assertInertia(fn (Assert $p) => $p
             ->where('tugas.0.jenis', 'siap')
-            ->where('tugas.0.href', '/tampilpembayaran?periode=2026-09'));
+            ->where('tugas.0.href', '/tampillaporanpembayaran?periode=2026-09'));
     }
 }
