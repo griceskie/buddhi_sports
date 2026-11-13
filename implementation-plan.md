@@ -238,7 +238,7 @@ Audit setelah PR #35–#39. Bukan daftar tugas yang sudah diputuskan: semua buti
 |---|-------|--------|
 | 8.9 | Field bukti di form Pembayaran (`txtbukti`) berupa teks bebas yang dibaca dari disk privat oleh `BuktiBayarController`; Admin (atau data lama) bisa mengarahkannya ke `laporan/*.pdf` sehingga penyewa pemilik booking bisa membukanya. (Dari kode, belum dicoba.) | Validasi awalan `bukti/` dan tolak `..`; atau jangan boleh diedit dari form. |
 | 8.10 | Yang belum masuk log: login dan login gagal, ubah profil, ubah sandi. Ubah sandi tidak mengeluarkan sesi lain. | Catat ke `log_aktivitas`; `Auth::logoutOtherDevices()` / invalidasi sesi lain. |
-| 8.11 | `jenisLapangan` adalah teks bebas di server (form memakai nilai bawaan "Bulu Tangkis"), padahal ikon dan jam ramai bergantung pada dua nilai. | `in:Bulu Tangkis,Basket` di server. |
+| 8.11 | Form memakai Select (Bulu Tangkis / Basket), tetapi server hanya memvalidasi `string|max:255`, jadi permintaan langsung bisa mengisi jenis lain padahal ikon dan tampilan penyewa bergantung pada dua nilai. | `in:Bulu Tangkis,Basket` di server. |
 | 8.12 | Admin bisa mengubah email dan sandi penyewa (tercatat di log, sandi tidak ditulis). | Pertimbangkan: hanya reset lewat tautan, bukan ketik sandi. |
 | 8.13 | Booking `Dikonfirmasi` dari form Admin tanpa pembayaran memberi okupansi tanpa pemasukan di analitik laporan. | Beri tanda di tabel Booking, atau wajibkan pembayaran. |
 | 8.14 | "Periksa keaslian log" menghitung seluruh rantai secara sinkron; lambat saat log besar. | Periksa bertahap (dari titik terakhir yang lolos) dan jalankan lewat antrean. |
