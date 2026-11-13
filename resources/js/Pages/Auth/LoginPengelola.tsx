@@ -1,26 +1,22 @@
 import InputError from '@/Components/InputError';
+import PanelPratinjauLogin from '@/Components/pengelola/PanelPratinjauLogin';
 import PasswordInput from '@/Components/PasswordInput';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
-import GuestLayout from '@/Layouts/GuestLayout';
+import PengelolaGuestLayout from '@/Layouts/PengelolaGuestLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler, useState } from 'react';
+import { FormEventHandler } from 'react';
+
+type Peran = 'admin' | 'manager';
 
 export default function LoginPengelola() {
-    const [role, setRole] = useState<'admin' | 'manager'>('admin');
-
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset } = useForm<{ role: Peran; username: string; password: string }>({
         role: 'admin',
         username: '',
         password: '',
     });
-
-    const switchRole = (next: 'admin' | 'manager') => {
-        setRole(next);
-        setData('role', next);
-    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -31,69 +27,59 @@ export default function LoginPengelola() {
     };
 
     return (
-        <GuestLayout>
+        <PengelolaGuestLayout panel={<PanelPratinjauLogin peran={data.role} />}>
             <Head title="Login Pengelola" />
 
-            <Tabs
-                value={role}
-                onValueChange={(v) => switchRole(v as 'admin' | 'manager')}
-                className="mb-6"
-            >
-                <TabsList className="w-full">
-                    <TabsTrigger value="admin" className="flex-1">
-                        Login sebagai Admin
-                    </TabsTrigger>
-                    <TabsTrigger value="manager" className="flex-1">
-                        Login sebagai Manager
-                    </TabsTrigger>
-                </TabsList>
-            </Tabs>
-
-            <form onSubmit={submit}>
-                <div>
-                    <Label htmlFor="username">Username</Label>
-
-                    <Input
-                        id="username"
-                        name="username"
-                        value={data.username}
-                        className="mt-1"
-                        autoComplete="username"
-                        autoFocus
-                        onChange={(e) => setData('username', e.target.value)}
-                        required
-                    />
-
-                    <InputError message={errors.username} className="mt-2" />
+            <div className="flex flex-col gap-7">
+                <div className="flex flex-col gap-1.5">
+                    <h1 className="text-[26px] leading-8 font-semibold tracking-[-0.01em] text-balance">Login ke panel pengelola</h1>
+                    <p className="text-[15px] leading-[22px] text-muted-foreground">
+                        Selamat datang kembali, semoga lancar bekerja hari ini.
+                    </p>
                 </div>
 
-                <div className="mt-4">
-                    <Label htmlFor="password">Password</Label>
+                <Tabs value={data.role} onValueChange={(v) => setData('role', v as Peran)}>
+                    <TabsList className="h-9 w-full group-data-horizontal/tabs:h-9" aria-label="Peran">
+                        <TabsTrigger value="admin">Admin</TabsTrigger>
+                        <TabsTrigger value="manager">Manager</TabsTrigger>
+                    </TabsList>
+                </Tabs>
 
-                    <PasswordInput
-                        id="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1"
-                        autoComplete="current-password"
-                        onChange={(e) => setData('password', e.target.value)}
-                        required
-                    />
+                <form onSubmit={submit} className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1">
+                        <Label htmlFor="username">Username</Label>
+                        <Input
+                            id="username"
+                            name="username"
+                            value={data.username}
+                            autoComplete="username"
+                            autoFocus
+                            aria-invalid={!!errors.username}
+                            onChange={(e) => setData('username', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.username} className="mt-1" />
+                    </div>
 
-                    <InputError message={errors.password} className="mt-2" />
-                </div>
+                    <div className="flex flex-col gap-1">
+                        <Label htmlFor="password">Password</Label>
+                        <PasswordInput
+                            id="password"
+                            name="password"
+                            value={data.password}
+                            autoComplete="current-password"
+                            aria-invalid={!!errors.password}
+                            onChange={(e) => setData('password', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.password} className="mt-1" />
+                    </div>
 
-                <div className="mt-4 flex flex-col gap-3">
-                    <Button
-                        type="submit"
-                        size="lg"
-                        className="w-full"
-                        disabled={processing}
-                    >
-                        Login sebagai {role === 'admin' ? 'Admin' : 'Manager'}
+                    <Button type="submit" size="lg" className="h-10 w-full" disabled={processing}>
+                        Login sebagai {data.role === 'admin' ? 'Admin' : 'Manager'}
                     </Button>
-                </div>
-            </form>
-        </GuestLayout>
+                </form>
+            </div>
+        </PengelolaGuestLayout>
     );
 }
