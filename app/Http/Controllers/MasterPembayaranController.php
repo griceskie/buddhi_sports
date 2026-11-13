@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Support\KunciLaporan;
 use App\Support\LogAktivitas;
 use App\Support\Pemesanan;
 use Illuminate\Database\QueryException;
@@ -70,6 +71,7 @@ class MasterPembayaranController extends Controller
             'bukti' => $bukti,
             'periode' => ['bulan' => $bulan, 'tahun' => $tahun],
             'namaLaporan' => LaporanPembayaranController::namaLaporan($bulan, $tahun),
+            'terkunci' => KunciLaporan::terkunci($awal->toDateString()),
             'ringkasan' => self::ringkasan($varpembayaran),
             'laporan' => DB::table('laporan_pembayarans')->where('bulan', $bulan)->where('tahun', $tahun)
                 ->first(['idLaporan', 'namaLaporan', 'tglLaporan', 'filePdf', 'diperiksaPada']),
@@ -95,6 +97,10 @@ class MasterPembayaranController extends Controller
             'txtstatus' => 'required|string|max:255',
             'txtalasan' => 'required_if:txtstatus,Ditolak|nullable|string|max:500',
         ], ['txtalasan.required_if' => 'Tulis alasan penolakan untuk penyewa.']);
+
+        if (KunciLaporan::terkunci($request->txttglbayar)) {
+            return back()->withErrors(['txttglbayar' => KunciLaporan::pesan($request->txttglbayar)]);
+        }
 
         // satu booking hanya boleh punya satu pembayaran
         $sudahAda = DB::table('pembayarans')->where('idBooking', $request->txtbooking)->exists();
@@ -153,6 +159,12 @@ class MasterPembayaranController extends Controller
             'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
         ];
         $lama = (array) DB::table('pembayarans')->where('idPembayaran', $request->txtid)->first();
+        // laporan bulan lama atau bulan baru sudah diserahkan: data keuangan terkunci
+        foreach (array_filter([$lama['tglBayar'] ?? null, $data['tglBayar']]) as $tgl) {
+            if (KunciLaporan::terkunci($tgl)) {
+                return back()->withErrors(['txttglbayar' => KunciLaporan::pesan($tgl)]);
+            }
+        }
         // terverifikasi bersifat final: booking-nya menahan jam, jadi status tidak boleh diubah diam-diam dari sini
         if (($lama['status'] ?? null) === 'Terverifikasi' && $data['status'] !== 'Terverifikasi') {
             return back()->withErrors(['txtstatus' => 'Pembayaran yang sudah terverifikasi tidak bisa diubah statusnya. Untuk membatalkan, ubah status booking menjadi Dibatalkan.']);
@@ -174,6 +186,9 @@ class MasterPembayaranController extends Controller
     public function deleteDataPembayaran($idhapus){
         try {
             $lama = (array) DB::table('pembayarans')->where('idPembayaran', $idhapus)->first();
+            if (KunciLaporan::terkunci($lama['tglBayar'] ?? null)) {
+                return back()->with('error', KunciLaporan::pesan($lama['tglBayar']));
+            }
             DB::transaction(function () use ($idhapus, $lama) {
                 DB::table('pembayarans')->where('idPembayaran', $idhapus)->delete();
                 LogAktivitas::catat('hapus', 'Pembayaran', isset($lama['idBooking']) ? Pemesanan::kode((int) $lama['idBooking']) : '#'.$idhapus, LogAktivitas::selisih('Pembayaran', $lama, null));

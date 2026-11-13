@@ -18,7 +18,7 @@ import { ProofPreview } from '@/Components/ui/proof-review';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { cn } from 'cn';
-import { Plus } from 'lucide-react';
+import { Lock, Plus } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 type Pembayaran = {
@@ -39,6 +39,9 @@ type Props = {
     datapembayaran: Pembayaran[];
     bukti: BuktiAntrean[];
     periode: Period;
+    namaLaporan: string;
+    /** laporan bulan ini sudah diserahkan: tidak ada tambah, ubah, atau hapus */
+    terkunci: boolean;
     databooking: Booking[];
     dataadmin: Admin[];
 };
@@ -50,7 +53,7 @@ const TAB = [
     { id: 'Ditolak', label: 'Ditolak' },
 ];
 
-export default function TampilData({ datapembayaran, bukti, periode, databooking, dataadmin }: Props) {
+export default function TampilData({ datapembayaran, bukti, periode, namaLaporan, terkunci, databooking, dataadmin }: Props) {
     const sheet = useFormSheet<Pembayaran>();
     const booking = new Map(databooking.map((b) => [b.idBooking, b]));
 
@@ -98,6 +101,15 @@ export default function TampilData({ datapembayaran, bukti, periode, databooking
             }
         >
             <Head title="Data Pembayaran" />
+
+            {terkunci && (
+                <div role="status" className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
+                    <Lock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                    <span className="text-muted-foreground">
+                        {namaLaporan} sudah diserahkan, jadi pembayaran bulan ini terkunci. Kuncinya terbuka lagi kalau Manager meminta revisi.
+                    </span>
+                </div>
+            )}
 
             {/* tab status bernomor (kanvas), sekaligus filter tabel */}
             <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="tablist" aria-label="Status pembayaran">
@@ -172,15 +184,21 @@ export default function TampilData({ datapembayaran, bukti, periode, databooking
                         render: (r) => <PaymentStatusBadge status={r.status} />,
                     },
                 ]}
-                aksi={(r) => (
-                    <AksiBaris
-                        nama={booking.get(r.idBooking)?.kode ?? String(r.idPembayaran)}
-                        onEdit={() => sheet.buka(r)}
-                        hapus={`/deletepembayaran/${r.idPembayaran}`}
-                    />
-                )}
+                aksi={(r) =>
+                    terkunci ? (
+                        <span title="Laporan bulan ini sudah diserahkan, pembayaran terkunci" className="inline-flex size-8 items-center justify-center text-muted-foreground">
+                            <Lock className="size-4" aria-label="Terkunci" />
+                        </span>
+                    ) : (
+                        <AksiBaris
+                            nama={booking.get(r.idBooking)?.kode ?? String(r.idPembayaran)}
+                            onEdit={() => sheet.buka(r)}
+                            hapus={`/deletepembayaran/${r.idPembayaran}`}
+                        />
+                    )
+                }
                 toolbarKanan={
-                    <Button onClick={() => sheet.buka()}>
+                    <Button onClick={() => sheet.buka()} disabled={terkunci} title={terkunci ? 'Laporan bulan ini sudah diserahkan' : undefined}>
                         <Plus />
                         Tambah pembayaran
                     </Button>
