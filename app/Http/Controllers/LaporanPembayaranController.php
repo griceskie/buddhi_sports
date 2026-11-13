@@ -101,6 +101,9 @@ class LaporanPembayaranController extends Controller
             'tglLaporan' => $data['tglLaporan'],
             'namaLaporan' => $nama,
             'filePdf' => $path,
+            // dibuat ulang = diserahkan lagi: permintaan revisi sebelumnya selesai
+            'catatanRevisi' => null,
+            'revisiPada' => null,
         ];
         $ada = DB::table('laporan_pembayarans')->where('bulan', $bulan)->where('tahun', $tahun)->value('idLaporan');
         DB::transaction(function () use ($ada, $baris, $bulan, $tahun, $nama, $total, $rupiah, $pembayaran) {

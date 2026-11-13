@@ -54,6 +54,24 @@ class NotifikasiAdmin
                 'baru' => false,
             ]);
 
+        // Laporan yang diminta revisi Manager dan belum dibuat ulang (7 hari terakhir)
+        $revisi = DB::table('laporan_pembayarans')
+            ->whereNotNull('revisiPada')
+            ->whereNull('diperiksaPada')
+            ->where('revisiPada', '>=', now()->subDays(7))
+            ->orderByDesc('revisiPada')
+            ->limit(self::BATAS)
+            ->get(['idLaporan', 'namaLaporan', 'revisiPada', 'bulan', 'tahun'])
+            ->map(fn ($r) => [
+                'id' => 'revisi-'.$r->idLaporan,
+                'jenis' => 'laporan',
+                'judul' => 'Laporan perlu revisi',
+                'ket' => ($r->namaLaporan ?? 'Laporan pembayaran').' · catatan dari Manager',
+                'waktu' => Carbon::parse($r->revisiPada)->toIso8601String(),
+                'href' => url('/tampillaporanpembayaran?periode='.sprintf('%04d-%02d', $r->tahun, $r->bulan)),
+                'baru' => false,
+            ]);
+
         // Booking mendatang yang dibatalkan penyewa sendiri (tidak ada waktu batal, jadi ditaruh paling bawah)
         $batal = DB::table('bookings')
             ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
@@ -75,7 +93,7 @@ class NotifikasiAdmin
                 'baru' => false,
             ]);
 
-        $bertanggal = $bayar->concat($laporan)->sortByDesc('waktu')->values();
+        $bertanggal = $bayar->concat($laporan)->concat($revisi)->sortByDesc('waktu')->values();
         $daftar = $bertanggal->concat($batal)->take(self::BATAS)->values()->all();
 
         return [

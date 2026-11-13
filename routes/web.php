@@ -123,6 +123,7 @@ Route::middleware('auth:manager')->group(function () {
     Route::get('/manager/lapangan', [ManagerController::class, 'lapangan'])->name('manager.lapangan');
     Route::get('/manager/laporan', [ManagerController::class, 'laporanPembayaran'])->name('manager.laporan');
     Route::post('/manager/laporan/{idLaporan}/diperiksa', [ManagerController::class, 'tandaiDiperiksa'])->whereNumber('idLaporan')->name('manager.laporan.diperiksa');
+    Route::post('/manager/laporan/{idLaporan}/revisi', [ManagerController::class, 'mintaRevisi'])->whereNumber('idLaporan')->name('manager.laporan.revisi');
     Route::get('/manager/admin', [ManagerController::class, 'admin'])->name('manager.admin');
     Route::post('/manager/admin', [ManagerController::class, 'tambahAdmin'])->name('manager.admin.tambah');
     Route::put('/manager/admin/{idAdmin}/password', [ManagerController::class, 'resetPasswordAdmin'])->whereNumber('idAdmin')->name('manager.admin.password');
