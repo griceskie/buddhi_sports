@@ -51,8 +51,23 @@ class MasterPembayaranController extends Controller
             ->orderBy('tglBayar')
             ->get();
 
+        // bukti bayar periode ini untuk DrawerVerifikasi (klik baris tabel), terlama dikirim di atas
+        $bukti = DB::table('pembayarans')
+            ->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')
+            ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
+            ->join('lapangans', 'lapangans.idLapangan', '=', 'bookings.idLapangan')
+            ->whereBetween('pembayarans.tglBayar', [$awal->toDateString(), $awal->copy()->endOfMonth()->toDateString()])
+            ->orderByRaw('pembayarans.dikirimPada IS NULL')->orderBy('pembayarans.dikirimPada')->orderBy('pembayarans.idPembayaran')
+            ->get([
+                'pembayarans.idPembayaran', 'pembayarans.tglBayar', 'pembayarans.jumlahBayar', 'pembayarans.buktiBayar', 'pembayarans.status', 'pembayarans.dikirimPada',
+                'bookings.idBooking', 'bookings.idLapangan', 'bookings.tanggal', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.totalBayar',
+                'penyewas.namaPenyewa', 'lapangans.namaLapangan',
+            ])
+            ->map(fn ($p) => AdminDashboardController::bukti($p));
+
         return Inertia::render('Master/Pembayaran/TampilData', [
             'datapembayaran' => $varpembayaran,
+            'bukti' => $bukti,
             'periode' => ['bulan' => $bulan, 'tahun' => $tahun],
             'namaLaporan' => LaporanPembayaranController::namaLaporan($bulan, $tahun),
             'ringkasan' => self::ringkasan($varpembayaran),

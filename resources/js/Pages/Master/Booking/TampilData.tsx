@@ -4,22 +4,13 @@ import FormCombobox from '@/Components/FormCombobox';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
+import DataTable from '@/Components/pengelola/DataTable';
 import { BookingStatusBadge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Card } from '@/Components/ui/card';
 import { CurrencyInput } from '@/Components/ui/currency-input';
 import { DateInput } from '@/Components/ui/date-input';
 import { bookingTotal, formatRupiah, formatTanggal } from '@/Components/ui/format';
 import { Label } from '@/Components/ui/label';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableEmpty,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/Components/ui/table';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { Pencil, Plus } from 'lucide-react';
@@ -66,52 +57,80 @@ export default function TampilData({ databooking, ...pilihan }: { databooking: B
         >
             <Head title="Data Booking" />
 
-            <div className="mb-4">
-                <Button onClick={() => sheet.buka()}>
-                    <Plus />
-                    Tambah Booking
-                </Button>
+            <div className="mb-6">
+                <p className="text-muted-foreground">Semua pemesanan lapangan, dari penyewa maupun yang dicatat Admin.</p>
             </div>
 
-            <Card className="gap-0 overflow-hidden py-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Penyewa</TableHead>
-                            <TableHead>Lapangan</TableHead>
-                            <TableHead>Tanggal</TableHead>
-                            <TableHead>Jam</TableHead>
-                            <TableHead>Total</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {databooking.map((row) => (
-                            <TableRow key={row.idBooking}>
-                                <TableCell className="font-medium">{namaPenyewa.get(row.idPenyewa) ?? '-'}</TableCell>
-                                <TableCell>{namaLapangan.get(row.idLapangan) ?? '-'}</TableCell>
-                                <TableCell>{formatTanggal(row.tanggal, 'EEE, d MMM yyyy')}</TableCell>
-                                <TableCell className="tabular-nums">
-                                    {row.jamMulai.slice(0, 5)}–{row.jamSelesai.slice(0, 5)}
-                                </TableCell>
-                                <TableCell>{formatRupiah(row.totalBayar)}</TableCell>
-                                <TableCell><BookingStatusBadge status={row.status} /></TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => sheet.buka(row)}>
-                                            <Pencil />
-                                            Edit
-                                        </Button>
-                                        <DeleteButton href={`/deletebooking/${row.idBooking}`} />
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {databooking.length === 0 && <TableEmpty colSpan={7} />}
-                    </TableBody>
-                </Table>
-            </Card>
+            <DataTable
+                baris={databooking}
+                kunci={(r) => r.idBooking}
+                satuan="booking"
+                cari={(r) => `BK-${String(r.idBooking).padStart(4, '0')} ${namaPenyewa.get(r.idPenyewa) ?? ''}`}
+                placeholderCari="Cari kode atau nama penyewa…"
+                filter={[
+                    {
+                        id: 'status',
+                        label: 'Status',
+                        nilai: (r) => r.status,
+                        opsi: [
+                            { id: 'Dipesan', label: 'Dipesan' },
+                            { id: 'Dikonfirmasi', label: 'Dikonfirmasi' },
+                            { id: 'Dibatalkan', label: 'Dibatalkan' },
+                        ],
+                    },
+                    {
+                        id: 'lapangan',
+                        label: 'Lapangan',
+                        nilai: (r) => String(r.idLapangan),
+                        opsi: pilihan.datalapangan.map((l) => ({ id: String(l.idLapangan), label: l.namaLapangan })),
+                    },
+                ]}
+                kolom={[
+                    {
+                        id: 'penyewa',
+                        label: 'Penyewa',
+                        tetap: true,
+                        className: 'font-medium',
+                        urut: (r) => namaPenyewa.get(r.idPenyewa) ?? '',
+                        render: (r) => namaPenyewa.get(r.idPenyewa) ?? '-',
+                    },
+                    { id: 'lapangan', label: 'Lapangan', render: (r) => namaLapangan.get(r.idLapangan) ?? '-' },
+                    {
+                        id: 'tanggal',
+                        label: 'Tanggal',
+                        urut: (r) => r.tanggal + r.jamMulai,
+                        render: (r) => formatTanggal(r.tanggal, 'EEE, d MMM yyyy'),
+                    },
+                    {
+                        id: 'jam',
+                        label: 'Jam',
+                        className: 'tabular-nums',
+                        render: (r) => `${r.jamMulai.slice(0, 5)}–${r.jamSelesai.slice(0, 5)}`,
+                    },
+                    { id: 'total', label: 'Total', urut: (r) => r.totalBayar, render: (r) => formatRupiah(r.totalBayar) },
+                    {
+                        id: 'status',
+                        label: 'Status',
+                        urut: (r) => ['Dipesan', 'Dikonfirmasi', 'Dibatalkan'].indexOf(r.status),
+                        render: (r) => <BookingStatusBadge status={r.status} />,
+                    },
+                ]}
+                aksi={(r) => (
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => sheet.buka(r)}>
+                            <Pencil />
+                            Edit
+                        </Button>
+                        <DeleteButton href={`/deletebooking/${r.idBooking}`} />
+                    </div>
+                )}
+                toolbarKanan={
+                    <Button onClick={() => sheet.buka()}>
+                        <Plus />
+                        Tambah booking
+                    </Button>
+                }
+            />
 
             <FormSheet open={sheet.open} onClose={sheet.tutup}>
                 <FormBooking key={sheet.versi} row={sheet.row} onDone={sheet.tutup} {...pilihan} />

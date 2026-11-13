@@ -541,22 +541,19 @@ export default function AdminDashboard({
                 </Card>
             </div>
 
-            {bukti && (
-                <DrawerVerifikasi
-                    key={bukti.idPembayaran}
-                    bukti={bukti}
-                    posisi={pos}
-                    jumlah={antrean.length}
-                    adaBerikutnya={!!berikutnya && berikutnya.idPembayaran !== bukti.idPembayaran}
-                    onSebelum={() => pos > 0 && tinjau(antrean[pos - 1].idPembayaran)}
-                    onBerikut={() => pos < antrean.length - 1 && tinjau(antrean[pos + 1].idPembayaran)}
-                    onTutup={() => setDitinjau(null)}
-                    onTerima={() => putuskan('terima')}
-                    onTolak={(alasan) => putuskan('tolak', alasan)}
-                    galatAlasan={galatAlasan}
-                    memproses={memproses}
-                />
-            )}
+            <DrawerVerifikasi
+                bukti={bukti}
+                posisi={pos}
+                jumlah={antrean.length}
+                adaBerikutnya={!!bukti && !!berikutnya && berikutnya.idPembayaran !== bukti.idPembayaran}
+                onSebelum={() => pos > 0 && tinjau(antrean[pos - 1].idPembayaran)}
+                onBerikut={() => pos < antrean.length - 1 && tinjau(antrean[pos + 1].idPembayaran)}
+                onTutup={() => setDitinjau(null)}
+                onTerima={() => putuskan('terima')}
+                onTolak={(alasan) => putuskan('tolak', alasan)}
+                galatAlasan={galatAlasan}
+                memproses={memproses}
+            />
         </AdminSidebarLayout>
     );
 }

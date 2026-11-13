@@ -2,22 +2,13 @@ import DeleteButton from '@/Components/DeleteButton';
 import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
+import DataTable from '@/Components/pengelola/DataTable';
 import { CourtStatusBadge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Card } from '@/Components/ui/card';
 import { CurrencyInput } from '@/Components/ui/currency-input';
 import { formatRupiah } from '@/Components/ui/format';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableEmpty,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/Components/ui/table';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { ImagePlus, Pencil, Plus, X } from 'lucide-react';
@@ -50,55 +41,73 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
         >
             <Head title="Data Lapangan" />
 
-            <div className="mb-4">
-                <Button onClick={() => sheet.buka()}>
-                    <Plus />
-                    Tambah Lapangan
-                </Button>
+            <div className="mb-6">
+                <p className="text-muted-foreground">Lapangan GOR, tarif per jam dan statusnya.</p>
             </div>
 
-            <Card className="gap-0 overflow-hidden py-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nama</TableHead>
-                            <TableHead>Jenis</TableHead>
-                            <TableHead>Tarif/Jam</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {datalapangan.map((row) => (
-                            <TableRow key={row.idLapangan}>
-                                <TableCell>
-                                    <div className="flex items-center gap-3">
-                                        {row.foto[0] ? (
-                                            <img src={row.foto[0].url} alt="" className="h-9 w-12 shrink-0 rounded-md object-cover" />
-                                        ) : (
-                                            <div className="h-9 w-12 shrink-0 rounded-md bg-muted" />
-                                        )}
-                                        {row.namaLapangan}
-                                    </div>
-                                </TableCell>
-                                <TableCell>{row.jenisLapangan}</TableCell>
-                                <TableCell>{formatRupiah(row.tarifPerJam)}</TableCell>
-                                <TableCell><CourtStatusBadge status={row.status} /></TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => sheet.buka(row)}>
-                                            <Pencil />
-                                            Edit
-                                        </Button>
-                                        <DeleteButton href={`/deletelapangan/${row.idLapangan}`} />
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {datalapangan.length === 0 && <TableEmpty colSpan={5} />}
-                    </TableBody>
-                </Table>
-            </Card>
+            <DataTable
+                baris={datalapangan}
+                kunci={(r) => r.idLapangan}
+                satuan="lapangan"
+                cari={(r) => r.namaLapangan}
+                placeholderCari="Cari nama lapangan…"
+                filter={[
+                    {
+                        id: 'jenis',
+                        label: 'Jenis',
+                        nilai: (r) => r.jenisLapangan,
+                        opsi: [
+                            { id: 'Bulu Tangkis', label: 'Bulu tangkis' },
+                            { id: 'Basket', label: 'Basket' },
+                        ],
+                    },
+                    {
+                        id: 'status',
+                        label: 'Status',
+                        nilai: (r) => r.status,
+                        opsi: [
+                            { id: 'Tersedia', label: 'Tersedia' },
+                            { id: 'Perbaikan', label: 'Dalam perbaikan' },
+                        ],
+                    },
+                ]}
+                kolom={[
+                    {
+                        id: 'nama',
+                        label: 'Nama',
+                        tetap: true,
+                        urut: (r) => r.namaLapangan,
+                        render: (r) => (
+                            <div className="flex items-center gap-3">
+                                {r.foto[0] ? (
+                                    <img src={r.foto[0].url} alt="" className="h-9 w-12 shrink-0 rounded-md object-cover" />
+                                ) : (
+                                    <div className="h-9 w-12 shrink-0 rounded-md bg-muted" />
+                                )}
+                                {r.namaLapangan}
+                            </div>
+                        ),
+                    },
+                    { id: 'jenis', label: 'Jenis', render: (r) => r.jenisLapangan },
+                    { id: 'tarif', label: 'Tarif per jam', urut: (r) => r.tarifPerJam, render: (r) => formatRupiah(r.tarifPerJam) },
+                    { id: 'status', label: 'Status', render: (r) => <CourtStatusBadge status={r.status} /> },
+                ]}
+                aksi={(r) => (
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => sheet.buka(r)}>
+                            <Pencil />
+                            Edit
+                        </Button>
+                        <DeleteButton href={`/deletelapangan/${r.idLapangan}`} />
+                    </div>
+                )}
+                toolbarKanan={
+                    <Button onClick={() => sheet.buka()}>
+                        <Plus />
+                        Tambah lapangan
+                    </Button>
+                }
+            />
 
             <FormSheet open={sheet.open} onClose={sheet.tutup}>
                 <FormLapangan key={sheet.versi} row={sheet.row} onDone={sheet.tutup} />
