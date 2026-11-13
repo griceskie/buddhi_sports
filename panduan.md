@@ -35,6 +35,19 @@ kelas bg-primary
 
 Satu variabel lapis 1 bisa dipakai beberapa token. Contohnya `--labels-primary` dipakai `foreground`, `card-foreground`, `popover-foreground`, `secondary-foreground`, dan `accent-foreground`. Kalau hanya ingin mengubah satu peran, ubah token lapis 2-nya.
 
+### Lapis 3: tema panel pengelola (Admin dan login pengelola)
+Panel Admin memakai palet **Design System Administrator** (shadcn netral, mode gelap ala Shadcn UI Kit), terpisah dari palet penyewa. Isinya di [resources/css/admin.css](resources/css/admin.css), diimpor dari `app.css`.
+- Hanya aktif saat `<html>` punya kelas `tema-pengelola`. Kelas itu dipasang dari prop shared `temaPanel` (true untuk Admin dan `/login-pengelola`, false untuk Manager dan penyewa): di `app.blade.php` untuk muatan pertama, dan oleh `sinkronTemaPanel` di `app.tsx` setiap pindah halaman.
+- Token yang ditimpa sama dengan lapis 2 (`--background`, `--card`, `--primary`, `--border`, `--canvas`, `--sidebar-*`, `--accessible-*`, `--radius`, …) plus satu token baru `--tabel-header` (kelas `bg-tabel-header`). Selektornya `html.tema-pengelola` dan `html.tema-pengelola.dark`, jadi menang atas `:root`, `.dark` dan blok squircle tanpa bergantung urutan impor.
+- Mode gelap panel = kelas `.dark` di `<html>` (sama dengan `@custom-variant dark`). Pilihan disimpan per perangkat di cookie `tema_pengelola` (`gelap` / `terang`); tanpa cookie mengikuti pengaturan sistem. Kodenya di `Components/pengelola/tema.ts`. Sisi penyewa tetap tanpa mode gelap.
+- Di tema panel `--canvas` putih (sama dengan kartu). Untuk isian abu yang halus di dalam kartu (placeholder, jalur), pakai `bg-muted`, bukan `bg-canvas`.
+
+| Ingin | Ubah di |
+|---|---|
+| Warna panel Admin (terang atau gelap) | `admin.css`, blok `html.tema-pengelola` atau `html.tema-pengelola.dark` |
+| Warna penyewa | Lapis 1/2 di `app.css` (tidak mempengaruhi Admin) |
+| Halaman mana yang memakai tema panel | `temaPanel` di `app/Http/Middleware/HandleInertiaRequests.php` |
+
 ---
 
 ## 2. Warna
@@ -251,3 +264,5 @@ Variabel ini ditulis di file komponen, bukan di `app.css`.
 | Besar sudut | `--radius` | lapis 2 **dan** blok squircle |
 | Kehalusan sudut | `--corner-smoothing` | blok squircle |
 | Lebar sidebar | `SIDEBAR_WIDTH`, `SIDEBAR_WIDTH_ICON` | `ui/sidebar.tsx` |
+| Warna panel Admin | token di `html.tema-pengelola` / `.dark` | `admin.css` |
+| Latar kepala tabel panel Admin | `--tabel-header` | `admin.css` |

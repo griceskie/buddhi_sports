@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Support\LogAktivitas;
 use App\Support\Pemesanan;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -86,7 +87,7 @@ class MasterPembayaranController extends Controller
             return back()->withErrors(['txtbooking' => 'Booking ini sudah memiliki data pembayaran.']);
         }
 
-        DB::table('pembayarans') -> insert ([
+        $data = [
             'idAdmin' => $request->txtadmin,
             'idBooking' => $request->txtbooking,
             'tglBayar' => $request->txttglbayar,
@@ -94,7 +95,14 @@ class MasterPembayaranController extends Controller
             'buktiBayar' => $request->txtbukti,
             'status' => $request->txtstatus,
             'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
-        ]);
+        ];
+        if ($data['status'] === 'Terverifikasi') {
+            $data['diverifikasiPada'] = now();
+        }
+        DB::transaction(function () use ($data) {
+            DB::table('pembayarans')->insert($data);
+            LogAktivitas::catat('tambah', 'Pembayaran', Pemesanan::kode((int) $data['idBooking']), LogAktivitas::selisih('Pembayaran', null, $data));
+        });
 
         return back();
     }
@@ -120,9 +128,7 @@ class MasterPembayaranController extends Controller
             return back()->withErrors(['txtbooking' => 'Booking ini sudah memiliki data pembayaran lain.']);
         }
 
-        DB::table('pembayarans')
-        -> where('idPembayaran', $request->txtid)
-        ->update([
+        $data = [
             'idAdmin' => $request->txtadmin,
             'idBooking' => $request->txtbooking,
             'tglBayar' => $request->txttglbayar,
@@ -130,14 +136,29 @@ class MasterPembayaranController extends Controller
             'buktiBayar' => $request->txtbukti,
             'status' => $request->txtstatus,
             'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
-        ]);
+        ];
+        $lama = (array) DB::table('pembayarans')->where('idPembayaran', $request->txtid)->first();
+        // waktu verifikasi hanya diisi saat status berubah menjadi Terverifikasi (KPI dashboard)
+        if ($data['status'] === 'Terverifikasi' && ($lama['status'] ?? null) !== 'Terverifikasi') {
+            $data['diverifikasiPada'] = now();
+        }
+        DB::transaction(function () use ($request, $data, $lama) {
+            DB::table('pembayarans')
+            -> where('idPembayaran', $request->txtid)
+            ->update($data);
+            LogAktivitas::catat('ubah', 'Pembayaran', Pemesanan::kode((int) $data['idBooking']), LogAktivitas::selisih('Pembayaran', $lama, $data));
+        });
 
         return back();
     }
 
     public function deleteDataPembayaran($idhapus){
         try {
-            DB::table('pembayarans')->where('idPembayaran', $idhapus)->delete();
+            $lama = (array) DB::table('pembayarans')->where('idPembayaran', $idhapus)->first();
+            DB::transaction(function () use ($idhapus, $lama) {
+                DB::table('pembayarans')->where('idPembayaran', $idhapus)->delete();
+                LogAktivitas::catat('hapus', 'Pembayaran', isset($lama['idBooking']) ? Pemesanan::kode((int) $lama['idBooking']) : '#'.$idhapus, LogAktivitas::selisih('Pembayaran', $lama, null));
+            });
         } catch (QueryException $e) {
             // masih dirujuk oleh laporan pembayaran
             return redirect('/tampilpembayaran')->with('error', 'Pembayaran tidak bisa dihapus karena masih digunakan pada laporan pembayaran.');

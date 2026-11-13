@@ -73,10 +73,9 @@ class BlackboxDashboardAdminTest extends TestCase
 
         $this->actingAs($admin, 'admin')->get('/dashboard-admin')->assertInertia(fn (Assert $p) => $p
             ->component('Dashboard/Admin')
-            ->where('stat.bookingHariIni', 2)
-            ->where('stat.menungguVerifikasi', 1)
-            ->where('stat.pendapatanBulanIni', 50000)
-            ->where('stat.pendapatanBulanLalu', 50000)
+            // dashboard v2: KPI hanya hari ini (sesi, keterisian, booking masuk, terverifikasi)
+            ->has('jadwalHariIni', 2)
+            ->has('antrean', 1)
             ->where('stat.jamTerisi', 2)
             ->where('stat.jamTotal', 2 * (22 - 8)));
     }

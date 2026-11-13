@@ -63,19 +63,22 @@ class AdminDashboardTest extends TestCase
 
         $this->actingAs($this->admin, 'admin')->get('/dashboard-admin')->assertInertia(fn (Assert $p) => $p
             ->component('Dashboard/Admin')
-            ->where('stat.bookingHariIni', 2)
-            ->where('stat.menungguVerifikasi', 1)
-            ->where('stat.pendapatanBulanIni', 100000)
-            ->where('stat.pendapatanBulanLalu', 50000)
+            // KPI hanya hari ini: sesi = dikonfirmasi + menunggu verifikasi; terisi hanya yang dikonfirmasi
+            ->has('jadwalHariIni', 2)
             ->where('stat.jamTerisi', 2)
             ->where('stat.jamTotal', 28)
+            // semua booking dibuat hari ini oleh helper: 7 masuk, 1 dibatalkan, 2 Dipesan tanpa bukti
+            ->where('stat.bookingMasuk', 7)
+            ->where('stat.bookingMasukBatal', 1)
+            ->where('stat.bookingMasukBelumBayar', 2)
+            ->where('stat.terverifikasiJumlah', 0)
             ->has('lapangan', 2)
             ->has('jadwal', 3) // dua hari ini + 20 Okt (masih dalam 7 hari ke belakang); yang belum bayar tidak ikut
             ->has('antrean', 1)
             ->where('antrean.0.idPembayaran', $idP)
             ->where('antrean.0.kode', 'BK-'.str_pad((string) $menunggu, 4, '0', STR_PAD_LEFT))
             ->where('antrean.0.buktiBayar', fn ($url) => str_ends_with($url, "/pembayaran/$idP/bukti"))
-            ->has('terbaru', 6)
+            ->has('terbaru', 7)
             ->where('pengelola.menungguVerifikasi', 1));
     }
 
@@ -103,7 +106,7 @@ class AdminDashboardTest extends TestCase
             ->where('jadwalSampai', '2026-12-25')
             ->has('jadwal', 1)
             ->where('jadwal.0.idBooking', $jauh)
-            ->where('stat.bookingHariIni', 1)
+            ->has('jadwalHariIni', 1)
             ->where('stat.jamTerisi', 2));
 
         foreach (['2026-02-30', 'besok', ''] as $salah) {
@@ -182,5 +185,49 @@ class AdminDashboardTest extends TestCase
         $this->actingAs($this->penyewa)->get('/dashboard-admin')->assertRedirect('/login-pengelola');
         $this->actingAs($this->penyewa)->post("/verifikasi/$p/terima")->assertRedirect('/login-pengelola');
         $this->assertSame('Menunggu Verifikasi', DB::table('pembayarans')->where('idPembayaran', $p)->value('status'));
+    }
+
+    public function test_antrean_fifo_dengan_tanda_bentrok_dan_kpi_terverifikasi_hari_ini(): void
+    {
+        $this->booking('Dikonfirmasi', '2026-10-25', '10:00:00', '12:00:00');
+        $lama = $this->bayar($this->booking('Dipesan', '2026-10-30', '10:00:00', '11:00:00'), 'Menunggu Verifikasi');
+        $baru = $this->bayar($this->booking('Dipesan', '2026-10-24', '18:00:00', '19:00:00'), 'Menunggu Verifikasi');
+        $bentrok = $this->bayar($this->booking('Dipesan', '2026-10-25', '11:00:00', '12:00:00'), 'Menunggu Verifikasi');
+        DB::table('pembayarans')->where('idPembayaran', $lama)->update(['dikirimPada' => '2026-10-22 09:00:00']);
+        DB::table('pembayarans')->where('idPembayaran', $baru)->update(['dikirimPada' => '2026-10-23 13:00:00']);
+        DB::table('pembayarans')->where('idPembayaran', $bentrok)->update(['dikirimPada' => '2026-10-23 10:00:00']);
+
+        // FIFO: yang paling lama dikirim di atas, bukan yang jam mainnya paling dekat
+        $this->actingAs($this->admin, 'admin')->get('/dashboard-admin')->assertInertia(fn (Assert $p) => $p
+            ->where('antrean.0.idPembayaran', $lama)
+            ->where('antrean.1.idPembayaran', $bentrok)
+            ->where('antrean.2.idPembayaran', $baru)
+            ->where('antrean.1.bentrokDengan', fn ($k) => str_starts_with($k, 'BK-'))
+            ->where('antrean.0.bentrokDengan', null));
+
+        $this->post("/verifikasi/$lama/terima");
+        $this->assertNotNull(DB::table('pembayarans')->where('idPembayaran', $lama)->value('diverifikasiPada'));
+        $this->get('/dashboard-admin')->assertInertia(fn (Assert $p) => $p
+            ->where('stat.terverifikasiJumlah', 100000)
+            ->where('stat.terverifikasiN', 1));
+    }
+
+    public function test_tugas_lain_laporan_bulan_lalu_dan_bukti_ditolak(): void
+    {
+        // September belum punya laporan dan masih ada bukti September yang menunggu: tertahan
+        $sept = $this->bayar($this->booking('Dipesan', '2026-10-28', '10:00:00', '11:00:00'), 'Menunggu Verifikasi', '2026-09-29');
+        $this->bayar($this->booking('Dipesan', '2026-10-29', '10:00:00', '11:00:00'), 'Ditolak');
+
+        $this->actingAs($this->admin, 'admin')->get('/dashboard-admin')->assertInertia(fn (Assert $p) => $p
+            ->has('tugas', 2)
+            ->where('tugas.0.jenis', 'tertahan')
+            ->where('tugas.0.judul', 'Laporan September tertahan')
+            ->where('tugas.0.idPembayaran', $sept)
+            ->where('tugas.1.jenis', 'ditolak'));
+
+        $this->post("/verifikasi/$sept/terima");
+        $this->get('/dashboard-admin')->assertInertia(fn (Assert $p) => $p
+            ->where('tugas.0.jenis', 'siap')
+            ->where('tugas.0.href', '/tampilpembayaran?periode=2026-09'));
     }
 }
