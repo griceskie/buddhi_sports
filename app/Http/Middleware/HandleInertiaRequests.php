@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Admin;
 use App\Models\Manager;
 use App\Models\Penyewa;
+use App\Support\NotifikasiAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -49,6 +50,7 @@ class HandleInertiaRequests extends Middleware
                         'nama' => $user->namaAdmin,
                         'username' => $user->username,
                         'menungguVerifikasi' => DB::table('pembayarans')->where('status', 'Menunggu Verifikasi')->count(),
+                        'notifikasi' => NotifikasiAdmin::untuk($user),
                     ];
                 }
 

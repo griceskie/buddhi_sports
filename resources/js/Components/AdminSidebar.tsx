@@ -55,8 +55,16 @@ const MENU_ADMIN: Kelompok[] = [
             { href: '/tampilpembayaran', label: 'Pembayaran', icon: Wallet },
         ],
     },
-    { label: 'Laporan', menu: [{ href: '/tampillaporanpembayaran', label: 'Laporan Pembayaran', icon: FileText }] },
+    { label: 'Laporan', menu: [{ href: '/tampillaporanpembayaran', label: 'Laporan pembayaran', icon: FileText }] },
 ];
+
+/** Judul header panel Admin: label menu yang aktif. */
+export function judulHalamanAdmin(url: string) {
+    const path = url.split('?')[0];
+    if (path.startsWith('/profile-pengelola')) return 'Profil pengelola';
+    const semua = MENU_ADMIN.flatMap((k) => k.menu);
+    return semua.find((m) => (m.href === '/dashboard-admin' ? path === m.href : path.startsWith(m.href)))?.label ?? 'Panel Admin';
+}
 
 // Manager hanya melihat pembayaran, lapangan, dan laporan; yang bisa diubah hanya akun Admin (PRD bagian 4).
 const MENU_MANAGER: Kelompok[] = [
@@ -152,7 +160,8 @@ export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
-                <SidebarTrigger className="shrink-0 text-sidebar-foreground/70" />
+                {/* Admin: tombol ciutkan pindah ke header halaman (HeaderPengelola) */}
+                {manager && <SidebarTrigger className="shrink-0 text-sidebar-foreground/70" />}
             </SidebarHeader>
 
             <SidebarContent>
@@ -182,9 +191,12 @@ export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
                 ))}
             </SidebarContent>
 
-            <SidebarFooter>
-                <PenggunaMenu />
-            </SidebarFooter>
+            {/* Admin: menu akun ada di header (HeaderPengelola), jadi tidak diulang di sini */}
+            {manager && (
+                <SidebarFooter>
+                    <PenggunaMenu />
+                </SidebarFooter>
+            )}
 
             <SidebarRail />
         </Sidebar>

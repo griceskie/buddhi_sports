@@ -75,6 +75,7 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/dashboard-admin', [AdminDashboardController::class, 'index'])->name('dashboard.admin');
     Route::post('/verifikasi/{idPembayaran}/terima', [AdminDashboardController::class, 'terima'])->whereNumber('idPembayaran')->name('verifikasi.terima');
     Route::post('/verifikasi/{idPembayaran}/tolak', [AdminDashboardController::class, 'tolak'])->whereNumber('idPembayaran')->name('verifikasi.tolak');
+    Route::post('/notifikasi/dibaca', [AdminDashboardController::class, 'tandaiNotifikasiDibaca'])->name('notifikasi.dibaca');
     Route::post('/laporanpembayaran/buat', [LaporanPembayaranController::class, 'buat'])->name('laporan.buat');
 
     Route::get('/tampilpenyewa', [MasterPenyewaController::class, 'tampilData']);
