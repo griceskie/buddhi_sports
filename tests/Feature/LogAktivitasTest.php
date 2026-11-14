@@ -163,7 +163,7 @@ class LogAktivitasTest extends TestCase
         $this->tambahPenyewa();
         $manager = Manager::create(['namaManager' => 'Jarwo', 'username' => 'Manager1', 'password' => Hash::make('Manager123')]);
         auth('admin')->logout();
-        $this->actingAs($manager, 'manager')->post('/manager/admin', ['nama' => 'Sari', 'username' => 'Admin2', 'password' => 'rahasia'])->assertRedirect();
+        $this->actingAs($manager, 'manager')->post('/manager/admin', ['nama' => 'Sari', 'username' => 'Admin2', 'password' => 'rahasia1'])->assertRedirect();
         $idSari = DB::table('admins')->where('username', 'Admin2')->value('idAdmin');
         $this->put("/manager/admin/{$idSari}/password", ['password' => 'barubaru'])->assertRedirect();
         $this->delete("/manager/admin/{$idSari}")->assertRedirect();

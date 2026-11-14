@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -61,13 +63,22 @@ class PengelolaAuthenticatedSessionController extends Controller
         ]);
 
         $guard = $request->string('role')->toString();
+        // paling banyak 5 percobaan salah per menit untuk satu username dari satu alamat IP
+        $kunci = 'login-pengelola|'.$guard.'|'.Str::lower($request->string('username')->toString()).'|'.$request->ip();
+        if (RateLimiter::tooManyAttempts($kunci, 5)) {
+            throw ValidationException::withMessages([
+                'password' => 'Terlalu banyak percobaan masuk. Coba lagi dalam '.RateLimiter::availableIn($kunci).' detik.',
+            ]);
+        }
 
         if (! Auth::guard($guard)->attempt($request->only('username', 'password'))) {
+            RateLimiter::hit($kunci, 60);
             throw ValidationException::withMessages([
                 'password' => 'Username atau password salah.',
             ]);
         }
 
+        RateLimiter::clear($kunci);
         $request->session()->regenerate();
 
         return redirect()->intended(

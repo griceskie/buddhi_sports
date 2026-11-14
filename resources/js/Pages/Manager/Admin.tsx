@@ -155,7 +155,7 @@ function FormTambahAdmin({ onDone }: { onDone: () => void }) {
                         onChange={(e) => setData('password', e.target.value)}
                     />
                 </div>
-                <InputError message={errors.password} className="mt-1" />
+                {errors.password ? <InputError message={errors.password} className="mt-1" /> : <p className="mt-1 text-sm text-muted-foreground">Minimal 8 karakter.</p>}
             </div>
         </SheetForm>
     );
@@ -187,7 +187,7 @@ function FormResetPassword({ admin, onDone }: { admin: Admin; onDone: () => void
                         onChange={(e) => setData('password', e.target.value)}
                     />
                 </div>
-                <InputError message={errors.password} className="mt-1" />
+                {errors.password ? <InputError message={errors.password} className="mt-1" /> : <p className="mt-1 text-sm text-muted-foreground">Minimal 8 karakter.</p>}
             </div>
         </SheetForm>
     );

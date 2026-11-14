@@ -15,6 +15,8 @@ use Inertia\Inertia;
 
 class MasterPembayaranController extends Controller
 {
+    public const PESAN_LEWAT_TERIMA = 'Status Terverifikasi hanya bisa diberikan lewat tombol Terima di panel verifikasi, supaya jam bentrok dicek dan booking ikut dikonfirmasi.';
+
 
     /** Awal bulan dari ?periode=YYYY-MM, bawaannya bulan ini. Dipakai juga halaman Pembayaran Manager. */
     public static function awalPeriode(Request $request): Carbon
@@ -94,9 +96,13 @@ class MasterPembayaranController extends Controller
             'txttglbayar' => 'required|date',
             'txtjumlah' => 'required|integer|min:0',
             'txtbukti' => 'nullable|string|max:255',
-            'txtstatus' => 'required|string|max:255',
+            // Terverifikasi hanya lewat Terima di panel verifikasi (cek bentrok, booking jadi Dikonfirmasi, tercatat terima)
+            'txtstatus' => 'required|in:Menunggu Verifikasi,Ditolak',
             'txtalasan' => 'required_if:txtstatus,Ditolak|nullable|string|max:500',
-        ], ['txtalasan.required_if' => 'Tulis alasan penolakan untuk penyewa.']);
+        ], [
+            'txtalasan.required_if' => 'Tulis alasan penolakan untuk penyewa.',
+            'txtstatus.in' => self::PESAN_LEWAT_TERIMA,
+        ]);
 
         if (KunciLaporan::terkunci($request->txttglbayar)) {
             return back()->withErrors(['txttglbayar' => KunciLaporan::pesan($request->txttglbayar)]);
@@ -117,9 +123,6 @@ class MasterPembayaranController extends Controller
             'status' => $request->txtstatus,
             'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
         ];
-        if ($data['status'] === 'Terverifikasi') {
-            $data['diverifikasiPada'] = now();
-        }
         DB::transaction(function () use ($data) {
             DB::table('pembayarans')->insert($data);
             LogAktivitas::catat('tambah', 'Pembayaran', Pemesanan::kode((int) $data['idBooking']), LogAktivitas::selisih('Pembayaran', null, $data));
@@ -169,9 +172,9 @@ class MasterPembayaranController extends Controller
         if (($lama['status'] ?? null) === 'Terverifikasi' && $data['status'] !== 'Terverifikasi') {
             return back()->withErrors(['txtstatus' => 'Pembayaran yang sudah terverifikasi tidak bisa diubah statusnya. Untuk membatalkan, ubah status booking menjadi Dibatalkan.']);
         }
-        // waktu verifikasi hanya diisi saat status berubah menjadi Terverifikasi (KPI dashboard)
+        // menjadi Terverifikasi hanya lewat Terima di panel verifikasi
         if ($data['status'] === 'Terverifikasi' && ($lama['status'] ?? null) !== 'Terverifikasi') {
-            $data['diverifikasiPada'] = now();
+            return back()->withErrors(['txtstatus' => self::PESAN_LEWAT_TERIMA]);
         }
         DB::transaction(function () use ($request, $data, $lama) {
             DB::table('pembayarans')

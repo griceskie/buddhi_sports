@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -227,7 +228,7 @@ class ManagerController extends Controller
         $request->validate([
             'nama' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:admins,username',
-            'password' => 'required|string|min:6',
+            'password' => ['required', 'string', Password::defaults()],
         ]);
 
         DB::transaction(function () use ($request) {
@@ -244,7 +245,7 @@ class ManagerController extends Controller
 
     public function resetPasswordAdmin(Request $request, int $idAdmin): RedirectResponse
     {
-        $request->validate(['password' => 'required|string|min:6']);
+        $request->validate(['password' => ['required', 'string', Password::defaults()]], ['password.min' => 'Password minimal :min karakter.']);
         $admin = DB::table('admins')->where('idAdmin', $idAdmin)->first(['namaAdmin', 'username']);
         abort_if($admin === null, 404);
         $nama = $admin->namaAdmin;

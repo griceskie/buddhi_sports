@@ -63,7 +63,7 @@ Route::get('/pembayaran/{idPembayaran}/bukti', [BuktiBayarController::class, 'ta
     ->middleware('auth:web,admin,manager')->whereNumber('idPembayaran')->name('pembayaran.bukti');
 
 // Profil Admin & Manager (guard yang login otomatis dipakai oleh $request->user())
-Route::middleware('auth:admin,manager')->group(function () {
+Route::middleware(['auth:admin,manager', 'auth.session'])->group(function () {
     Route::get('/profile-pengelola', [PengelolaProfileController::class, 'edit'])->name('profile.pengelola');
     Route::patch('/profile-pengelola', [PengelolaProfileController::class, 'update'])->name('profile.pengelola.update');
     Route::put('/profile-pengelola/password', [PengelolaProfileController::class, 'updatePassword'])->name('profile.pengelola.password');
@@ -76,7 +76,7 @@ Route::middleware('auth:admin,manager')->group(function () {
 });
 
 // Panel Admin: dashboard + semua data master
-Route::middleware('auth:admin')->group(function () {
+Route::middleware(['auth:admin', 'auth.session'])->group(function () {
     Route::get('/dashboard-admin', [AdminDashboardController::class, 'index'])->name('dashboard.admin');
     Route::post('/verifikasi/{idPembayaran}/terima', [AdminDashboardController::class, 'terima'])->whereNumber('idPembayaran')->name('verifikasi.terima');
     Route::post('/verifikasi/{idPembayaran}/tolak', [AdminDashboardController::class, 'tolak'])->whereNumber('idPembayaran')->name('verifikasi.tolak');
@@ -116,7 +116,7 @@ Route::middleware('auth:admin')->group(function () {
 });
 
 // Panel Manager: dashboard saja untuk saat ini (akses ke laporan pembayaran menyusul)
-Route::middleware('auth:manager')->group(function () {
+Route::middleware(['auth:manager', 'auth.session'])->group(function () {
     Route::get('/dashboard-manager', [ManagerController::class, 'dashboard'])->name('dashboard.manager');
     // Manager hanya melihat pembayaran, lapangan, dan laporan; yang bisa diubah hanya akun Admin
     Route::get('/manager/analisis', [ManagerController::class, 'analisis'])->name('manager.analisis');
