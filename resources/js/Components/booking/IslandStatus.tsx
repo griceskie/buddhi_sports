@@ -1,7 +1,7 @@
 import { cn } from 'cn';
 import { X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { jam, JAM_TUTUP } from './jadwal';
+import { jamTeks, JAM_TUTUP } from './jadwal';
 
 // island muncul saat pengguna menggulir, paling cepat sekali tiap JEDA sejak terakhir tampil, lalu hilang sendiri
 const JEDA_MS = 120_000;
@@ -91,7 +91,7 @@ export default function IslandStatus({
             <div className="relative z-1 flex items-center gap-3 rounded-full bg-background py-1.5 pr-1.5 pl-26 shadow-[0_10px_30px_rgb(0_0_0/0.14),0_0_0_1px_color-mix(in_oklab,var(--foreground)_6%,transparent)]">
                 <p className="min-w-0 truncate text-[15px] leading-5 tabular-nums">
                     <span className={cn('font-semibold', !buka && 'text-destructive')}>{buka ? 'Buka' : 'Tutup'}</span>{' '}
-                    {buka ? `sampai ${jam(JAM_TUTUP)}` : `· ${bukaLagi}`}
+                    {buka ? `sampai ${jamTeks(JAM_TUTUP)}` : `· ${bukaLagi}`}
                 </p>
                 <button
                     type="button"

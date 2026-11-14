@@ -33,8 +33,8 @@ class MasterBookingController extends Controller
     private function validasiBooking(Request $request, array $tambahan = []): void
     {
         $jam = fn (int $dari, int $sampai) => array_map(fn ($h) => sprintf('%02d:00', $h), range($dari, $sampai));
-        $buka = sprintf('%02d:00', Pemesanan::JAM_BUKA);
-        $tutup = sprintf('%02d:00', Pemesanan::JAM_TUTUP);
+        $buka = sprintf('%02d.00', Pemesanan::JAM_BUKA);
+        $tutup = sprintf('%02d.00', Pemesanan::JAM_TUTUP);
 
         $request->validate($tambahan + [
             'txtpenyewa' => 'required|integer',
@@ -48,8 +48,8 @@ class MasterBookingController extends Controller
             'txttotal' => 'required|integer|min:0',
             'txtstatus' => ['required', Rule::in(Pemesanan::STATUS)],
         ], [
-            'txtjammulai.in' => "Pilih jam mulai antara {$buka} dan ".sprintf('%02d:00', Pemesanan::JAM_TUTUP - 1).'.',
-            'txtjamselesai.in' => 'Pilih jam selesai antara '.sprintf('%02d:00', Pemesanan::JAM_BUKA + 1)." dan {$tutup}.",
+            'txtjammulai.in' => "Pilih jam mulai antara {$buka} dan ".sprintf('%02d.00', Pemesanan::JAM_TUTUP - 1).'.',
+            'txtjamselesai.in' => 'Pilih jam selesai antara '.sprintf('%02d.00', Pemesanan::JAM_BUKA + 1)." dan {$tutup}.",
             'txtjamselesai.after' => 'Jam selesai harus setelah jam mulai.',
         ]);
     }
@@ -102,6 +102,16 @@ class MasterBookingController extends Controller
 
     public function updateData(Request $request){
         $this->validasiBooking($request, ['txtid' => 'required|integer']);
+        $lama = (array) DB::table('bookings')->where('idBooking', $request->txtid)->first();
+
+        // membatalkan booking wajib dengan alasan; disimpan di catatan Log aktivitas, tanpa kolom baru
+        $membatalkan = $request->txtstatus === 'Dibatalkan' && ($lama['status'] ?? null) !== 'Dibatalkan';
+        if ($membatalkan) {
+            $request->validate(['txtalasanbatal' => 'required|string|max:255'], [
+                'txtalasanbatal.required' => 'Tulis alasan pembatalan.',
+                'txtalasanbatal.max' => 'Alasan pembatalan paling banyak 255 karakter.',
+            ]);
+        }
 
         if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, $request->txtid, $request->txtstatus)) {
             return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
@@ -117,12 +127,11 @@ class MasterBookingController extends Controller
             'totalBayar' => $request->txttotal,
             'status' => $request->txtstatus,
         ];
-        $lama = (array) DB::table('bookings')->where('idBooking', $request->txtid)->first();
-        DB::transaction(function () use ($request, $data, $lama) {
+        DB::transaction(function () use ($request, $data, $lama, $membatalkan) {
             DB::table('bookings')
             -> where('idBooking', $request->txtid)
             ->update($data);
-            LogAktivitas::catat('ubah', 'Booking', Pemesanan::kode((int) $request->txtid), LogAktivitas::selisih('Booking', $lama, $data));
+            LogAktivitas::catat('ubah', 'Booking', Pemesanan::kode((int) $request->txtid), LogAktivitas::selisih('Booking', $lama, $data), $membatalkan ? trim($request->txtalasanbatal) : null);
         });
 
         return redirect('/tampilbooking');

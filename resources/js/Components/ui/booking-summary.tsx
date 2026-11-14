@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "cn"
-import { bookingTotal, durationHours, formatRupiah, formatTanggal } from "./format"
+import { bookingTotal, durationHours, formatRupiah, formatTanggal, rentangJam } from "./format"
 
 type BookingSummaryProps = {
   /** lapangans.namaLapangan */
@@ -38,7 +38,7 @@ function BookingSummary({ court, type, date, start, end, rate, children, classNa
       <dl className="grid gap-2">
         {row("Lapangan", type ? `${court} · ${type}` : court)}
         {row("Tanggal", formatTanggal(date))}
-        {row("Jam", <span className="tabular-nums">{start}–{end}</span>)}
+        {row("Jam", <span className="tabular-nums">{rentangJam(start, end)}</span>)}
         {row("Tarif", <span className="tabular-nums">{formatRupiah(rate)} × {hours.toLocaleString("id-ID")} jam</span>)}
       </dl>
       <div className="flex items-baseline justify-between gap-4 border-t pt-3">

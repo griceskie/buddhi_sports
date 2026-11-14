@@ -18,7 +18,7 @@ const WARNA = {
 function waktuSingkat(iso: string | null) {
     if (!iso) return '';
     const d = new Date(iso);
-    if (isToday(d)) return format(d, 'HH:mm');
+    if (isToday(d)) return format(d, 'HH.mm');
     if (isYesterday(d)) return 'Kemarin';
     return format(d, 'd MMM', { locale: id });
 }
@@ -64,9 +64,9 @@ export default function NotifikasiHeader({ daftar, baru }: { daftar: NotifikasiP
                                         </span>
                                         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                                             <span className="text-[13px] leading-[18px] font-medium">{n.judul}</span>
-                                            <span className="text-xs text-muted-foreground">{n.ket}</span>
+                                            <span className="text-sm text-muted-foreground">{n.ket}</span>
                                         </span>
-                                        <span className="shrink-0 text-[11px] leading-[18px] text-muted-foreground tabular-nums">{waktuSingkat(n.waktu)}</span>
+                                        <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{waktuSingkat(n.waktu)}</span>
                                     </Link>
                                 </li>
                             );

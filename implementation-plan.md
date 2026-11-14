@@ -205,6 +205,25 @@ Perbarui `CLAUDE.md` (ringkasan progres), `panduan.md` (lapisan warna baru untuk
 - **Draft B**: tetap di kanvas sebagai arsip, tidak dipakai.
 - **PDF laporan**: tetap seperti sekarang; grafik dan isi tambahan ditunda. Satu-satunya tambahan adalah hash log (Tahap 4, butir 7).
 
+## 6b. Redesign panel Manager dan lanjutan Admin (rencana 2026-11-14)
+
+Rencana lengkap: `project/RENCANA-IMPLEMENTASI.md` di kanvas "Redesign Dashboard Admin" (artboard `Manager-*`, `Admin-Profil`, `Manager-Profil`). Ringkasnya, satu tahap = satu branch dari `main` = satu PR:
+
+| Tahap | Isi | Branch | Status |
+|---|---|---|---|
+| 1 | Admin disamakan dengan kanvas (teks abu minimal 14px, tooltip di semua badge status, Jumlah rata kanan), format jam titik di pengelola dan penyewa, alasan wajib saat Admin membatalkan booking | `feat/admin-sinkron-kanvas-2` | PR dibuka |
+| 2 | Kerangka panel Manager: tema, header, sidebar, menu akun, notifikasi | `feat/manager-kerangka` | belum |
+| 3 | Log aktivitas: kolom `peran`, tindakan Manager tercatat, satu log untuk semua pengelola (Admin bawaan filter Admin) | `feat/manager-log` | belum |
+| 4 | Pemantauan | `feat/manager-pemantauan` | belum |
+| 5 | Analisis bisnis (Pendapatan, Penyewa, Pola booking, Kinerja Admin) | `feat/manager-analisis` | belum |
+| 6 | Halaman data Manager | `feat/manager-halaman-data` | belum |
+| 7 | Profile Admin dan Manager | `feat/pengelola-profil` | belum |
+| 8 | Sinkron dokumen dan design system | `docs/sinkron-manager` | belum |
+
+Keputusan user 2026-11-14: perhitungan di PHP, React hanya menampilkan; jam ditulis dengan titik (16.20) di semua halaman, termasuk penyewa; satu kolom log `peran`; mode Rentang = tiga pilihan cepat + "Pilih tanggal sendiri"; pesan galat Profile pengelola bahasa Indonesia; celah bagian 8 dikerjakan sesudah semua tahap Manager.
+
+Catatan Tahap 1: jam tampil lewat `formatJam` / `rentangJam` (`ui/format.ts`) atau `jamTeks` (`booking/jadwal.ts`); nilai yang dikirim ke server tetap `HH:MM` (`jam()`), dan hitungan mundur bayar tetap `mm:ss`. Baris log lama tidak diubah (masih titik dua). Alasan batal Admin (`txtalasanbatal`, maks 255, kolom `catatan` log) diminta hanya saat status berubah menjadi `Dibatalkan`.
+
 ## 7. Verifikasi akhir
 
 - Cek manual tiap halaman master: tambah → muncul di list → edit → delete (termasuk kasus delete gagal karena FK).

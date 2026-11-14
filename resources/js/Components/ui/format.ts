@@ -29,9 +29,22 @@ function bookingTotal(start: string, end: string, tarifPerJam: number) {
   return Math.round(durationHours(start, end) * tarifPerJam)
 }
 
+/** Jam dengan titik (EYD): "16:20:00", "16:20", 16 atau Date → "16.20". */
+function formatJam(value: string | number | Date) {
+  if (value instanceof Date) return `${String(value.getHours()).padStart(2, "0")}.${String(value.getMinutes()).padStart(2, "0")}`
+  if (typeof value === "number") return `${String(Math.floor(value)).padStart(2, "0")}.${String(Math.round((value % 1) * 60)).padStart(2, "0")}`
+  const [h, m = "00"] = value.slice(0, 5).split(":")
+  return `${h.padStart(2, "0")}.${m}`
+}
+
+/** "08:00", "10:00" (atau angka jam) → "08.00–10.00". */
+function rentangJam(mulai: string | number, selesai: string | number) {
+  return `${formatJam(mulai)}–${formatJam(selesai)}`
+}
+
 const BULAN = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ]
 
-export { formatRupiah, formatTanggal, toMinutes, durationHours, bookingTotal, BULAN }
+export { formatRupiah, formatTanggal, formatJam, rentangJam, toMinutes, durationHours, bookingTotal, BULAN }

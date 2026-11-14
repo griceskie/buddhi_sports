@@ -51,8 +51,8 @@ export function sebabBatal(b: Pick<BookingPenyewa, 'dibatalkanPenyewa' | 'status
     return 'pengelola' as const;
 }
 
-/** Hari dan jam singkat untuk riwayat status, mis. "Kamis, 26 Nov pukul 16:12". */
-export const waktuSingkat = (iso: string) => formatTanggal(iso, "EEEE, d MMM 'pukul' HH:mm");
+/** Hari dan jam singkat untuk riwayat status, mis. "Kamis, 26 Nov pukul 16.12". */
+export const waktuSingkat = (iso: string) => formatTanggal(iso, "EEEE, d MMM 'pukul' HH.mm");
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -70,7 +70,7 @@ export function useSisaWaktu(batas: string | null) {
     const d = new Date(batas);
     const detik = Math.max(0, Math.floor((d.getTime() - sekarang) / 1000));
     return {
-        jamBatas: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+        jamBatas: `${pad(d.getHours())}.${pad(d.getMinutes())}`,
         sisa: `${pad(Math.floor(detik / 60))}:${pad(detik % 60)}`,
         habis: detik === 0,
         genting: detik < 600,

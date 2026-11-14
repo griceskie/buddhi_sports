@@ -182,7 +182,7 @@ class LogAktivitas
             'noHp' => self::sensorHp((string) $nilai),
             'email' => self::sensorEmail((string) $nilai),
             'tarifPerJam', 'totalBayar', 'jumlahBayar', 'totalPemasukan' => 'Rp'.number_format((int) $nilai, 0, ',', '.'),
-            'jamMulai', 'jamSelesai' => substr((string) $nilai, 0, 5),
+            'jamMulai', 'jamSelesai' => str_replace(':', '.', substr((string) $nilai, 0, 5)),
             'tanggal', 'tglBayar', 'tglLaporan' => Carbon::parse($nilai)->locale('id')->translatedFormat('j M Y'),
             'idPenyewa' => (string) (DB::table('penyewas')->where('idPenyewa', $nilai)->value('namaPenyewa') ?? '#'.$nilai),
             'idLapangan' => (string) (DB::table('lapangans')->where('idLapangan', $nilai)->value('namaLapangan') ?? '#'.$nilai),

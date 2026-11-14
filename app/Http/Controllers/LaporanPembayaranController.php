@@ -79,7 +79,7 @@ class LaporanPembayaranController extends Controller
                 'kode' => Pemesanan::kode($p->idBooking),
                 'penyewa' => $p->namaPenyewa,
                 'lapangan' => $p->namaLapangan,
-                'jadwal' => $tanggal($p->tanggal).', '.substr($p->jamMulai, 0, 5).'–'.substr($p->jamSelesai, 0, 5),
+                'jadwal' => $tanggal($p->tanggal).', '.str_replace(':', '.', substr($p->jamMulai, 0, 5)).'–'.str_replace(':', '.', substr($p->jamSelesai, 0, 5)),
                 'tglBayar' => $tanggal($p->tglBayar),
                 'jumlah' => $rupiah((int) $p->jumlahBayar),
             ])->all(),

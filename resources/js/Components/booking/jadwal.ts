@@ -1,4 +1,4 @@
-import { toMinutes } from '@/Components/ui/format';
+import { formatJam, toMinutes } from '@/Components/ui/format';
 
 export const JAM_BUKA = 8;
 export const JAM_TUTUP = 22;
@@ -43,13 +43,15 @@ export type StatusJam = 'free' | 'taken' | 'past';
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export const jam = (h: number) => `${pad(h)}:00`;
+/** Jam untuk ditampilkan (EYD, titik): 8 → "08.00". `jam()` tetap untuk nilai yang dikirim ke server. */
+export const jamTeks = (h: number) => formatJam(h);
 
 /** Status GOR pada jam ini: buka JAM_BUKA–JAM_TUTUP; saat tutup, kapan buka lagi. */
 export function statusGor(sekarang: Date) {
     const h = sekarang.getHours();
     return {
         buka: h >= JAM_BUKA && h < JAM_TUTUP,
-        bukaLagi: `buka ${h >= JAM_TUTUP ? 'besok' : 'pukul'} ${jam(JAM_BUKA)}`,
+        bukaLagi: `buka ${h >= JAM_TUTUP ? 'besok' : 'pukul'} ${jamTeks(JAM_BUKA)}`,
     };
 }
 

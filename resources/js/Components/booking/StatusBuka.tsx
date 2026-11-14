@@ -1,6 +1,6 @@
 import { cn } from 'cn';
 import { useEffect, useState } from 'react';
-import { jam, JAM_BUKA, JAM_TUTUP, statusGor } from './jadwal';
+import { jamTeks, JAM_BUKA, JAM_TUTUP, statusGor } from './jadwal';
 
 /** Waktu sekarang yang diperbarui tiap menit (untuk status buka/tutup). */
 export function useSekarangPerMenit() {
@@ -32,7 +32,7 @@ export default function StatusBuka() {
             <span>
                 <span className={cn('font-semibold', !buka && 'text-destructive')}>{buka ? 'Buka' : 'Tutup'}</span>{' '}
                 <span className="text-muted-foreground tabular-nums">
-                    {buka ? `${jam(JAM_BUKA)}–${jam(JAM_TUTUP)}` : `· ${bukaLagi}`}
+                    {buka ? `${jamTeks(JAM_BUKA)}–${jamTeks(JAM_TUTUP)}` : `· ${bukaLagi}`}
                 </span>
             </span>
         </p>

@@ -3,6 +3,7 @@ import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
 import AksiBaris from '@/Components/pengelola/AksiBaris';
+import BadgeTip, { tipBooking, tipLapangan, tipPembayaran } from '@/Components/pengelola/BadgeTip';
 import DataTable, { NilaiFilter } from '@/Components/pengelola/DataTable';
 import JudulHalaman from '@/Components/pengelola/JudulHalaman';
 import { PaymentStatusBadge } from '@/Components/ui/badge';
@@ -30,6 +31,8 @@ type Pembayaran = {
     buktiBayar: string | null;
     status: string;
     alasanTolak: string | null;
+    dikirimPada?: string | null;
+    diverifikasiPada?: string | null;
 };
 
 type Booking = { idBooking: number; kode: string; tanggal: string; namaPenyewa: string; namaLapangan: string };
@@ -128,7 +131,7 @@ export default function TampilData({ datapembayaran, bukti, periode, namaLaporan
                                 aktif && 'border-primary ring-1 ring-primary',
                             )}
                         >
-                            <span className={cn('text-[13px] font-medium', aktif ? 'text-primary' : 'text-muted-foreground')}>{t.label}</span>
+                            <span className={cn('text-sm font-medium', aktif ? 'text-primary' : 'text-muted-foreground')}>{t.label}</span>
                             <span className="text-lg leading-[26px] font-semibold tabular-nums">{n}</span>
                         </button>
                     );
@@ -176,12 +179,16 @@ export default function TampilData({ datapembayaran, bukti, periode, namaLaporan
                         urut: (r) => r.tglBayar,
                         render: (r) => formatTanggal(r.tglBayar, 'EEE, d MMM yyyy'),
                     },
-                    { id: 'jumlah', label: 'Jumlah', className: 'tabular-nums', urut: (r) => r.jumlahBayar, render: (r) => formatRupiah(r.jumlahBayar) },
+                    { id: 'jumlah', label: 'Jumlah', className: 'pr-8 text-right tabular-nums', urut: (r) => r.jumlahBayar, render: (r) => formatRupiah(r.jumlahBayar) },
                     {
                         id: 'status',
                         label: 'Status',
                         urut: (r) => TAB.findIndex((t) => t.id === r.status),
-                        render: (r) => <PaymentStatusBadge status={r.status} />,
+                        render: (r) => (
+                            <BadgeTip tip={tipPembayaran(r)}>
+                                <PaymentStatusBadge status={r.status} />
+                            </BadgeTip>
+                        ),
                     },
                 ]}
                 aksi={(r) =>
@@ -355,7 +362,7 @@ function FormPembayaran({
                         <p id="txtstatus" className="mt-1 flex h-10 items-center rounded-md border bg-muted px-3 text-base text-muted-foreground">
                             Terverifikasi
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="mt-1 text-sm text-muted-foreground">
                             Pembayaran yang sudah terverifikasi tidak bisa diubah statusnya. Untuk membatalkan, ubah status booking menjadi Dibatalkan.
                         </p>
                     </>

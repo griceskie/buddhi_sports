@@ -8,6 +8,7 @@ import {
     JAM_BUKA,
     isoTanggal,
     jam,
+    jamTeks,
     jamKosong,
     jamKosongPertama,
     jamSudahLewat,
@@ -197,7 +198,7 @@ export default function Dashboard({ lapangan, terisi = [] }: { lapangan: Lapanga
                                 </AlertTitle>
                                 <AlertDescription>
                                     {akhirHari === 'tutup'
-                                        ? `Buka lagi besok pukul ${jam(JAM_BUKA)}. `
+                                        ? `Buka lagi besok pukul ${jamTeks(JAM_BUKA)}. `
                                         : 'Jam terakhir hari ini sudah dimulai. '}
                                     Anda tetap bisa booking untuk besok dan seterusnya.
                                 </AlertDescription>

@@ -134,6 +134,25 @@ class MasterDataSheetTest extends TestCase
             ->assertSessionHasErrors(['txttotal' => 'The total amount field must be an integer.']);
     }
 
+    public function test_membatalkan_booking_wajib_dengan_alasan_yang_tercatat_di_log(): void
+    {
+        $b = DB::table('bookings')->first();
+        $ubah = fn (array $tambahan) => $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/updatebooking', $tambahan + [
+            'txtid' => $b->idBooking, 'txtpenyewa' => $b->idPenyewa, 'txtlapangan' => $b->idLapangan, 'txtadmin' => $this->admin->idAdmin,
+            'txttanggal' => $b->tanggal, 'txtjammulai' => '18:00', 'txtjamselesai' => '20:00', 'txttotal' => 100000, 'txtstatus' => 'Dibatalkan',
+        ]);
+
+        $ubah([])->assertSessionHasErrors(['txtalasanbatal' => 'Tulis alasan pembatalan.']);
+        $this->assertDatabaseHas('bookings', ['idBooking' => $b->idBooking, 'status' => 'Dikonfirmasi']);
+
+        $ubah(['txtalasanbatal' => 'Penyewa minta batal lewat telepon.'])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('bookings', ['idBooking' => $b->idBooking, 'status' => 'Dibatalkan']);
+        $this->assertDatabaseHas('log_aktivitas', ['jenisObjek' => 'Booking', 'aksi' => 'ubah', 'catatan' => 'Penyewa minta batal lewat telepon.']);
+
+        // booking yang sudah dibatalkan boleh diubah lagi tanpa alasan baru
+        $ubah(['txttotal' => 90000])->assertSessionHasNoErrors();
+    }
+
     public function test_jam_booking_harus_bulat_dalam_jam_operasional_dan_selesai_setelah_mulai(): void
     {
         $b = DB::table('bookings')->first();

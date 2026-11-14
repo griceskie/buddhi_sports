@@ -1,6 +1,6 @@
 import { IKON_LAPANGAN, JAM_BUKA, JAM_TUTUP } from '@/Components/booking/jadwal';
 import { Button } from '@/Components/ui/button';
-import { toMinutes } from '@/Components/ui/format';
+import { rentangJam, toMinutes } from '@/Components/ui/format';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PointerEvent as ReactPointerEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
@@ -23,7 +23,7 @@ const LEBAR = (JAM_TUTUP - JAM_BUKA) * PX_JAM; // 1.400px untuk 08:00-22:00
 const KOLOM_NAMA = 200;
 const JAM = Array.from({ length: JAM_TUTUP - JAM_BUKA }, (_, i) => JAM_BUKA + i);
 const dua = (n: number) => String(n).padStart(2, '0');
-const teksMenit = (m: number) => `${dua(Math.floor(m / 60))}:${dua(Math.round(m % 60))}`;
+const teksMenit = (m: number) => `${dua(Math.floor(m / 60))}.${dua(Math.round(m % 60))}`;
 const posisi = (hhmm: string) => ((toMinutes(hhmm) - JAM_BUKA * 60) / 60) * PX_JAM;
 
 type Blok = JadwalBooking & { menunggu: boolean; bentrok: boolean; lajur: number };
@@ -164,7 +164,7 @@ export default function JadwalGeser({
                         <div className="sticky left-0 z-20 h-full shrink-0 bg-card" style={{ width: KOLOM_NAMA }} />
                         <div className="relative h-full" style={{ width: LEBAR }}>
                             {JAM.map((h) => (
-                                <span key={h} className="absolute bottom-1 text-xs text-muted-foreground tabular-nums" style={{ left: (h - JAM_BUKA) * PX_JAM }}>
+                                <span key={h} className="absolute bottom-1 text-sm text-muted-foreground tabular-nums" style={{ left: (h - JAM_BUKA) * PX_JAM }}>
                                     {dua(h)}
                                 </span>
                             ))}
@@ -189,7 +189,7 @@ export default function JadwalGeser({
                                     <img src={IKON_LAPANGAN[l.jenisLapangan]} alt="" width={28} height={28} className="size-7 shrink-0 object-contain" />
                                     <div className="min-w-0">
                                         <p className="truncate font-medium">{l.namaLapangan}</p>
-                                        <p className="truncate text-xs text-muted-foreground">
+                                        <p className="truncate text-sm text-muted-foreground">
                                             {l.jenisLapangan} · {blok.length} booking
                                         </p>
                                     </div>
@@ -205,7 +205,7 @@ export default function JadwalGeser({
                                             top: 6 + b.lajur * (tinggiBlok + 4),
                                             height: tinggiBlok,
                                         };
-                                        const jam = `${b.jamMulai}–${b.jamSelesai}`;
+                                        const jam = rentangJam(b.jamMulai, b.jamSelesai);
                                         if (!b.menunggu)
                                             return (
                                                 <div
@@ -215,7 +215,7 @@ export default function JadwalGeser({
                                                     style={gaya}
                                                 >
                                                     <p className="truncate text-xs font-semibold">{b.namaPenyewa}</p>
-                                                    <p className="truncate text-xs text-muted-foreground tabular-nums">{jam}</p>
+                                                    <p className="truncate text-sm text-muted-foreground tabular-nums">{jam}</p>
                                                 </div>
                                             );
                                         const warna = b.bentrok
@@ -251,7 +251,7 @@ export default function JadwalGeser({
                     <Button variant="outline" size="icon" aria-label="Maju 1 jam" disabled={geser >= maks} onClick={() => geserKe(geser + PX_JAM, true)}>
                         <ChevronRight />
                     </Button>
-                    <span className="w-[84px] text-xs text-muted-foreground tabular-nums">{rentang}</span>
+                    <span className="w-[84px] text-sm text-muted-foreground tabular-nums">{rentang}</span>
                 </div>
                 <div
                     ref={trek}
