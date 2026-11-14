@@ -6,6 +6,7 @@ use App\Models\Admin;
 use App\Models\Manager;
 use App\Models\Penyewa;
 use App\Support\NotifikasiAdmin;
+use App\Support\NotifikasiManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -60,13 +61,14 @@ class HandleInertiaRequests extends Middleware
                         'nama' => $user->namaManager,
                         'username' => $user->username,
                         'laporanBelumDiperiksa' => DB::table('laporan_pembayarans')->whereNotNull('filePdf')->whereNull('diperiksaPada')->count(),
+                        'notifikasi' => NotifikasiManager::untuk($user),
                     ];
                 }
 
                 return null;
             },
-            // Tema panel pengelola (Design System Administrator) hanya untuk Admin dan halaman login pengelola; Manager dan penyewa tidak
-            'temaPanel' => fn () => $request->user() instanceof Admin || $request->routeIs('login.pengelola'),
+            // Tema panel pengelola (Design System Administrator) untuk Admin, Manager, dan halaman login pengelola; penyewa tidak
+            'temaPanel' => fn () => $request->user() instanceof Admin || $request->user() instanceof Manager || $request->routeIs('login.pengelola'),
             // Penyewa: jumlah booking mendatang yang menunggu tindakannya (belum bayar atau bukti ditolak), untuk titik merah di menu akun
             'perluTindakan' => function () use ($request) {
                 $user = $request->user();

@@ -11,7 +11,7 @@ export interface Pengelola {
     username: string;
     /** Admin saja: jumlah pembayaran yang menunggu verifikasi (badge sidebar). */
     menungguVerifikasi?: number;
-    /** Admin saja: notifikasi header (maksimal 5) dan jumlah bukti bayar yang belum dibaca. */
+    /** Notifikasi header (maksimal 5) dan jumlah yang belum dibaca: Admin = bukti bayar, Manager = laporan menunggu diperiksa. */
     notifikasi?: { daftar: NotifikasiPengelola[]; baru: number };
     /** Manager saja: jumlah laporan ber-PDF yang belum ditandai diperiksa (badge sidebar). */
     laporanBelumDiperiksa?: number;
@@ -19,7 +19,7 @@ export interface Pengelola {
 
 export interface NotifikasiPengelola {
     id: string;
-    jenis: 'bayar' | 'laporan' | 'batal';
+    jenis: 'bayar' | 'laporan' | 'batal' | 'terlambat';
     judul: string;
     ket: string;
     /** ISO 8601; null untuk booking yang dibatalkan penyewa (waktu batal tidak tercatat). */
