@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Satu-satunya jalan menulis log aktivitas Admin. Tabelnya hanya bisa ditambah (trigger di migrasi), dan setiap baris
+ * Satu-satunya jalan menulis log aktivitas pengelola (Admin, Manager, sistem). Tabelnya hanya bisa ditambah (trigger di migrasi), dan setiap baris
  * menyimpan hash dari isinya ditambah hash baris sebelumnya, jadi mengubah atau menghapus satu baris di luar aplikasi
  * memutus rantai dan terlihat di `periksa()`. Panggil `catat()` di dalam transaksi aksinya.
  */
@@ -23,6 +23,9 @@ class LogAktivitas
         'tolak' => 'menolak bukti bayar',
         'otomatis' => 'membatalkan otomatis',
         'buat' => 'membuat',
+        'periksa' => 'menandai diperiksa',
+        'revisi' => 'meminta revisi',
+        'reset' => 'mereset password',
     ];
 
     /** Label isian per jenis data; kolom yang tidak ada di sini tidak dicatat (mis. path foto). */
@@ -39,9 +42,11 @@ class LogAktivitas
      */
     public static function catat(string $aksi, string $jenisObjek, string $kodeObjek, array $rincian = [], ?string $catatan = null, bool $olehSistem = false): void
     {
-        // aksi otomatis (scheduler, halaman penyewa) dicatat atas nama "Sistem" walau ada sesi Admin di browser yang sama
+        // aksi otomatis (scheduler, halaman penyewa) dicatat atas nama "Sistem" walau ada sesi pengelola di browser yang sama
         $admin = $olehSistem ? null : Auth::guard('admin')->user();
-        $nama = $admin?->namaAdmin ?? 'Sistem';
+        $manager = $olehSistem || $admin ? null : Auth::guard('manager')->user();
+        $nama = $admin?->namaAdmin ?? $manager?->namaManager ?? 'Sistem';
+        $peran = $admin ? 'admin' : ($manager ? 'manager' : 'sistem');
 
         // kunci baris terakhir supaya dua aksi bersamaan tidak memakai hash sebelumnya yang sama
         $terakhir = DB::table('log_aktivitas')->orderByDesc('id')->lockForUpdate()->value('hash') ?? self::AWAL;
@@ -57,6 +62,7 @@ class LogAktivitas
             'rincian' => json_encode(array_values($rincian), JSON_UNESCAPED_UNICODE),
             'catatan' => $catatan,
             'hashSebelumnya' => $terakhir,
+            'peran' => $peran,
         ];
         $baris['hash'] = self::hash($baris);
 
@@ -73,6 +79,10 @@ class LogAktivitas
             $isi[$k] = $nilai === null ? null : (string) $nilai;
         }
         $isi['waktu'] = Carbon::parse($isi['waktu'])->format('Y-m-d H:i:s');
+        // kolom peran (sejak 2026-11-14) ikut di-hash hanya bila terisi, jadi hash baris lama tetap sama
+        if (($baris['peran'] ?? null) !== null) {
+            $isi['peran'] = (string) $baris['peran'];
+        }
 
         return hash('sha256', json_encode($isi, JSON_UNESCAPED_UNICODE));
     }

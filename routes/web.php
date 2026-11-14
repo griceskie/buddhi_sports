@@ -68,6 +68,9 @@ Route::middleware('auth:admin,manager')->group(function () {
     Route::patch('/profile-pengelola', [PengelolaProfileController::class, 'update'])->name('profile.pengelola.update');
     Route::put('/profile-pengelola/password', [PengelolaProfileController::class, 'updatePassword'])->name('profile.pengelola.password');
     Route::post('/notifikasi/dibaca', [AdminDashboardController::class, 'tandaiNotifikasiDibaca'])->name('notifikasi.dibaca');
+    // Log aktivitas semua pengelola: hanya baca dan periksa keaslian; tidak ada rute ubah atau hapus
+    Route::get('/log-aktivitas', [LogAktivitasController::class, 'tampilData'])->name('log.aktivitas');
+    Route::post('/log-aktivitas/periksa', [LogAktivitasController::class, 'periksa'])->name('log.aktivitas.periksa');
     // PDF laporan disimpan privat; Admin yang membuat dan Manager yang dituju sama-sama bisa membukanya
     Route::get('/laporanpembayaran/{idLaporan}/pdf', [LaporanPembayaranController::class, 'unduh'])->whereNumber('idLaporan')->name('laporan.pdf');
 });
@@ -77,9 +80,6 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('/dashboard-admin', [AdminDashboardController::class, 'index'])->name('dashboard.admin');
     Route::post('/verifikasi/{idPembayaran}/terima', [AdminDashboardController::class, 'terima'])->whereNumber('idPembayaran')->name('verifikasi.terima');
     Route::post('/verifikasi/{idPembayaran}/tolak', [AdminDashboardController::class, 'tolak'])->whereNumber('idPembayaran')->name('verifikasi.tolak');
-    // Log aktivitas: hanya baca dan periksa keaslian; tidak ada rute ubah atau hapus
-    Route::get('/log-aktivitas', [LogAktivitasController::class, 'tampilData'])->name('log.aktivitas');
-    Route::post('/log-aktivitas/periksa', [LogAktivitasController::class, 'periksa'])->name('log.aktivitas.periksa');
     Route::post('/laporanpembayaran/buat', [LaporanPembayaranController::class, 'buat'])->name('laporan.buat');
 
     Route::get('/tampilpenyewa', [MasterPenyewaController::class, 'tampilData']);

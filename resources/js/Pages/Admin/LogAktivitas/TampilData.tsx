@@ -16,16 +16,19 @@ import {
     Check,
     Clock,
     FilePlus,
+    KeyRound,
     FileText,
     LandPlot,
     Lock,
     LucideIcon,
     Pencil,
     Plus,
+    RotateCcw,
     ShieldAlert,
     ShieldCheck,
     Trash2,
     User,
+    UserCog,
     Wallet,
     X,
 } from 'lucide-react';
@@ -36,6 +39,7 @@ type Entri = {
     id: number;
     waktu: string;
     namaAdmin: string;
+    peran: 'admin' | 'manager' | 'sistem';
     aksi: keyof typeof AKSI;
     jenisObjek: string;
     kodeObjek: string;
@@ -44,7 +48,7 @@ type Entri = {
     catatan: string | null;
 };
 type Pemeriksaan = { utuh: boolean; diperiksa: number; rusakPada: number | null; waktu: string } | null;
-type Filter = { q?: string; admin?: string; aksi?: string; jenis?: string };
+type Filter = { q?: string; admin?: string; aksi?: string; jenis?: string; peran?: string };
 
 const AKSI = {
     tambah: { label: 'Menambah', ikon: Plus, warna: 'text-accessible-green' },
@@ -54,6 +58,9 @@ const AKSI = {
     tolak: { label: 'Menolak bukti', ikon: X, warna: 'text-accessible-red' },
     otomatis: { label: 'Membatalkan', ikon: Clock, warna: 'text-muted-foreground' },
     buat: { label: 'Membuat', ikon: FilePlus, warna: 'text-accessible-green' },
+    periksa: { label: 'Menandai diperiksa', ikon: Check, warna: 'text-accessible-green' },
+    revisi: { label: 'Meminta revisi', ikon: RotateCcw, warna: 'text-accessible-red' },
+    reset: { label: 'Mereset password', ikon: KeyRound, warna: 'text-accessible-orange' },
 } satisfies Record<string, { label: string; ikon: LucideIcon; warna: string }>;
 
 const IKON_JENIS: Record<string, LucideIcon> = {
@@ -62,7 +69,10 @@ const IKON_JENIS: Record<string, LucideIcon> = {
     Penyewa: User,
     Lapangan: LandPlot,
     Laporan: FileText,
+    Admin: UserCog,
 };
+
+const PERAN = { admin: 'Admin', manager: 'Manager', sistem: 'Sistem' };
 
 const kapan = (w: string) => format(new Date(w.replace(' ', 'T')), 'EEE, d MMM yyyy, HH.mm', { locale: id });
 const kapanPanjang = (w: string) => format(new Date(w.replace(' ', 'T')), 'EEEE, d MMMM yyyy, HH.mm', { locale: id });
@@ -152,7 +162,7 @@ export default function TampilData({
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div className="space-y-1">
                         <h2 className="text-xl leading-tight font-semibold">Log aktivitas</h2>
-                        <p className="text-sm text-muted-foreground">Siapa melakukan apa, kapan, dan apa yang terjadi. Klik baris untuk melihat isian sebelum dan sesudah.</p>
+                        <p className="text-sm text-muted-foreground">Catatan tindakan Admin, Manager, dan sistem. Pilih baris untuk melihat data sebelum dan sesudah diubah.</p>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                         <Button variant="outline" onClick={periksa} disabled={memeriksa}>
@@ -172,12 +182,24 @@ export default function TampilData({
                 <div className="flex flex-wrap items-center gap-2">
                     <SearchInput
                         defaultValue={filter.q ?? ''}
-                        placeholder="Cari kode, nama, atau admin…"
+                        placeholder="Cari kode atau nama…"
                         aria-label="Cari aktivitas"
                         onValueChange={(q) => {
                             clearTimeout(tunda.current);
                             tunda.current = setTimeout(() => saring({ q: q || undefined }), 300);
                         }}
+                    />
+                    <FormSelect
+                        className="w-52"
+                        value={filter.peran ?? 'semua'}
+                        onChange={(v) => saring({ peran: v || 'semua', admin: undefined })}
+                        placeholder="Peran"
+                        options={[
+                            { value: 'semua', label: 'Semua pengelola' },
+                            { value: 'admin', label: 'Admin' },
+                            { value: 'manager', label: 'Manager' },
+                            { value: 'sistem', label: 'Sistem' },
+                        ]}
                     />
                     <FormSelect
                         className="w-44"
@@ -229,6 +251,7 @@ export default function TampilData({
                                                 {inisial(e.namaAdmin)}
                                             </span>
                                             <span className="font-medium">{e.namaAdmin}</span>
+                                            {e.peran !== 'sistem' && <span className="text-muted-foreground">· {PERAN[e.peran]}</span>}
                                         </span>
                                     </TableCell>
                                     <TableCell className="whitespace-nowrap tabular-nums">{kapan(e.waktu)}</TableCell>

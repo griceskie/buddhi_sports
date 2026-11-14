@@ -65,6 +65,7 @@ const MENU_MANAGER: Kelompok[] = [
     },
     { label: 'Laporan', menu: [{ href: '/manager/laporan', label: 'Laporan pembayaran', icon: FileText }] },
     { label: 'Pengguna', menu: [{ href: '/manager/admin', label: 'Admin', icon: UserCog }] },
+    { label: 'Pengawasan', menu: [{ href: '/log-aktivitas', label: 'Log aktivitas', icon: History }] },
 ];
 
 /** Judul header panel pengelola: label menu yang aktif. */

@@ -57,12 +57,10 @@ export function IsiMenuAkunPengelola({ pengelola, ...props }: { pengelola: Penge
                     <User />
                     Profil pengelola
                 </DropdownMenuItem>
-                {pengelola.role === 'admin' && (
-                    <DropdownMenuItem render={<Link href={route('log.aktivitas')} />}>
-                        <History />
-                        Log aktivitas
-                    </DropdownMenuItem>
-                )}
+                <DropdownMenuItem render={<Link href={route('log.aktivitas')} />}>
+                    <History />
+                    Log aktivitas
+                </DropdownMenuItem>
                 <DropdownMenuItem closeOnClick={false} onClick={() => setGelap(!gelap)} className="justify-between">
                     <span className="flex items-center gap-2">
                         <Moon />
