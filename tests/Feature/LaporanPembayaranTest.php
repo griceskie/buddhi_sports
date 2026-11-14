@@ -167,7 +167,7 @@ class LaporanPembayaranTest extends TestCase
         DB::table('laporan_pembayarans')->update(['revisiPada' => now(), 'catatanRevisi' => 'Salah']);
         $l = DB::table('laporan_pembayarans')->first();
 
-        $this->actingAs($this->admin, 'admin')->get("/deletelaporanpembayaran/{$l->idLaporan}");
+        $this->actingAs($this->admin, 'admin')->delete("/deletelaporanpembayaran/{$l->idLaporan}");
         $this->assertSame(0, DB::table('laporan_pembayarans')->count());
         Storage::disk('local')->assertMissing($l->filePdf);
     }
@@ -213,7 +213,7 @@ class LaporanPembayaranTest extends TestCase
             'txtid' => $l->idLaporan, 'txtadmin' => $this->admin->idAdmin, 'txtmanager' => $this->manager->idManager,
             'txtbulan' => 10, 'txttahun' => 2026, 'txttotal' => 1, 'txttgllaporan' => '2026-10-29',
         ])->assertSessionHas('error');
-        $this->actingAs($this->admin, 'admin')->get("/deletelaporanpembayaran/{$l->idLaporan}")->assertSessionHas('error');
+        $this->actingAs($this->admin, 'admin')->delete("/deletelaporanpembayaran/{$l->idLaporan}")->assertSessionHas('error');
 
         $sesudah = DB::table('laporan_pembayarans')->first();
         $this->assertSame('2026-11-02', $sesudah->tglLaporan);
@@ -253,11 +253,11 @@ class LaporanPembayaranTest extends TestCase
         $this->buat()->assertSessionHas('success');
         $l = DB::table('laporan_pembayarans')->first();
 
-        $this->actingAs($this->admin, 'admin')->get("/deletelaporanpembayaran/{$l->idLaporan}")->assertSessionHas('error');
+        $this->actingAs($this->admin, 'admin')->delete("/deletelaporanpembayaran/{$l->idLaporan}")->assertSessionHas('error');
         $this->assertDatabaseCount('laporan_pembayarans', 1);
 
         DB::table('laporan_pembayarans')->update(['revisiPada' => now(), 'catatanRevisi' => 'Salah total']);
-        $this->get("/deletelaporanpembayaran/{$l->idLaporan}");
+        $this->delete("/deletelaporanpembayaran/{$l->idLaporan}");
         $this->assertDatabaseCount('laporan_pembayarans', 0);
     }
 

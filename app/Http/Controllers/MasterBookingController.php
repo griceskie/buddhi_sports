@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class MasterBookingController extends Controller
@@ -30,6 +31,22 @@ class MasterBookingController extends Controller
     }
 
     // aturan bersama Tambah dan Edit booking
+    /**
+     * Dijalankan di dalam transaksi simpan: kunci baris lapangan (seperti sisi penyewa) supaya dua simpan bersamaan
+     * tidak menghasilkan booking ganda, lalu cek bentrok jam. Lapangan Perbaikan ditolak untuk booking baru
+     * atau saat booking dipindah ke lapangan itu; membatalkan tetap boleh.
+     */
+    private function kunciDanCekJadwal(Request $request, ?int $idBooking, bool $lapanganBaru): void
+    {
+        $lapangan = DB::table('lapangans')->where('idLapangan', $request->txtlapangan)->lockForUpdate()->first();
+        if ($request->txtstatus !== 'Dibatalkan' && $lapanganBaru && strtolower((string) $lapangan->status) === 'perbaikan') {
+            throw ValidationException::withMessages(['txtlapangan' => 'Lapangan sedang dalam perbaikan, jadi tidak bisa dipesan.']);
+        }
+        if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, $idBooking, $request->txtstatus)) {
+            throw ValidationException::withMessages(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
+        }
+    }
+
     private function validasiBooking(Request $request, array $tambahan = []): void
     {
         $jam = fn (int $dari, int $sampai) => array_map(fn ($h) => sprintf('%02d:00', $h), range($dari, $sampai));
@@ -37,8 +54,8 @@ class MasterBookingController extends Controller
         $tutup = sprintf('%02d.00', Pemesanan::JAM_TUTUP);
 
         $request->validate($tambahan + [
-            'txtpenyewa' => 'required|integer',
-            'txtlapangan' => 'required|integer',
+            'txtpenyewa' => 'required|integer|exists:penyewas,idPenyewa',
+            'txtlapangan' => 'required|integer|exists:lapangans,idLapangan',
             // booking manual diisi di lokasi, jadi Admin yang bertugas wajib tercatat
             'txtadmin' => 'required|integer|exists:admins,idAdmin',
             'txttanggal' => 'required|date',
@@ -78,10 +95,6 @@ class MasterBookingController extends Controller
     public function insertData(Request $request){
         $this->validasiBooking($request);
 
-        if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, null, $request->txtstatus)) {
-            return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
-        }
-
         $data = [
             'idPenyewa' => $request->txtpenyewa,
             'idLapangan' => $request->txtlapangan,
@@ -92,7 +105,8 @@ class MasterBookingController extends Controller
             'totalBayar' => $request->txttotal,
             'status' => $request->txtstatus,
         ];
-        DB::transaction(function () use ($data) {
+        DB::transaction(function () use ($request, $data) {
+            $this->kunciDanCekJadwal($request, null, true);
             $id = DB::table('bookings')->insertGetId($data, 'idBooking');
             LogAktivitas::catat('tambah', 'Booking', Pemesanan::kode($id), LogAktivitas::selisih('Booking', null, $data));
         });
@@ -103,6 +117,7 @@ class MasterBookingController extends Controller
     public function updateData(Request $request){
         $this->validasiBooking($request, ['txtid' => 'required|integer']);
         $lama = (array) DB::table('bookings')->where('idBooking', $request->txtid)->first();
+        abort_if(! $lama, 404);
 
         // membatalkan booking wajib dengan alasan; disimpan di catatan Log aktivitas, tanpa kolom baru
         $membatalkan = $request->txtstatus === 'Dibatalkan' && ($lama['status'] ?? null) !== 'Dibatalkan';
@@ -113,9 +128,6 @@ class MasterBookingController extends Controller
             ]);
         }
 
-        if ($this->isLapanganTerbooking($request->txtlapangan, $request->txttanggal, $request->txtjammulai, $request->txtjamselesai, $request->txtid, $request->txtstatus)) {
-            return back()->withErrors(['txtlapangan' => 'Lapangan sudah terbooking pada tanggal dan jam tersebut. Silakan pilih lapangan atau jam lain.']);
-        }
 
         $data = [
             'idPenyewa' => $request->txtpenyewa,
@@ -128,6 +140,7 @@ class MasterBookingController extends Controller
             'status' => $request->txtstatus,
         ];
         DB::transaction(function () use ($request, $data, $lama, $membatalkan) {
+            $this->kunciDanCekJadwal($request, (int) $request->txtid, (int) $lama['idLapangan'] !== (int) $request->txtlapangan);
             DB::table('bookings')
             -> where('idBooking', $request->txtid)
             ->update($data);
@@ -140,6 +153,7 @@ class MasterBookingController extends Controller
     public function deleteDataBooking($idhapus){
         try {
             $lama = (array) DB::table('bookings')->where('idBooking', $idhapus)->first();
+            abort_if(! $lama, 404);
             DB::transaction(function () use ($idhapus, $lama) {
                 DB::table('bookings')->where('idBooking', $idhapus)->delete();
                 LogAktivitas::catat('hapus', 'Booking', Pemesanan::kode((int) $idhapus), LogAktivitas::selisih('Booking', $lama, null));

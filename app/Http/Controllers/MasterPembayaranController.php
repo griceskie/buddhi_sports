@@ -91,8 +91,8 @@ class MasterPembayaranController extends Controller
 
     public function insertData(Request $request){
         $request->validate([
-            'txtadmin' => 'nullable|integer',
-            'txtbooking' => 'required|integer',
+            'txtadmin' => 'nullable|integer|exists:admins,idAdmin',
+            'txtbooking' => 'required|integer|exists:bookings,idBooking',
             'txttglbayar' => 'required|date',
             'txtjumlah' => 'required|integer|min:0',
             'txtbukti' => 'nullable|string|max:255',
@@ -134,8 +134,8 @@ class MasterPembayaranController extends Controller
     public function updateData(Request $request){
         $request->validate([
             'txtid' => 'required|integer',
-            'txtadmin' => 'nullable|integer',
-            'txtbooking' => 'required|integer',
+            'txtadmin' => 'nullable|integer|exists:admins,idAdmin',
+            'txtbooking' => 'required|integer|exists:bookings,idBooking',
             'txttglbayar' => 'required|date',
             'txtjumlah' => 'required|integer|min:0',
             'txtbukti' => 'nullable|string|max:255',
@@ -162,6 +162,7 @@ class MasterPembayaranController extends Controller
             'alasanTolak' => $request->txtstatus === 'Ditolak' ? $request->txtalasan : null,
         ];
         $lama = (array) DB::table('pembayarans')->where('idPembayaran', $request->txtid)->first();
+        abort_if(! $lama, 404);
         // laporan bulan lama atau bulan baru sudah diserahkan: data keuangan terkunci
         foreach (array_filter([$lama['tglBayar'] ?? null, $data['tglBayar']]) as $tgl) {
             if (KunciLaporan::terkunci($tgl)) {
@@ -189,6 +190,7 @@ class MasterPembayaranController extends Controller
     public function deleteDataPembayaran($idhapus){
         try {
             $lama = (array) DB::table('pembayarans')->where('idPembayaran', $idhapus)->first();
+            abort_if(! $lama, 404);
             if (KunciLaporan::terkunci($lama['tglBayar'] ?? null)) {
                 return back()->with('error', KunciLaporan::pesan($lama['tglBayar']));
             }

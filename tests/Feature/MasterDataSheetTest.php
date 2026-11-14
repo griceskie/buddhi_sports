@@ -195,4 +195,37 @@ class MasterDataSheetTest extends TestCase
         $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', ['txtadmin' => 9999])
             ->assertSessionHasErrors(['txtadmin' => 'The selected admin is invalid.']);
     }
+
+    // celah 8.6: hapus data master hanya lewat DELETE (dengan token CSRF), bukan tautan GET
+    public function test_hapus_master_tidak_bisa_lewat_get(): void
+    {
+        $this->actingAs($this->admin, 'admin')->get("/deletebooking/{$this->booking}")->assertMethodNotAllowed();
+        $this->assertDatabaseHas('bookings', ['idBooking' => $this->booking]);
+        $this->delete("/deletebooking/{$this->booking}")->assertRedirect('/tampilbooking');
+        $this->assertDatabaseMissing('bookings', ['idBooking' => $this->booking]);
+    }
+
+    // celah 8.7: lapangan Perbaikan tidak bisa dipesan dari form Admin
+    public function test_lapangan_perbaikan_tidak_bisa_dipesan_admin(): void
+    {
+        $b = DB::table('bookings')->first();
+        DB::table('lapangans')->update(['status' => 'Perbaikan']);
+        $this->actingAs($this->admin, 'admin')->from('/tampilbooking')->post('/insertbooking', [
+            'txtpenyewa' => $b->idPenyewa, 'txtlapangan' => $b->idLapangan, 'txttanggal' => '2026-10-25',
+            'txtadmin' => $this->admin->idAdmin, 'txtjammulai' => '10:00', 'txtjamselesai' => '11:00', 'txttotal' => 50000, 'txtstatus' => 'Dipesan',
+        ])->assertSessionHasErrors(['txtlapangan' => 'Lapangan sedang dalam perbaikan, jadi tidak bisa dipesan.']);
+        $this->assertDatabaseCount('bookings', 1);
+    }
+
+    // celah 8.8: edit dengan ID yang tidak ada -> 404 tanpa baris log; ID relasi harus ada
+    public function test_edit_id_tidak_ada_dan_relasi_tidak_ada(): void
+    {
+        $this->actingAs($this->admin, 'admin')->post('/updatepembayaran', [
+            'txtid' => 9999, 'txtbooking' => $this->booking, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 1, 'txtstatus' => 'Menunggu Verifikasi',
+        ])->assertNotFound();
+        $this->assertDatabaseCount('log_aktivitas', 0);
+        $this->from('/tampilpembayaran')->post('/insertpembayaran', [
+            'txtbooking' => 9999, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 1, 'txtstatus' => 'Menunggu Verifikasi',
+        ])->assertSessionHasErrors('txtbooking');
+    }
 }

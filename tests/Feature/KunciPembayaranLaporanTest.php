@@ -59,7 +59,7 @@ class KunciPembayaranLaporanTest extends TestCase
         $this->ubah()->assertSessionHasErrors('txttglbayar');
         $this->assertDatabaseHas('pembayarans', ['idPembayaran' => $this->pembayaran, 'jumlahBayar' => 100000]);
 
-        $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran')->get("/deletepembayaran/{$this->pembayaran}")->assertSessionHas('error');
+        $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran')->delete("/deletepembayaran/{$this->pembayaran}")->assertSessionHas('error');
         $this->assertDatabaseHas('pembayarans', ['idPembayaran' => $this->pembayaran]);
 
         // booking lain dengan tanggal bayar di bulan terkunci

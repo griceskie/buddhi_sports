@@ -72,6 +72,7 @@ class MasterPenyewaController extends Controller
         }
 
         $lama = (array) DB::table('penyewas')->where('idPenyewa', $request->txtid)->first();
+        abort_if(! $lama, 404);
         DB::transaction(function () use ($request, $data, $lama) {
             DB::table('penyewas')
             -> where('idPenyewa', $request->txtid)
@@ -85,6 +86,7 @@ class MasterPenyewaController extends Controller
     public function deleteDataPenyewa($idhapus){
         try {
             $lama = (array) DB::table('penyewas')->where('idPenyewa', $idhapus)->first();
+            abort_if(! $lama, 404);
             DB::transaction(function () use ($idhapus, $lama) {
                 DB::table('penyewas')->where('idPenyewa', $idhapus)->delete();
                 LogAktivitas::catat('hapus', 'Penyewa', $lama['namaPenyewa'] ?? '#'.$idhapus, LogAktivitas::selisih('Penyewa', $lama, null));
