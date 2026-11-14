@@ -23,12 +23,31 @@ class LaporanPembayaranController extends Controller
         return 'Laporan Pembayaran '.Carbon::create($tahun, $bulan, 1)->locale('id')->translatedFormat('F Y');
     }
 
+    /** Alasan laporan bulan ini belum bisa dibuat, atau null bila boleh (bulan selesai, ada data, tanpa bukti menunggu). */
+    public static function alasanTidakBisaDibuat(Carbon $awal): ?string
+    {
+        $nama = $awal->locale('id')->translatedFormat('F Y');
+        if ($awal->gte(today()->startOfMonth())) {
+            return 'Laporan '.$nama.' baru bisa dibuat setelah bulannya selesai.';
+        }
+        $mulai = collect([DB::table('pembayarans')->min('tglBayar'), DB::table('bookings')->min('tanggal')])->filter()->min();
+        if (! $mulai || $awal->lt(Carbon::parse($mulai)->startOfMonth())) {
+            return 'Belum ada data di '.$nama.', jadi laporannya tidak bisa dibuat.';
+        }
+        $menunggu = DB::table('pembayarans')->where('status', 'Menunggu Verifikasi')
+            ->whereBetween('tglBayar', [$awal->toDateString(), $awal->copy()->endOfMonth()->toDateString()])->count();
+        if ($menunggu > 0) {
+            return 'Masih ada '.$menunggu.' bukti bayar '.$nama.' yang menunggu verifikasi. Selesaikan dulu, lalu buat laporannya.';
+        }
+
+        return null;
+    }
+
     public function buat(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'bulan' => 'required|integer|between:1,12',
             'tahun' => 'required|integer|between:2000,2100',
-            'tglLaporan' => 'required|date_format:Y-m-d',
             'idManager' => 'required|integer|exists:managers,idManager',
             'tandaTangan' => ['required', 'string', 'starts_with:'.self::PREFIX_TTD, 'max:400000'],
         ], [
@@ -51,6 +70,10 @@ class LaporanPembayaranController extends Controller
         if (DB::table('laporan_pembayarans')->where('bulan', $bulan)->where('tahun', $tahun)->whereNotNull('diperiksaPada')->exists()) {
             return back()->with('error', self::namaLaporan($bulan, $tahun).' sudah diperiksa Manager, jadi tidak bisa dibuat ulang.');
         }
+        // sama dengan keadaan di halaman Laporan: hanya bulan yang sudah selesai, punya data, dan tanpa bukti menunggu
+        if ($pesan = self::alasanTidakBisaDibuat($awal)) {
+            return back()->with('error', $pesan);
+        }
 
         $pembayaran = DB::table('pembayarans')
             ->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')
@@ -72,7 +95,7 @@ class LaporanPembayaranController extends Controller
         $pdf = Pdf::loadView('pdf.laporan-pembayaran', [
             'nama' => $nama,
             'periode' => $awal->locale('id')->translatedFormat('F Y'),
-            'tanggalLaporan' => Carbon::parse($data['tglLaporan'])->locale('id')->translatedFormat('j F Y'),
+            'tanggalLaporan' => today()->locale('id')->translatedFormat('j F Y'),
             'admin' => Auth::guard('admin')->user()->namaAdmin,
             'manager' => DB::table('managers')->where('idManager', $data['idManager'])->value('namaManager'),
             'pembayaran' => $pembayaran->map(fn ($p) => [
@@ -90,7 +113,8 @@ class LaporanPembayaranController extends Controller
             // tanpa subsetting, seluruh font DejaVu (±800 KB) ikut tertanam di tiap PDF
             ->setOption('isFontSubsettingEnabled', true);
 
-        $path = sprintf('laporan/laporan-pembayaran-%04d-%02d.pdf', $tahun, $bulan);
+        // nama berversi: PDF yang sudah diserahkan tidak ditimpa (tetap tersimpan sebagai arsip)
+        $path = sprintf('laporan/laporan-pembayaran-%04d-%02d-%s.pdf', $tahun, $bulan, now()->format('YmdHis'));
         Storage::disk('local')->put($path, $pdf->output());
 
         // satu laporan per periode: membuat ulang menimpa catatan dan PDF yang lama
@@ -98,7 +122,8 @@ class LaporanPembayaranController extends Controller
             'idAdmin' => Auth::guard('admin')->id(),
             'idManager' => $data['idManager'],
             'totalPemasukan' => $total,
-            'tglLaporan' => $data['tglLaporan'],
+            // tanggal laporan = hari dibuat, tidak bisa dimundurkan
+            'tglLaporan' => today()->toDateString(),
             'namaLaporan' => $nama,
             'filePdf' => $path,
             // dibuat ulang = diserahkan lagi: permintaan revisi sebelumnya selesai
@@ -106,17 +131,23 @@ class LaporanPembayaranController extends Controller
             'revisiPada' => null,
         ];
         $ada = DB::table('laporan_pembayarans')->where('bulan', $bulan)->where('tahun', $tahun)->value('idLaporan');
-        DB::transaction(function () use ($ada, $baris, $bulan, $tahun, $nama, $total, $rupiah, $pembayaran) {
-            if ($ada) {
-                DB::table('laporan_pembayarans')->where('idLaporan', $ada)->update($baris);
-            } else {
-                DB::table('laporan_pembayarans')->insert($baris + ['bulan' => $bulan, 'tahun' => $tahun]);
-            }
-            LogAktivitas::catat('buat', 'Laporan', $nama, [
-                ['Total pemasukan', '—', $rupiah($total)],
-                ['Pembayaran terverifikasi', '—', (string) $pembayaran->count()],
-            ], $ada ? 'Membuat ulang laporan periode ini (PDF lama diganti).' : null);
-        });
+        try {
+            DB::transaction(function () use ($ada, $baris, $bulan, $tahun, $nama, $total, $rupiah, $pembayaran) {
+                if ($ada) {
+                    DB::table('laporan_pembayarans')->where('idLaporan', $ada)->update($baris);
+                } else {
+                    DB::table('laporan_pembayarans')->insert($baris + ['bulan' => $bulan, 'tahun' => $tahun]);
+                }
+                LogAktivitas::catat('buat', 'Laporan', $nama, [
+                    ['Total pemasukan', '—', $rupiah($total)],
+                    ['Pembayaran terverifikasi', '—', (string) $pembayaran->count()],
+                ], $ada ? 'Membuat ulang laporan periode ini (PDF lama tetap diarsipkan).' : null);
+            });
+        } catch (\Throwable $e) {
+            // catatan gagal disimpan: buang PDF yang baru ditulis supaya file dan baris tetap cocok
+            Storage::disk('local')->delete($path);
+            throw $e;
+        }
 
         return back()->with('success', $nama.' berhasil dibuat dan tersimpan di Laporan Pembayaran.');
     }

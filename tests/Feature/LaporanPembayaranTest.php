@@ -56,6 +56,11 @@ class LaporanPembayaranTest extends TestCase
 
     private function buat(array $ubah = [])
     {
+        // laporan Oktober baru bisa dibuat setelah Oktober selesai (celah 8.3)
+        $this->travelTo(Carbon::parse('2026-11-02 10:00:00'));
+        // bukti yang masih menunggu menahan laporan (celah 8.3); di sini diselesaikan dulu
+        DB::table('pembayarans')->where('status', 'Menunggu Verifikasi')->update(['status' => 'Ditolak', 'alasanTolak' => 'Tes']);
+
         return $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran?periode=2026-10')->post('/laporanpembayaran/buat', array_merge([
             'bulan' => 10, 'tahun' => 2026, 'tglLaporan' => '2026-10-31',
             'idManager' => $this->manager->idManager, 'tandaTangan' => $this->ttd,
@@ -92,7 +97,7 @@ class LaporanPembayaranTest extends TestCase
         $this->assertSame([10, 2026], [(int) $l->bulan, (int) $l->tahun]);
         $this->assertSame($this->admin->idAdmin, (int) $l->idAdmin);
         $this->assertSame($this->manager->idManager, (int) $l->idManager);
-        $this->assertSame('laporan/laporan-pembayaran-2026-10.pdf', $l->filePdf);
+        $this->assertMatchesRegularExpression('#^laporan/laporan-pembayaran-2026-10-\d{14}\.pdf$#', $l->filePdf);
         Storage::disk('local')->assertExists($l->filePdf);
         $pdf = Storage::disk('local')->get($l->filePdf);
         $this->assertStringStartsWith('%PDF', $pdf);
@@ -108,7 +113,7 @@ class LaporanPembayaranTest extends TestCase
         $this->assertSame(1, DB::table('laporan_pembayarans')->count());
         $l = DB::table('laporan_pembayarans')->first();
         $this->assertSame(180000, (int) $l->totalPemasukan);
-        $this->assertSame('2026-10-30', $l->tglLaporan);
+        $this->assertSame('2026-11-02', $l->tglLaporan); // diisi server, bukan dari input
     }
 
     public function test_buat_ulang_menghapus_permintaan_revisi(): void
@@ -158,6 +163,8 @@ class LaporanPembayaranTest extends TestCase
     public function test_hapus_laporan_ikut_menghapus_pdf(): void
     {
         $this->buat();
+        // hanya laporan yang sedang diminta revisi yang boleh dihapus (celah 8.5)
+        DB::table('laporan_pembayarans')->update(['revisiPada' => now(), 'catatanRevisi' => 'Salah']);
         $l = DB::table('laporan_pembayarans')->first();
 
         $this->actingAs($this->admin, 'admin')->get("/deletelaporanpembayaran/{$l->idLaporan}");
@@ -209,7 +216,7 @@ class LaporanPembayaranTest extends TestCase
         $this->actingAs($this->admin, 'admin')->get("/deletelaporanpembayaran/{$l->idLaporan}")->assertSessionHas('error');
 
         $sesudah = DB::table('laporan_pembayarans')->first();
-        $this->assertSame('2026-10-31', $sesudah->tglLaporan);
+        $this->assertSame('2026-11-02', $sesudah->tglLaporan);
         $this->assertSame((int) $l->totalPemasukan, (int) $sesudah->totalPemasukan);
         Storage::disk('local')->assertExists($l->filePdf);
     }
@@ -222,5 +229,49 @@ class LaporanPembayaranTest extends TestCase
         $this->actingAs($this->admin, 'admin')->post('/insertadmin', ['txtnama' => 'X', 'txtusername' => 'x', 'txtpassword' => '123456'])->assertNotFound();
         $this->assertSame(1, DB::table('admins')->count());
         $this->assertSame(1, DB::table('managers')->count());
+    }
+
+    // celah 8.3: bulan berjalan, bulan tanpa data, dan bulan dengan bukti menunggu tidak bisa dilaporkan
+    public function test_laporan_ditolak_untuk_bulan_yang_belum_siap(): void
+    {
+        $kirim = fn (int $bulan, int $tahun) => $this->actingAs($this->admin, 'admin')->post('/laporanpembayaran/buat', [
+            'bulan' => $bulan, 'tahun' => $tahun, 'idManager' => $this->manager->idManager, 'tandaTangan' => $this->ttd,
+        ]);
+
+        // hari ini 31 Okt: Oktober masih berjalan
+        $kirim(10, 2026)->assertSessionHas('error', 'Laporan Oktober 2026 baru bisa dibuat setelah bulannya selesai.');
+        $this->travelTo(Carbon::parse('2026-11-02 10:00:00'));
+        $kirim(10, 2026)->assertSessionHas('error');
+        $this->assertStringContainsString('1 bukti bayar Oktober 2026 yang menunggu', session('error'));
+        $kirim(8, 2026)->assertSessionHas('error', 'Belum ada data di Agustus 2026, jadi laporannya tidak bisa dibuat.');
+        $this->assertDatabaseCount('laporan_pembayarans', 0);
+    }
+
+    // celah 8.5: laporan yang sudah diserahkan tidak bisa dihapus Admin (kecuali sedang diminta revisi)
+    public function test_laporan_diserahkan_tidak_bisa_dihapus(): void
+    {
+        $this->buat()->assertSessionHas('success');
+        $l = DB::table('laporan_pembayarans')->first();
+
+        $this->actingAs($this->admin, 'admin')->get("/deletelaporanpembayaran/{$l->idLaporan}")->assertSessionHas('error');
+        $this->assertDatabaseCount('laporan_pembayarans', 1);
+
+        DB::table('laporan_pembayarans')->update(['revisiPada' => now(), 'catatanRevisi' => 'Salah total']);
+        $this->get("/deletelaporanpembayaran/{$l->idLaporan}");
+        $this->assertDatabaseCount('laporan_pembayarans', 0);
+    }
+
+    // celah 8.4: total di form master dihitung server, periode tidak bisa ganda atau dipindah
+    public function test_form_master_laporan_menghitung_total_dan_menjaga_periode(): void
+    {
+        $data = ['txtadmin' => $this->admin->idAdmin, 'txtmanager' => $this->manager->idManager, 'txtbulan' => 9, 'txttahun' => 2026, 'txttotal' => 999, 'txttgllaporan' => '2026-10-02'];
+        $this->actingAs($this->admin, 'admin')->post('/insertlaporanpembayaran', $data);
+        $l = DB::table('laporan_pembayarans')->first();
+        $this->assertSame(70000, (int) $l->totalPemasukan);
+
+        $this->from('/tampillaporanpembayaran')->post('/insertlaporanpembayaran', $data)->assertSessionHasErrors('txtbulan');
+        $this->post('/updatelaporanpembayaran', ['txtid' => $l->idLaporan, 'txtbulan' => 3, 'txttahun' => 2025] + $data);
+        $this->assertDatabaseHas('laporan_pembayarans', ['idLaporan' => $l->idLaporan, 'bulan' => 9, 'tahun' => 2026, 'totalPemasukan' => 70000]);
+        $this->assertDatabaseCount('laporan_pembayarans', 1);
     }
 }
