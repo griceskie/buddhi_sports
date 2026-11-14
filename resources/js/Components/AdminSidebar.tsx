@@ -79,7 +79,7 @@ const MENU_MANAGER: Kelompok[] = [
 /** Judul header panel pengelola: label menu yang aktif. */
 export function judulHalamanPengelola(url: string, peran: 'admin' | 'manager') {
     const path = url.split('?')[0];
-    if (path.startsWith('/profile-pengelola')) return 'Profil pengelola';
+    if (path.startsWith('/profile-pengelola')) return 'Profile';
     const kelompok = peran === 'admin' ? MENU_ADMIN : MENU_MANAGER;
     const beranda = kelompok[0].menu[0].href;
     const semua = kelompok.flatMap((k) => k.menu);

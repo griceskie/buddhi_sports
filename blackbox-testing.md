@@ -159,13 +159,14 @@ Diuji otomatis lewat request HTTP ke `/dashboard-manager`, `/manager/pembayaran`
 
 | ID | Skenario | Hasil yang diharapkan | Hasil aktual | Status |
 |---|---|---|---|---|
-| J01 | Penyewa/Pengelola mengubah nama | Tersimpan, toast sukses | Nama **tersimpan** di database untuk Penyewa dan Pengelola. **Toast sukses tidak muncul** — lihat temuan di bawah | **Tidak valid (sebagian)** |
+| J01 | Penyewa/Pengelola mengubah nama | Tersimpan, toast sukses | Nama tersimpan untuk Penyewa dan Pengelola, keduanya dengan toast (Pengelola: "Profile disimpan.", sejak 2026-11-14) | Valid |
 | J02 | Ganti password dengan password lama salah / konfirmasi tidak sama | Ditolak | Keduanya ditolak untuk Penyewa (`PUT /password`) maupun Pengelola (`PUT /profile-pengelola/password`): error pada `current_password` / `password` | Valid |
 | J03 | Username Pengelola duplikat | Ditolak | Ditolak dengan error pada `username` (`unique(...)->ignore(diri sendiri)`) | Valid |
+| J04 | Pengelola mengubah profile dan password | Pesan bahasa Indonesia, tercatat di Log aktivitas | Toast "Profile disimpan." / "Password diganti. …", password lama salah ditolak "Password saat ini salah.", dua baris log `Profil` tanpa isi password | Valid |
 
 Diuji otomatis lewat request HTTP ke `/profile`, `/profile-pengelola`, `/password`, `/profile-pengelola/password` (`tests/Feature/BlackboxProfilTest.php`, 7 skenario/17 assertion).
 
-**Temuan (J01 — bug, bukan catatan sebatas keterbatasan pengujian):** `ProfileController@update`, `PengelolaProfileController@update`, dan `PengelolaProfileController@updatePassword` semuanya mengembalikan `redirect()->route(...)` / `back()` **tanpa** `->with('success', ...)`. Mekanisme toast di `resources/js/app.tsx` (`tampilkanFlash`) hanya memicu `toast.success()` kalau props `flash.success` terisi dari server. Karena ketiga aksi ini tidak pernah mengisi `flash.success`, **mengubah nama atau mengganti password di halaman Profil tidak menampilkan toast sukses apa pun** — walau datanya benar tersimpan. Pengujian otomatis (`assertNull($response->getSession()->get('success'))`) mengonfirmasi ini pada J01; kemungkinan sama untuk ganti password (J02 yang berhasil, belum diuji eksplisit di sini karena J02 fokus ke kasus gagal, tapi kode-nya identik). Perbaikannya kecil: tambahkan `->with('success', '...')` di tiga method tersebut.
+**Temuan (J01, sudah diperbaiki: Penyewa 2026-11-07, Pengelola 2026-11-14; retest lulus):** `ProfileController@update`, `PengelolaProfileController@update`, dan `PengelolaProfileController@updatePassword` semuanya mengembalikan `redirect()->route(...)` / `back()` **tanpa** `->with('success', ...)`. Mekanisme toast di `resources/js/app.tsx` (`tampilkanFlash`) hanya memicu `toast.success()` kalau props `flash.success` terisi dari server. Karena ketiga aksi ini tidak pernah mengisi `flash.success`, **mengubah nama atau mengganti password di halaman Profil tidak menampilkan toast sukses apa pun** — walau datanya benar tersimpan. Pengujian otomatis (`assertNull($response->getSession()->get('success'))`) mengonfirmasi ini pada J01; kemungkinan sama untuk ganti password (J02 yang berhasil, belum diuji eksplisit di sini karena J02 fokus ke kasus gagal, tapi kode-nya identik). Perbaikannya kecil: tambahkan `->with('success', '...')` di tiga method tersebut.
 
 ## 3. Jadwal pelaksanaan
 
@@ -191,13 +192,13 @@ Seluruh 48 kasus uji di modul A–J (85 skenario teknis, karena satu kasus kadan
 | G — Data master Admin | `BlackboxMasterDataTest.php` | 9 | Valid (1 catatan dokumentasi) |
 | H — Laporan Pembayaran | `BlackboxLaporanPembayaranTest.php` | 6 | Valid |
 | I — Panel Manager | `BlackboxPanelManagerTest.php` | 5 | Valid |
-| J — Profil | `BlackboxProfilTest.php` | 7 | **1 kasus tidak valid (J01)** |
+| J — Profil | `BlackboxProfilTest.php` | 8 | Semua valid (J01 diperbaiki dan diuji ulang) |
 
 Hasil akhir `php artisan test`: **148 lulus, 8 gagal** (dari 156 total), naik dari kondisi awal **63 lulus, 8 gagal** (71 total) sebelum pengujian ini dimulai — 85 test baru, seluruhnya lulus tanpa menyebabkan regresi pada test yang sudah ada. 8 test yang gagal itu sama persis sejak awal sampai akhir: test Breeze lama (`AuthenticationTest`, `RegistrationTest`, `PasswordResetTest`, `PasswordConfirmationTest`, `ProfileTest`) yang masih memakai `User::factory()`/kolom `name`, tidak tersentuh oleh pengujian ini (sudah tercatat sebagai isu terpisah di CLAUDE.md sebelum pengujian ini mulai).
 
 ### 4.2 Masalah yang ditemukan
 
-1. **J01 — toast sukses tidak muncul saat ubah profil (bug, bisa diperbaiki).** `ProfileController@update` (Penyewa), `PengelolaProfileController@update`, dan `PengelolaProfileController@updatePassword` mengembalikan redirect tanpa `->with('success', ...)`. Mekanisme toast di `resources/js/app.tsx` hanya jalan kalau `flash.success` terisi dari server, jadi mengubah nama atau mengganti password tidak pernah menampilkan toast — walau datanya tersimpan benar. Dibuktikan lewat `assertNull($response->getSession()->get('success'))` pada `BlackboxProfilTest`.
+1. **J01 — toast sukses tidak muncul saat ubah profil (sudah diperbaiki, lihat 4.3).** `ProfileController@update` (Penyewa), `PengelolaProfileController@update`, dan `PengelolaProfileController@updatePassword` mengembalikan redirect tanpa `->with('success', ...)`. Mekanisme toast di `resources/js/app.tsx` hanya jalan kalau `flash.success` terisi dari server, jadi mengubah nama atau mengganti password tidak pernah menampilkan toast — walau datanya tersimpan benar. Dibuktikan lewat `assertNull($response->getSession()->get('success'))` pada `BlackboxProfilTest`.
 2. **G05 — catatan "belum divalidasi" di rencana ini dan di CLAUDE.md sudah usang (temuan dokumentasi, bukan bug kode).** `MasterBookingController::validasiBooking` sudah memvalidasi jam selesai harus setelah jam mulai lewat rule `after:txtjammulai`. Sudah dikoreksi langsung di tabel modul G pada dokumen ini.
 3. **D04 — angka batas hari pemesanan di rencana awal tidak presisi (temuan dokumentasi, bukan bug kode).** Rencana menulis "hari ini + 30 hari diterima", padahal kode membatasi sampai hari ini + 29 hari (30 hari terhitung termasuk hari ini). Sudah dikoreksi di tabel modul D.
 4. **B — catatan di luar kasus uji:** middleware `guest` pada `/login-pengelola` hanya memeriksa guard `web` secara default, sehingga Admin/Manager yang sudah login masih bisa membuka halaman itu lagi. Bukan risiko keamanan (tidak membuka akses ke data), hanya sedikit tidak rapi dari sisi UX — tidak diperbaiki karena di luar permintaan pengujian ini.
@@ -208,11 +209,11 @@ Tidak ditemukan masalah yang melanggar Kriteria lulus di bagian 5 (tidak ada keb
 
 - **Infrastruktur pengujian (bukan perilaku aplikasi):** menambahkan `database/factories/PenyewaFactory.php` (baru) dan trait `HasFactory` pada `App\Models\Penyewa`, supaya modul A bisa memakai `Penyewa::factory()` seperti model lain. Tidak mengubah perilaku aplikasi untuk pengguna.
 - **Dokumen rencana ini:** tabel modul D dan G sudah dikoreksi langsung (lihat 4.2 poin 2–3), karena itu adalah salah tulis di rencana, bukan di kode.
-- **J01 (bug nyata di kode aplikasi): belum diperbaiki.** Sesuai poin 4 di atas, pengujian ini berhenti di tahap "melaporkan yang perlu diperbaiki" — perbaikannya (menambahkan `->with('success', '...')` di tiga method terkait) sudah diketahui letaknya dan sederhana, tapi sengaja belum diterapkan tanpa persetujuan eksplisit untuk mengubah kode controller.
+- **J01: sudah diperbaiki** (toast "Profil disimpan." untuk Penyewa, "Profile disimpan." dan "Password diganti. …" untuk Pengelola). Catatan awal: Sesuai poin 4 di atas, pengujian ini berhenti di tahap "melaporkan yang perlu diperbaiki" — perbaikannya (menambahkan `->with('success', '...')` di tiga method terkait) sudah diketahui letaknya dan sederhana, tapi sengaja belum diterapkan tanpa persetujuan eksplisit untuk mengubah kode controller.
 
 ### 4.4 Hasil pengujian ulang
 
-- Belum ada siklus retest untuk J01, karena perbaikannya belum diterapkan (lihat 4.3). Begitu diperbaiki, retest-nya adalah menjalankan ulang `test_j01_penyewa_ubah_nama_tersimpan` dan `test_j01_pengelola_ubah_nama_tersimpan` di `BlackboxProfilTest.php` dan mengganti assertion `assertNull(...)` menjadi `assertNotNull(...)`/`assertSame(...)` pada `session('success')`.
+- Retest J01 sudah dijalankan: kedua tes J01 kini memeriksa `session('success')` dan lulus. Begitu diperbaiki, retest-nya adalah menjalankan ulang `test_j01_penyewa_ubah_nama_tersimpan` dan `test_j01_pengelola_ubah_nama_tersimpan` di `BlackboxProfilTest.php` dan mengganti assertion `assertNull(...)` menjadi `assertNotNull(...)`/`assertSame(...)` pada `session('success')`.
 - Untuk modul A–I, tidak ada kasus yang gagal sehingga tidak diperlukan retest. Satu kesalahan sempat terjadi saat menyiapkan test I04 (bukan kegagalan pada aplikasi, tapi pada cara test itu ditulis — `actingAs()` yang mengubah guard default Laravel untuk sisa proses test; lihat catatan di modul I), langsung diperbaiki di berkas test-nya dan dites ulang sampai lulus sebelum dilanjutkan ke modul berikutnya.
 - Regresi dicek berulang kali: setelah setiap modul ditambahkan, `php artisan test` penuh dijalankan dan jumlah test yang gagal tetap 8 (selalu yang sama) dari awal sampai akhir — memastikan 85 test baru tidak merusak bagian aplikasi yang sudah berjalan.
 

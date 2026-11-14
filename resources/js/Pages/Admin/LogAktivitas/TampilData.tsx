@@ -29,6 +29,7 @@ import {
     Trash2,
     User,
     UserCog,
+    UserRound,
     Wallet,
     X,
 } from 'lucide-react';
@@ -70,6 +71,7 @@ const IKON_JENIS: Record<string, LucideIcon> = {
     Lapangan: LandPlot,
     Laporan: FileText,
     Admin: UserCog,
+    Profil: UserRound,
 };
 
 const PERAN = { admin: 'Admin', manager: 'Manager', sistem: 'Sistem' };
