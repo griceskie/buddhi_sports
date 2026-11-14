@@ -367,17 +367,19 @@ function FormPembayaran({
                         </p>
                     </>
                 ) : (
-                    <FormSelect
-                        id="txtstatus"
-                        className="mt-1"
-                        value={data.txtstatus}
-                        onChange={(v) => setData('txtstatus', v)}
-                        options={[
-                            { value: 'Menunggu Verifikasi', label: 'Menunggu Verifikasi' },
-                            { value: 'Terverifikasi', label: 'Terverifikasi' },
-                            { value: 'Ditolak', label: 'Ditolak' },
-                        ]}
-                    />
+                    <>
+                        <FormSelect
+                            id="txtstatus"
+                            className="mt-1"
+                            value={data.txtstatus}
+                            onChange={(v) => setData('txtstatus', v)}
+                            options={[
+                                { value: 'Menunggu Verifikasi', label: 'Menunggu Verifikasi' },
+                                { value: 'Ditolak', label: 'Ditolak' },
+                            ]}
+                        />
+                        <p className="mt-1 text-sm text-muted-foreground">Untuk menerima bukti, klik baris pembayaran di tabel lalu pilih Terima.</p>
+                    </>
                 )}
                 <InputError message={errors.txtstatus} className="mt-1" />
             </div>

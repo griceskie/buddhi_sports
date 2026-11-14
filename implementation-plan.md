@@ -237,8 +237,8 @@ Audit setelah PR #35–#39. Bukan daftar tugas yang sudah diputuskan: semua buti
 
 | # | Celah | Bukti | Usulan perbaikan |
 |---|-------|-------|------------------|
-| 8.1 | `POST /login-pengelola` tidak dibatasi percobaan. Sandi dev masih `Admin123` / `Manager123`. Login penyewa sudah punya throttle, pengelola belum. | Terbukti: 12 percobaan salah berturut-turut semuanya 302 (tidak ada 429). | Tambah `throttle` (misalnya 5/menit per username + IP) pada rute login pengelola; catat login gagal ke log aktivitas. |
-| 8.2 | Form Tambah/Edit Pembayaran bisa langsung menyimpan status `Terverifikasi`. Booking tetap `Dipesan` (tidak menahan jam), tidak ada cek bentrok jam, dan jumlah bayar tidak dibandingkan dengan `totalBayar` booking. Pembayaran final (aturan A) tetapi booking-nya tidak ikut berubah. | Terbukti: pembayaran `Terverifikasi` dari form, booking tetap `Dipesan`. | Satu jalur untuk memverifikasi: status `Terverifikasi` hanya lewat `verifikasi.terima`; form hanya boleh `Menunggu Verifikasi` / `Ditolak`. Atau, kalau form tetap boleh, samakan efeknya (booking → `Dikonfirmasi` + cek bentrok). |
+| 8.1 | **Selesai 2026-11-14** (5 percobaan salah per menit per username + IP). `POST /login-pengelola` tidak dibatasi percobaan. Sandi dev masih `Admin123` / `Manager123`. Login penyewa sudah punya throttle, pengelola belum. | Terbukti: 12 percobaan salah berturut-turut semuanya 302 (tidak ada 429). | Tambah `throttle` (misalnya 5/menit per username + IP) pada rute login pengelola; catat login gagal ke log aktivitas. |
+| 8.2 | **Selesai 2026-11-14** (pilihan user: satu jalur, `Terverifikasi` hanya lewat Terima). Form Tambah/Edit Pembayaran bisa langsung menyimpan status `Terverifikasi`. Booking tetap `Dipesan` (tidak menahan jam), tidak ada cek bentrok jam, dan jumlah bayar tidak dibandingkan dengan `totalBayar` booking. Pembayaran final (aturan A) tetapi booking-nya tidak ikut berubah. | Terbukti: pembayaran `Terverifikasi` dari form, booking tetap `Dipesan`. | Satu jalur untuk memverifikasi: status `Terverifikasi` hanya lewat `verifikasi.terima`; form hanya boleh `Menunggu Verifikasi` / `Ditolak`. Atau, kalau form tetap boleh, samakan efeknya (booking → `Dikonfirmasi` + cek bentrok). |
 
 ### Sedang
 
@@ -264,6 +264,17 @@ Audit setelah PR #35–#39. Bukan daftar tugas yang sudah diputuskan: semua buti
 | 8.15 | PDF laporan ditimpa tanpa arsip, dan file ditulis sebelum transaksi DB selesai (gagal di tengah → file dan baris tidak cocok). | Simpan dengan nama berversi; tulis file setelah commit atau bersihkan saat gagal. |
 | 8.16 | Prop `dataadmin` / `datamanager` di Pembayaran dan Laporan masih mengirim hash sandi (backlog lama). | `select` kolom yang perlu saja. |
 | 8.17 | Konfigurasi: `.env.example` memakai `APP_DEBUG=true` / `APP_ENV=local`, `SESSION_SECURE_COOKIE` belum diatur, sandi dev ada di PRD. | Ubah sebelum aplikasi dipublikasikan (sandi dev sengaja dibiarkan sampai itu, keputusan user 2026-10-25). |
+
+### Tambahan audit 2026-11-14 (sesudah tahap Manager)
+
+| # | Celah | Status |
+|---|-------|--------|
+| B1 | Reset password Admin oleh Manager tidak mengeluarkan sesi Admin yang sedang login. | **Selesai 2026-11-14**: middleware `auth.session` di grup `auth:admin`, `auth:manager`, `auth:admin,manager` (hash password di sesi; berubah = keluar). Ganti password sendiri tetap login di perangkat yang dipakai, perangkat lain keluar. |
+| B2 | Password Admin dari halaman Manager cukup 6 karakter, Profile minimal 8. | **Selesai 2026-11-14**: `Password::defaults()` (min. 8) untuk Tambah admin dan Reset password. |
+| B3 | Pemantauan memperbarui data tiap 30 detik, jadi sesi Manager yang ditinggal terbuka tidak pernah habis. | Belum diputuskan (batas diam berapa lama). |
+| B4 | Akun Manager hanya satu dan tidak bisa direset dari aplikasi. | Belum diputuskan (Manager kedua atau perintah `artisan`). |
+| B5 | Peringatan Laporan Manager hanya memuat tombol untuk laporan terlama yang menunggu. | Keputusan desain PR #46, menunggu user. |
+| B6 | Analisis bisnis belum memakai cache. | Belum diputuskan. |
 
 ### Urutan yang disarankan (usulan, bukan keputusan)
 

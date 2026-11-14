@@ -99,8 +99,11 @@ class ManagerTest extends TestCase
 
         $this->actingAs($this->manager, 'manager')->from('/manager/admin')
             ->put("/manager/admin/{$sari->idAdmin}/password", ['password' => 'baru123'])
+            ->assertSessionHasErrors('password'); // celah B2: minimal 8 karakter
+        $this->actingAs($this->manager, 'manager')->from('/manager/admin')
+            ->put("/manager/admin/{$sari->idAdmin}/password", ['password' => 'baru1234'])
             ->assertSessionHas('success');
-        $this->assertTrue(Hash::check('baru123', DB::table('admins')->where('idAdmin', $sari->idAdmin)->value('password')));
+        $this->assertTrue(Hash::check('baru1234', DB::table('admins')->where('idAdmin', $sari->idAdmin)->value('password')));
 
         $this->actingAs($this->manager, 'manager')->from('/manager/admin')
             ->delete("/manager/admin/{$sari->idAdmin}")->assertSessionHas('success');

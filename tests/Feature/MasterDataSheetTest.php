@@ -72,7 +72,7 @@ class MasterDataSheetTest extends TestCase
         DB::table('pembayarans')->insert(['idBooking' => $this->booking, 'tglBayar' => '2026-10-23', 'jumlahBayar' => 100000, 'status' => 'Terverifikasi']);
 
         $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran?periode=2026-10')->post('/insertpembayaran', [
-            'txtbooking' => $this->booking, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 100000, 'txtstatus' => 'Terverifikasi',
+            'txtbooking' => $this->booking, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 100000, 'txtstatus' => 'Menunggu Verifikasi',
         ])->assertRedirect('/tampilpembayaran?periode=2026-10')->assertSessionHasErrors('txtbooking');
 
         $b = DB::table('bookings')->first();
@@ -100,10 +100,25 @@ class MasterDataSheetTest extends TestCase
     public function test_simpan_pembayaran_kembali_ke_periode_yang_dibuka(): void
     {
         $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran?periode=2026-10')->post('/insertpembayaran', [
-            'txtbooking' => $this->booking, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 100000, 'txtstatus' => 'Terverifikasi',
+            'txtbooking' => $this->booking, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 100000, 'txtstatus' => 'Menunggu Verifikasi',
         ])->assertRedirect('/tampilpembayaran?periode=2026-10')->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('pembayarans', ['idBooking' => $this->booking, 'jumlahBayar' => 100000]);
+    }
+
+    // celah 8.2: Terverifikasi hanya lewat Terima di panel verifikasi, tidak lewat form tambah/edit
+    public function test_form_pembayaran_tidak_bisa_memberi_status_terverifikasi(): void
+    {
+        $this->actingAs($this->admin, 'admin')->from('/tampilpembayaran')->post('/insertpembayaran', [
+            'txtbooking' => $this->booking, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 100000, 'txtstatus' => 'Terverifikasi',
+        ])->assertSessionHasErrors('txtstatus');
+        $this->assertDatabaseCount('pembayarans', 0);
+
+        $id = DB::table('pembayarans')->insertGetId(['idBooking' => $this->booking, 'tglBayar' => '2026-10-23', 'jumlahBayar' => 100000, 'status' => 'Menunggu Verifikasi']);
+        $this->post('/updatepembayaran', [
+            'txtid' => $id, 'txtbooking' => $this->booking, 'txttglbayar' => '2026-10-23', 'txtjumlah' => 100000, 'txtstatus' => 'Terverifikasi',
+        ])->assertSessionHasErrors('txtstatus');
+        $this->assertDatabaseHas('pembayarans', ['idPembayaran' => $id, 'status' => 'Menunggu Verifikasi', 'diverifikasiPada' => null]);
     }
 
     public function test_status_ditolak_lewat_form_wajib_ada_alasan(): void
