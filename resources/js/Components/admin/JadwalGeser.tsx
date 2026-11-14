@@ -60,7 +60,8 @@ export default function JadwalGeser({
     booking: JadwalBooking[];
     /** Diisi kalau tanggal yang tampil adalah hari ini: garis "Sekarang". */
     sekarang?: Date;
-    onTinjau: (idPembayaran: number) => void;
+    /** Tanpa onTinjau (Pemantauan Manager) blok menunggu verifikasi hanya ditampilkan, tidak bisa diklik. */
+    onTinjau?: (idPembayaran: number) => void;
 }) {
     const area = useRef<HTMLDivElement>(null);
     const trek = useRef<HTMLDivElement>(null);
@@ -221,6 +222,18 @@ export default function JadwalGeser({
                                         const warna = b.bentrok
                                             ? 'border-accessible-red bg-accessible-red/10 text-accessible-red'
                                             : 'border-accessible-orange bg-accessible-orange/10 text-accessible-orange';
+                                        if (!onTinjau)
+                                            return (
+                                                <div
+                                                    key={b.idBooking}
+                                                    title={`${b.namaPenyewa}, ${jam}`}
+                                                    className={`absolute overflow-hidden rounded-md border border-dashed px-2 py-1 ${warna}`}
+                                                    style={gaya}
+                                                >
+                                                    <p className="truncate text-xs font-semibold text-foreground">{b.namaPenyewa}</p>
+                                                    <p className="truncate text-xs font-medium">{b.bentrok ? 'Bentrok' : 'Menunggu verifikasi'}</p>
+                                                </div>
+                                            );
                                         return (
                                             <button
                                                 key={b.idBooking}

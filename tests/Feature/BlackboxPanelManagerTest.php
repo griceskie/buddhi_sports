@@ -51,27 +51,19 @@ class BlackboxPanelManagerTest extends TestCase
         DB::table('pembayarans')->insert(['idBooking' => $b, 'tglBayar' => $tgl, 'jumlahBayar' => $jumlah, 'status' => $status]);
     }
 
-    // I01: dashboard, kartu pemasukan dan grafik 12 bulan -> sesuai pembayaran Terverifikasi.
-    public function test_i01_kartu_dan_grafik_sesuai_data(): void
+    // I01: Pemantauan (pengganti dashboard Manager sejak 2026-11-14) -> isinya sama dengan dashboard Admin, hanya baca.
+    // Kartu pemasukan dan grafik pindah ke Analisis bisnis (lihat I06).
+    public function test_i01_pemantauan_hanya_baca_dengan_antrean_admin(): void
     {
         $idLapangan = $this->buatLapangan();
-        $this->buatPembayaran($idLapangan, '2026-05-10', 100000); // bulan ini
-        $this->buatPembayaran($idLapangan, '2026-05-20', 50000); // bulan ini
-        $this->buatPembayaran($idLapangan, '2026-04-15', 70000); // bulan lalu
-        $this->buatPembayaran($idLapangan, '2026-01-10', 20000); // tahun ini, bulan lain
-        $this->buatPembayaran($idLapangan, '2026-05-21', 999999, 'Menunggu Verifikasi'); // tidak ikut terhitung
+        $this->buatPembayaran($idLapangan, '2026-05-31', 100000, 'Menunggu Verifikasi');
 
         $this->actingAs($this->manager, 'manager')->get('/dashboard-manager')->assertInertia(fn (Assert $p) => $p
-            ->component('Dashboard/Manager')
-            ->where('stat.pemasukanBulanIni', 150000)
-            ->where('stat.pemasukanBulanLalu', 70000)
-            ->where('stat.pemasukanTahunIni', 240000)
-            ->has('grafik', 12)
-            ->where('grafik.0.bulan', 5)
-            ->where('grafik.0.tahun', 2026)
-            ->where('grafik.0.totalPemasukan', 150000)
-            ->where('grafik.1.bulan', 4)
-            ->where('grafik.1.totalPemasukan', 70000));
+            ->component('Manager/Pemantauan')
+            ->has('antrean', 1)
+            ->missing('terbaru'));
+        // tombol Terima/Tolak tetap milik Admin
+        $this->post('/verifikasi/1/terima')->assertRedirect('/login-pengelola');
     }
 
     // I02: halaman Pembayaran dan Lapangan Manager hanya bisa dilihat -> tidak ada rute ubah yang bisa dipakai.

@@ -19,6 +19,8 @@ export type BuktiAntrean = {
     jamSelesai: string;
     tglBayar: string;
     dikirimPada: string | null;
+    /** Lama menunggu di jam operasional (08.00–22.00), dalam menit. */
+    menitTunggu?: number | null;
     jumlahBayar: number;
     totalBayar: number;
     buktiBayar: string | null;

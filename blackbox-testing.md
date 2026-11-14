@@ -142,7 +142,7 @@ Diuji otomatis lewat request HTTP ke `/laporanpembayaran/buat` dan `/laporanpemb
 
 | ID | Skenario | Hasil yang diharapkan | Hasil aktual | Status |
 |---|---|---|---|---|
-| I01 | Dashboard: kartu pemasukan dan grafik 12 bulan | Sesuai pembayaran `Terverifikasi` | `pemasukanBulanIni`/`BulanLalu`/`TahunIni` dan 12 titik `grafik` (bulan ini di urutan pertama, mundur) semua sesuai; pembayaran `Menunggu Verifikasi` tidak ikut terhitung | Valid |
+| I01 | Pemantauan (pengganti dashboard Manager, 2026-11-14) | Isi sama dengan dashboard Admin, hanya baca | Komponen `Manager/Pemantauan`, antrean bukti tampil, tanpa Booking terbaru; rute Terima/Tolak tetap tertutup untuk Manager. Kartu pemasukan dan grafik pindah ke Analisis bisnis (I06) | Valid |
 | I02 | Halaman Pembayaran dan Lapangan | Hanya bisa dilihat, tidak ada tombol ubah | Halaman bisa dibuka (200), tapi rute ubah data (`/insertpembayaran`, `/updatelapangan`, khusus guard `admin`) tetap tertutup untuk Manager — diarahkan ke `/login-pengelola` | Valid, sebagian |
 | I03 | Tambah Admin dengan username duplikat | Ditolak | Ditolak dengan error pada `username` | Valid |
 | I04 | Reset password Admin, lalu login dengan password baru | Berhasil | Password lama langsung tidak berfungsi, password baru berhasil login ke guard `admin` | Valid |
