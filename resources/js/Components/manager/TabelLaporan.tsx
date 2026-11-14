@@ -26,7 +26,8 @@ import {
     TableRow,
 } from '@/Components/ui/table';
 import { router, useForm } from '@inertiajs/react';
-import { CircleCheck, Download, ExternalLink } from 'lucide-react';
+import { Check, FileText } from 'lucide-react';
+import BadgeTip from '@/Components/pengelola/BadgeTip';
 import { useState } from 'react';
 
 export type Laporan = {
@@ -43,79 +44,62 @@ export type Laporan = {
     namaAdmin: string | null;
 };
 
-/** Laporan pembayaran untuk Manager: PDF bisa dibuka atau diunduh, dan laporan bisa ditandai sudah diperiksa. */
+const tgl = (iso: string) => formatTanggal(iso.slice(0, 10), 'd MMM yyyy');
+
+function statusLaporan(l: Laporan): { teks: string; nada: string; tip: string } {
+    if (l.diperiksaPada) return { teks: 'Sudah diperiksa', nada: 'hijau', tip: `Anda periksa ${tgl(l.diperiksaPada)}. Admin tidak bisa lagi mengubahnya.` };
+    if (!l.filePdf) return { teks: 'Belum ada PDF', nada: 'abu', tip: 'Admin belum membuat PDF laporan ini.' };
+    if (l.revisiPada) return { teks: 'Menunggu revisi Admin', nada: 'oranye', tip: `Catatan Anda: ${l.catatanRevisi ?? '-'}` };
+    return { teks: 'Menunggu diperiksa', nada: 'biru', tip: 'Buka PDF-nya, lalu tandai diperiksa atau minta revisi.' };
+}
+
+/** Daftar laporan pembayaran untuk Manager. Tindakan ada di peringatan atas halaman (laporan terlama yang menunggu). */
 export default function TabelLaporan({ laporan }: { laporan: Laporan[] }) {
     return (
         <Table>
             <TableHeader>
                 <TableRow>
-                    <TableHead>Nama laporan</TableHead>
-                    <TableHead>Total pemasukan</TableHead>
-                    <TableHead>Tanggal laporan</TableHead>
-                    <TableHead>Dibuat oleh</TableHead>
+                    <TableHead>Periode</TableHead>
+                    <TableHead className="text-right">Total pemasukan</TableHead>
+                    <TableHead>Dibuat</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
+                    <TableHead>Diperiksa</TableHead>
+                    <TableHead>
+                        <span className="sr-only">Aksi</span>
+                    </TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {laporan.map((l) => (
-                    <TableRow key={l.idLaporan}>
-                        <TableCell className="max-w-56 whitespace-normal font-medium">{l.namaLaporan ?? `Laporan ${l.bulan}/${l.tahun}`}</TableCell>
-                        <TableCell className="tabular-nums">{formatRupiah(l.totalPemasukan)}</TableCell>
-                        <TableCell>{formatTanggal(l.tglLaporan, 'd MMM yyyy')}</TableCell>
-                        <TableCell>{l.namaAdmin ?? '-'}</TableCell>
-                        <TableCell>
-                            {l.diperiksaPada ? (
-                                <Badge variant="success">
-                                    <CircleCheck aria-hidden="true" />
-                                    Sudah diperiksa
-                                </Badge>
-                            ) : l.filePdf ? (
-                                l.revisiPada ? (
-                                    <Badge variant="outline" className="border-accessible-orange/40 text-accessible-orange">
-                                        Menunggu revisi Admin
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="outline">Menunggu diperiksa</Badge>
-                                )
-                            ) : (
-                                '-'
-                            )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                            {l.filePdf ? (
-                                <div className="flex items-center justify-end gap-2 whitespace-nowrap">
-                                    {!l.diperiksaPada && (
-                                        <div className="flex flex-col items-stretch gap-1.5">
-                                            <TandaiDiperiksa laporan={l} />
-                                            <MintaRevisi laporan={l} />
-                                        </div>
-                                    )}
-                                    <a
-                                        href={route('laporan.pdf', l.idLaporan)}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        aria-label="Buka PDF"
-                                        title="Buka PDF"
-                                        className={buttonVariants({ variant: 'outline', size: 'icon-sm' })}
-                                    >
-                                        <ExternalLink />
+                {laporan.map((l) => {
+                    const st = statusLaporan(l);
+                    return (
+                        <TableRow key={l.idLaporan}>
+                            <TableCell>
+                                <span className="font-medium">{l.namaLaporan ?? `Laporan ${l.bulan}/${l.tahun}`}</span>
+                                {l.revisiPada && !l.diperiksaPada && <span className="block max-w-80 truncate text-muted-foreground">Revisi: {l.catatanRevisi}</span>}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">{formatRupiah(l.totalPemasukan)}</TableCell>
+                            <TableCell className="whitespace-nowrap text-muted-foreground tabular-nums">
+                                {tgl(l.tglLaporan)}
+                                {l.namaAdmin && ` · ${l.namaAdmin}`}
+                            </TableCell>
+                            <TableCell>
+                                <BadgeTip tip={st.tip}>
+                                    <Badge data-nada={st.nada}>{st.teks}</Badge>
+                                </BadgeTip>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-muted-foreground tabular-nums">{l.diperiksaPada ? tgl(l.diperiksaPada) : '—'}</TableCell>
+                            <TableCell className="text-right">
+                                {l.filePdf && (
+                                    <a href={route('laporan.pdf', l.idLaporan)} target="_blank" rel="noreferrer" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+                                        <FileText />
+                                        PDF
                                     </a>
-                                    <a
-                                        href={route('laporan.pdf', { idLaporan: l.idLaporan, unduh: 1 })}
-                                        aria-label="Unduh PDF"
-                                        title="Unduh PDF"
-                                        className={buttonVariants({ variant: 'outline', size: 'icon-sm' })}
-                                    >
-                                        <Download />
-                                    </a>
-                                </div>
-                            ) : (
-                                <span className="text-sm text-muted-foreground">Belum ada PDF</span>
-                            )}
-                        </TableCell>
-                    </TableRow>
-                ))}
+                                )}
+                            </TableCell>
+                        </TableRow>
+                    );
+                })}
                 {laporan.length === 0 && <TableEmpty colSpan={6}>Belum ada laporan pembayaran.</TableEmpty>}
             </TableBody>
         </Table>
@@ -123,10 +107,11 @@ export default function TabelLaporan({ laporan }: { laporan: Laporan[] }) {
 }
 
 /** Menandai laporan sudah diperiksa; minta konfirmasi karena Admin tidak bisa lagi mengubah laporan itu. */
-function TandaiDiperiksa({ laporan }: { laporan: Laporan }) {
+export function TandaiDiperiksa({ laporan }: { laporan: Laporan }) {
     return (
         <AlertDialog>
-            <AlertDialogTrigger className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            <AlertDialogTrigger className={buttonVariants({ size: 'sm' })}>
+                <Check />
                 Tandai diperiksa
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -153,7 +138,7 @@ function TandaiDiperiksa({ laporan }: { laporan: Laporan }) {
 }
 
 /** Meminta Admin memperbaiki laporan: catatan wajib, ditampilkan ke Admin di halaman Laporan dan notifikasi. */
-function MintaRevisi({ laporan }: { laporan: Laporan }) {
+export function MintaRevisi({ laporan }: { laporan: Laporan }) {
     const [buka, setBuka] = useState(false);
     const form = useForm({ catatan: laporan.catatanRevisi ?? '' });
 

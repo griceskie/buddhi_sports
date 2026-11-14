@@ -216,7 +216,7 @@ Rencana lengkap: `project/RENCANA-IMPLEMENTASI.md` di kanvas "Redesign Dashboard
 | 3 | Log aktivitas: kolom `peran`, tindakan Manager tercatat, satu log untuk semua pengelola (Admin bawaan filter Admin) | `feat/manager-log` | PR dibuka |
 | 4 | Pemantauan: `/dashboard-manager` = dashboard Admin hanya baca (`dataHariIni` dipakai bersama), lama tunggu bukti di jam operasional, Aktivitas hari ini, polling 30 dtk | `feat/manager-pemantauan` | PR dibuka |
 | 5 | Analisis bisnis (Pendapatan, Penyewa, Pola booking, Kinerja Admin): `/manager/analisis`, semua angka di `App\Support\AnalitikBisnis` | `feat/manager-analisis` | PR dibuka |
-| 6 | Halaman data Manager | `feat/manager-halaman-data` | belum |
+| 6 | Halaman data Manager | `feat/manager-halaman-data` | PR dibuka |
 | 7 | Profile Admin dan Manager | `feat/pengelola-profil` | belum |
 | 8 | Sinkron dokumen dan design system | `docs/sinkron-manager` | belum |
 

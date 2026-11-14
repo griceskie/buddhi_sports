@@ -142,4 +142,23 @@ class ManagerTest extends TestCase
         $this->actingAs($this->manager, 'manager')->get("/laporanpembayaran/$id/pdf?unduh=1")
             ->assertOk()->assertDownload('Laporan Pembayaran September 2026.pdf');
     }
+
+    public function test_halaman_lapangan_admin_dan_laporan_mengirim_ringkasan(): void
+    {
+        // September (bulan terakhir yang selesai) dan hari ini; hari ini 24 Okt 2026
+        $this->bayar('2026-09-10', 100000, 'Terverifikasi');
+        $this->bayar('2026-10-24', 100000, 'Terverifikasi');
+        DB::table('pembayarans')->update(['idAdmin' => $this->admin->idAdmin]);
+        $laporan = DB::table('laporan_pembayarans')->insertGetId(['idAdmin' => $this->admin->idAdmin, 'idManager' => $this->manager->idManager, 'bulan' => 9, 'tahun' => 2026,
+            'totalPemasukan' => 100000, 'tglLaporan' => '2026-10-02', 'filePdf' => 'laporan/x.pdf'], 'idLaporan');
+
+        $this->actingAs($this->manager, 'manager')->get('/manager/lapangan')->assertInertia(fn (Assert $p) => $p
+            ->where('bulan', 'September')
+            ->where('lapangan.0.pemasukan', 100000)
+            ->where('lapangan.0.terisi', 0.5) // 2 jam dari 30 hari x 14 jam
+            ->where('lapangan.0.hariIni', ['booking' => 1, 'jam' => 2]));
+        $this->get('/manager/admin')->assertInertia(fn (Assert $p) => $p
+            ->where('admin.0.pembayaran', 2)->where('admin.0.laporan', 1)->missing('admin.0.password'));
+        $this->get('/manager/laporan')->assertInertia(fn (Assert $p) => $p->where('menunggu', $laporan));
+    }
 }

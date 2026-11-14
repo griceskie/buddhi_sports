@@ -62,8 +62,10 @@ type Props = {
     onSebelum: () => void;
     onBerikut: () => void;
     onTutup: () => void;
-    onTerima: () => void;
-    onTolak: (alasan: string) => void;
+    onTerima?: () => void;
+    onTolak?: (alasan: string) => void;
+    /** Manager: hanya melihat bukti dan rinciannya, tanpa Terima/Tolak. */
+    hanyaLihat?: boolean;
     galatAlasan?: string;
     memproses: boolean;
 };
@@ -80,6 +82,7 @@ function IsiDrawer({
     onTolak,
     galatAlasan,
     memproses,
+    hanyaLihat,
 }: Props & { bukti: BuktiAntrean }) {
     const [menolak, setMenolak] = useState(false);
     const [alasan, setAlasan] = useState('');
@@ -95,7 +98,7 @@ function IsiDrawer({
     return (
         <>
         <SheetHeader>
-            <SheetTitle>Verifikasi pembayaran</SheetTitle>
+            <SheetTitle>{hanyaLihat ? 'Detail pembayaran' : 'Verifikasi pembayaran'}</SheetTitle>
             <SheetDescription>
                 {bukti.kode} · {bukti.namaPenyewa} · {bukti.namaLapangan}
             </SheetDescription>
@@ -180,7 +183,14 @@ function IsiDrawer({
                 <span />
             )}
             <div className="flex flex-wrap items-center justify-end gap-2">
-                {!menunggu ? (
+                {hanyaLihat ? (
+                    <>
+                        {menunggu && <span className="text-sm text-muted-foreground">Admin yang menerima atau menolak bukti ini.</span>}
+                        <Button variant="outline" onClick={onTutup}>
+                            Tutup
+                        </Button>
+                    </>
+                ) : !menunggu ? (
                     <Button variant="outline" onClick={onTutup}>
                         Tutup
                     </Button>
@@ -189,7 +199,7 @@ function IsiDrawer({
                         <Button variant="outline" disabled={memproses} onClick={() => setMenolak(false)}>
                             Batal
                         </Button>
-                        <Button variant="destructive" disabled={memproses || !alasan.trim()} onClick={() => onTolak(alasan.trim())}>
+                        <Button variant="destructive" disabled={memproses || !alasan.trim()} onClick={() => onTolak?.(alasan.trim())}>
                             Tolak pembayaran
                         </Button>
                     </>
