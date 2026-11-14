@@ -217,7 +217,7 @@ Rencana lengkap: `project/RENCANA-IMPLEMENTASI.md` di kanvas "Redesign Dashboard
 | 4 | Pemantauan: `/dashboard-manager` = dashboard Admin hanya baca (`dataHariIni` dipakai bersama), lama tunggu bukti di jam operasional, Aktivitas hari ini, polling 30 dtk | `feat/manager-pemantauan` | PR dibuka |
 | 5 | Analisis bisnis (Pendapatan, Penyewa, Pola booking, Kinerja Admin): `/manager/analisis`, semua angka di `App\Support\AnalitikBisnis` | `feat/manager-analisis` | PR dibuka |
 | 6 | Halaman data Manager | `feat/manager-halaman-data` | PR dibuka |
-| 7 | Profile Admin dan Manager | `feat/pengelola-profil` | belum |
+| 7 | Profile Admin dan Manager | `feat/pengelola-profil` | PR dibuka |
 | 8 | Sinkron dokumen dan design system | `docs/sinkron-manager` | belum |
 
 Keputusan user 2026-11-14: perhitungan di PHP, React hanya menampilkan; jam ditulis dengan titik (16.20) di semua halaman, termasuk penyewa; satu kolom log `peran`; mode Rentang = tiga pilihan cepat + "Pilih tanggal sendiri"; pesan galat Profile pengelola bahasa Indonesia; celah bagian 8 dikerjakan sesudah semua tahap Manager.
