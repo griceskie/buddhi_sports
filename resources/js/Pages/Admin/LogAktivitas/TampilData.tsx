@@ -20,6 +20,7 @@ import {
     FileText,
     LandPlot,
     Lock,
+    LogIn,
     LucideIcon,
     Pencil,
     Plus,
@@ -62,6 +63,8 @@ const AKSI = {
     periksa: { label: 'Menandai diperiksa', ikon: Check, warna: 'text-accessible-green' },
     revisi: { label: 'Meminta revisi', ikon: RotateCcw, warna: 'text-accessible-red' },
     reset: { label: 'Mereset password', ikon: KeyRound, warna: 'text-accessible-orange' },
+    masuk: { label: 'Masuk', ikon: LogIn, warna: 'text-muted-foreground' },
+    gagal: { label: 'Login gagal', ikon: ShieldAlert, warna: 'text-accessible-red' },
 } satisfies Record<string, { label: string; ikon: LucideIcon; warna: string }>;
 
 const IKON_JENIS: Record<string, LucideIcon> = {
@@ -72,6 +75,7 @@ const IKON_JENIS: Record<string, LucideIcon> = {
     Laporan: FileText,
     Admin: UserCog,
     Profil: UserRound,
+    Akun: KeyRound,
 };
 
 const PERAN = { admin: 'Admin', manager: 'Manager', sistem: 'Sistem' };

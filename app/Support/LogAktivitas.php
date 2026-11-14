@@ -26,6 +26,8 @@ class LogAktivitas
         'periksa' => 'menandai diperiksa',
         'revisi' => 'meminta revisi',
         'reset' => 'mereset password',
+        'masuk' => 'masuk ke',
+        'gagal' => 'mencatat login gagal untuk',
     ];
 
     /** Label isian per jenis data; kolom yang tidak ada di sini tidak dicatat (mis. path foto). */
@@ -40,11 +42,12 @@ class LogAktivitas
     /**
      * @param  list<array{0: string, 1: string, 2: string}>  $rincian  [isian, sebelum, sesudah]
      */
-    public static function catat(string $aksi, string $jenisObjek, string $kodeObjek, array $rincian = [], ?string $catatan = null, bool $olehSistem = false): void
+    public static function catat(string $aksi, string $jenisObjek, string $kodeObjek, array $rincian = [], ?string $catatan = null, bool $olehSistem = false, ?string $guard = null): void
     {
-        // aksi otomatis (scheduler, halaman penyewa) dicatat atas nama "Sistem" walau ada sesi pengelola di browser yang sama
-        $admin = $olehSistem ? null : Auth::guard('admin')->user();
-        $manager = $olehSistem || $admin ? null : Auth::guard('manager')->user();
+        // aksi otomatis (scheduler, halaman penyewa) dicatat atas nama "Sistem" walau ada sesi pengelola di browser yang sama;
+        // $guard dipakai saat login, supaya sesi peran lain di browser yang sama tidak ikut terbaca
+        $admin = $olehSistem || $guard === 'manager' ? null : Auth::guard('admin')->user();
+        $manager = $olehSistem || $admin || $guard === 'admin' ? null : Auth::guard('manager')->user();
         $nama = $admin?->namaAdmin ?? $manager?->namaManager ?? 'Sistem';
         $peran = $admin ? 'admin' : ($manager ? 'manager' : 'sistem');
 

@@ -130,7 +130,35 @@ export default function AdminDashboard({
     const pengelola = usePage<PageProps>().props.pengelola;
     const nama = pengelola?.nama;
     // Pemantauan: diperbarui otomatis setiap 30 detik; Inertia memperlambatnya saat tab tidak aktif
-    usePoll(30_000, { only: ['stat', 'jadwal', 'jadwalHariIni', 'antrean', 'tugas', 'aktivitas', 'pengelola'] }, { autoStart: !!pemantauan });
+    const propsPantau = ['stat', 'jadwal', 'jadwalHariIni', 'antrean', 'tugas', 'aktivitas', 'pengelola'];
+    const { start: mulaiPantau, stop: hentiPantau } = usePoll(30_000, { only: propsPantau }, { autoStart: !!pemantauan });
+    // berhenti setelah 30 menit tanpa sentuhan, supaya sesi Manager yang ditinggal terbuka tetap bisa habis; lanjut saat ada sentuhan lagi
+    useEffect(() => {
+        if (!pemantauan) return;
+        let terakhir = Date.now();
+        let berhenti = false;
+        const aktif = () => {
+            terakhir = Date.now();
+            if (berhenti) {
+                berhenti = false;
+                router.reload({ only: propsPantau });
+                mulaiPantau();
+            }
+        };
+        const cek = window.setInterval(() => {
+            if (!berhenti && Date.now() - terakhir > 30 * 60_000) {
+                berhenti = true;
+                hentiPantau();
+            }
+        }, 60_000);
+        const peristiwa = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
+        peristiwa.forEach((e) => window.addEventListener(e, aktif, { passive: true }));
+        return () => {
+            window.clearInterval(cek);
+            peristiwa.forEach((e) => window.removeEventListener(e, aktif));
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pemantauan ? 1 : 0]);
     // aktivitas baru disorot sebentar
     const sudahTampil = useRef<Set<string> | null>(null);
     const baruMuncul = new Set((pemantauan?.aktivitas ?? []).filter((a) => sudahTampil.current && !sudahTampil.current.has(a.id)).map((a) => a.id));

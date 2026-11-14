@@ -16,7 +16,9 @@ class BuktiBayarController extends Controller
             ->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')
             ->where('pembayarans.idPembayaran', $idPembayaran)
             ->first(['pembayarans.buktiBayar', 'bookings.idPenyewa']);
-        abort_if(! $p?->buktiBayar || ! Storage::disk('local')->exists($p->buktiBayar), 404);
+        // hanya file di folder bukti/: disk privat juga menyimpan PDF laporan
+        $aman = $p?->buktiBayar && str_starts_with($p->buktiBayar, 'bukti/') && ! str_contains($p->buktiBayar, '..');
+        abort_if(! $aman || ! Storage::disk('local')->exists($p->buktiBayar), 404);
 
         $boleh = Auth::guard('admin')->check()
             || Auth::guard('manager')->check()

@@ -61,11 +61,14 @@ class LogAktivitasController extends Controller
             ->whereNull('peran')->when($peran === 'admin', fn ($x) => $x->whereNotNull('idAdmin'), fn ($x) => $x->whereNull('idAdmin')))));
     }
 
-    /** Telusuri seluruh rantai hash dan simpan hasilnya (tampil di halaman log). */
+    /**
+     * Telusuri rantai hash dari titik terakhir yang lolos (bukan dari awal, supaya tetap cepat saat log besar) dan simpan
+     * hasilnya. Penelusuran penuh berjalan mingguan lewat `log:periksa --penuh`.
+     */
     public function periksa(): RedirectResponse
     {
-        $hasil = LogAktivitas::periksa();
         $titik = Cache::get(self::CACHE_TITIK);
+        $hasil = LogAktivitas::periksa($titik['id'] ?? 0, $titik['hash'] ?? LogAktivitas::AWAL);
         if ($hasil['utuh'] && ! LogAktivitas::titikMasihAda($titik)) {
             $hasil = [...$hasil, 'utuh' => false, 'rusakPada' => $titik['id']];
         }
@@ -77,7 +80,7 @@ class LogAktivitasController extends Controller
         return back()->with(
             $hasil['utuh'] ? 'success' : 'error',
             $hasil['utuh']
-                ? 'Log utuh: '.$hasil['diperiksa'].' entri diperiksa, rantainya tidak putus.'
+                ? 'Log utuh: '.$hasil['diperiksa'].' entri baru diperiksa sejak pemeriksaan terakhir, rantainya tidak putus.'
                 : 'Log tidak utuh: rantai putus di entri #'.$hasil['rusakPada'].'. Ada data yang diubah atau dihapus di luar aplikasi.',
         );
     }

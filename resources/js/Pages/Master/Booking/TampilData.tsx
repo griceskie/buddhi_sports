@@ -29,6 +29,7 @@ type Booking = {
     jamSelesai: string;
     totalBayar: number;
     status: string;
+    tanpaBayar: boolean;
 };
 // jam bulat dalam jam operasional: mulai 08:00-21:00, selesai paling lambat 22:00
 const rentangJam = (dari: number, sampai: number) =>
@@ -121,9 +122,12 @@ export default function TampilData({ databooking, ...pilihan }: { databooking: B
                         label: 'Status',
                         urut: (r) => ['Dipesan', 'Dikonfirmasi', 'Dibatalkan'].indexOf(r.status),
                         render: (r) => (
-                            <BadgeTip tip={tipBooking(r.status)}>
-                                <BookingStatusBadge status={r.status} />
-                            </BadgeTip>
+                            <span className="inline-flex items-center gap-2">
+                                <BadgeTip tip={tipBooking(r.status, r.tanpaBayar)}>
+                                    <BookingStatusBadge status={r.status} />
+                                </BadgeTip>
+                                {r.tanpaBayar && <span className="text-sm text-accessible-orange">Tanpa pembayaran</span>}
+                            </span>
                         ),
                     },
                 ]}
