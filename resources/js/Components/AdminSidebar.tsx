@@ -23,6 +23,7 @@ import {
     History,
     LandPlot,
     LayoutDashboard,
+    Lightbulb,
     LucideIcon,
     Trophy,
     Tv,
@@ -56,7 +57,13 @@ const MENU_ADMIN: Kelompok[] = [
 
 // Manager hanya melihat pembayaran, lapangan, dan laporan; yang bisa diubah hanya akun Admin (PRD bagian 4).
 const MENU_MANAGER: Kelompok[] = [
-    { label: 'Utama', menu: [{ href: '/dashboard-manager', label: 'Pemantauan', icon: Tv }] },
+    {
+        label: 'Utama',
+        menu: [
+            { href: '/dashboard-manager', label: 'Pemantauan', icon: Tv },
+            { href: '/manager/analisis', label: 'Analisis bisnis', icon: Lightbulb },
+        ],
+    },
     {
         label: 'Data',
         menu: [

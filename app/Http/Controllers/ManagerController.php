@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AnalitikBisnis;
 use App\Support\LogAktivitas;
 use App\Support\Pemesanan;
 use Illuminate\Database\QueryException;
@@ -68,6 +69,23 @@ class ManagerController extends Controller
             ]);
 
         return $kirim->concat($log)->sortByDesc('waktu')->take(30)->values()->all();
+    }
+
+    /** Analisis bisnis: periode dan tab dari query string, semua angka dihitung di AnalitikBisnis. */
+    public function analisis(Request $request)
+    {
+        $q = $request->validate([
+            'jenis' => 'nullable|in:'.implode(',', AnalitikBisnis::JENIS),
+            'tab' => 'nullable|in:'.implode(',', AnalitikBisnis::TAB),
+            'th' => 'nullable|integer|min:2000|max:2100',
+            'bl' => 'nullable|integer|min:1|max:12',
+            'q' => 'nullable|integer|min:1|max:4',
+            'rentang' => 'nullable|in:awal,6,12,pilih',
+            'dari' => 'nullable|date_format:Y-m-d',
+            'sampai' => 'nullable|date_format:Y-m-d|after_or_equal:dari',
+        ]);
+
+        return Inertia::render('Manager/Analisis', (new AnalitikBisnis)->halaman($q));
     }
 
     public function pembayaran(Request $request): Response

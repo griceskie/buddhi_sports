@@ -119,6 +119,7 @@ Route::middleware('auth:admin')->group(function () {
 Route::middleware('auth:manager')->group(function () {
     Route::get('/dashboard-manager', [ManagerController::class, 'dashboard'])->name('dashboard.manager');
     // Manager hanya melihat pembayaran, lapangan, dan laporan; yang bisa diubah hanya akun Admin
+    Route::get('/manager/analisis', [ManagerController::class, 'analisis'])->name('manager.analisis');
     Route::get('/manager/pembayaran', [ManagerController::class, 'pembayaran'])->name('manager.pembayaran');
     Route::get('/manager/lapangan', [ManagerController::class, 'lapangan'])->name('manager.lapangan');
     Route::get('/manager/laporan', [ManagerController::class, 'laporanPembayaran'])->name('manager.laporan');
