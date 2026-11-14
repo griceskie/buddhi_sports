@@ -90,6 +90,14 @@
   }
 }
 
+/* Lapangan Manager: kartu atau baris tabel masuk berurutan saat tampilan berganti (Pages/Manager/Lapangan.tsx) */
+@keyframes lp-masuk {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
 /* Batang grafik Laporan pembayaran naik dari dasar (Components/admin/AnalitikLaporan.tsx) */
 @keyframes naik-grafik {
   from {

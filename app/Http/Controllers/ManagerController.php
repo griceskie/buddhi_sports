@@ -88,6 +88,7 @@ class ManagerController extends Controller
         return Inertia::render('Manager/Analisis', (new AnalitikBisnis)->halaman($q));
     }
 
+    /** Pembayaran per bulan, hanya dilihat; baris dibentuk sama dengan drawer verifikasi Admin. */
     public function pembayaran(Request $request): Response
     {
         $awal = MasterPembayaranController::awalPeriode($request);
@@ -96,43 +97,66 @@ class ManagerController extends Controller
             ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
             ->join('lapangans', 'lapangans.idLapangan', '=', 'bookings.idLapangan')
             ->whereBetween('pembayarans.tglBayar', [$awal->toDateString(), $awal->copy()->endOfMonth()->toDateString()])
-            ->orderBy('pembayarans.tglBayar')
+            ->orderByRaw('pembayarans.dikirimPada IS NULL')->orderBy('pembayarans.dikirimPada')->orderBy('pembayarans.idPembayaran')
             ->get([
-                'pembayarans.idPembayaran', 'pembayarans.idBooking', 'pembayarans.tglBayar', 'pembayarans.jumlahBayar',
-                'pembayarans.buktiBayar', 'pembayarans.status', 'pembayarans.alasanTolak', 'bookings.totalBayar', 'penyewas.namaPenyewa', 'lapangans.namaLapangan',
+                'pembayarans.idPembayaran', 'pembayarans.tglBayar', 'pembayarans.jumlahBayar', 'pembayarans.buktiBayar', 'pembayarans.status',
+                'pembayarans.dikirimPada', 'pembayarans.alasanTolak', 'pembayarans.diverifikasiPada',
+                'bookings.idBooking', 'bookings.idLapangan', 'bookings.tanggal', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.totalBayar',
+                'penyewas.namaPenyewa', 'lapangans.namaLapangan',
             ]);
 
         return Inertia::render('Manager/Pembayaran', [
             'periode' => ['bulan' => $awal->month, 'tahun' => $awal->year],
             'ringkasan' => MasterPembayaranController::ringkasan($pembayaran),
-            'pembayaran' => $pembayaran->map(fn ($p) => [
-                'idPembayaran' => $p->idPembayaran,
-                'idBooking' => $p->idBooking,
-                'kode' => Pemesanan::kode($p->idBooking),
-                'namaPenyewa' => $p->namaPenyewa,
-                'namaLapangan' => $p->namaLapangan,
-                'tglBayar' => $p->tglBayar,
-                'jumlahBayar' => (int) $p->jumlahBayar,
-                'totalBayar' => (int) $p->totalBayar,
-                'status' => $p->status,
+            'pembayaran' => $pembayaran->map(fn ($p) => AdminDashboardController::bukti($p) + [
                 'alasanTolak' => $p->alasanTolak,
-                'buktiBayar' => $p->buktiBayar ? route('pembayaran.bukti', $p->idPembayaran) : null,
-                'buktiPdf' => str_ends_with(strtolower((string) $p->buktiBayar), '.pdf'),
+                'diverifikasiPada' => $p->diverifikasiPada ? Carbon::parse($p->diverifikasiPada)->toIso8601String() : null,
             ]),
         ]);
     }
 
+    /** Pemakaian dan pemasukan tiap lapangan: bulan terakhir yang sudah selesai, hari ini, dan 30 hari ke depan. */
     public function lapangan(): Response
     {
+        $bulan = today()->subMonthNoOverflow()->startOfMonth();
+        $rentang = [$bulan->toDateString(), $bulan->copy()->endOfMonth()->toDateString()];
+        $jamBuka = Pemesanan::JAM_TUTUP - Pemesanan::JAM_BUKA;
+        $pemasukan = DB::table('pembayarans')->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')
+            ->where('pembayarans.status', 'Terverifikasi')->whereBetween('pembayarans.tglBayar', $rentang)
+            ->groupBy('bookings.idLapangan')->selectRaw('bookings.idLapangan as id, SUM(pembayarans.jumlahBayar) as rp')->pluck('rp', 'id');
+        $terkonfirmasi = DB::table('bookings')->where('status', 'Dikonfirmasi')
+            ->whereBetween('tanggal', [$bulan->toDateString(), today()->addDays(30)->toDateString()])
+            ->get(['idLapangan', 'tanggal', 'jamMulai', 'jamSelesai']);
+        $jam = fn ($b) => (int) substr($b->jamSelesai, 0, 2) - (int) substr($b->jamMulai, 0, 2);
+        $hariIni = today()->toDateString();
+
         return Inertia::render('Manager/Lapangan', [
-            'lapangan' => DB::table('lapangans')->orderBy('idLapangan')->get(),
+            'bulan' => $bulan->locale('id')->translatedFormat('F'),
+            'lapangan' => DB::table('lapangans')->orderBy('idLapangan')->get(['idLapangan', 'namaLapangan', 'jenisLapangan', 'tarifPerJam', 'status'])
+                ->map(function ($l) use ($pemasukan, $terkonfirmasi, $jam, $rentang, $bulan, $jamBuka, $hariIni) {
+                    $b = $terkonfirmasi->where('idLapangan', $l->idLapangan);
+                    $diBulan = $b->filter(fn ($x) => $x->tanggal >= $rentang[0] && $x->tanggal <= $rentang[1]);
+                    $kini = $b->where('tanggal', $hariIni);
+                    $depan = $b->filter(fn ($x) => $x->tanggal > $hariIni);
+
+                    return (array) $l + [
+                        'pemasukan' => (int) ($pemasukan[$l->idLapangan] ?? 0),
+                        'terisi' => round($diBulan->sum($jam) / ($bulan->daysInMonth * $jamBuka) * 100, 1),
+                        'hariIni' => ['booking' => $kini->count(), 'jam' => (int) $kini->sum($jam)],
+                        'depan' => $depan->count(),
+                    ];
+                }),
         ]);
     }
 
     public function laporanPembayaran(): Response
     {
+        $laporan = $this->laporan()->get();
+
         return Inertia::render('Manager/LaporanPembayaran', [
-            'laporan' => $this->laporan()->get(),
+            'laporan' => $laporan,
+            // laporan terlama yang sudah diserahkan dan belum diperiksa (bukan yang sedang direvisi): muncul di peringatan atas
+            'menunggu' => $laporan->filter(fn ($l) => $l->filePdf && ! $l->diperiksaPada && ! $l->revisiPada)->last()?->idLaporan,
         ]);
     }
 
@@ -183,8 +207,18 @@ class ManagerController extends Controller
 
     public function admin(): Response
     {
+        // aktivitas terakhir dari log, dan berapa data yang masih mencatat Admin ini (karena itu tidak bisa dihapus)
+        $terakhir = DB::table('log_aktivitas')->whereNotNull('idAdmin')->groupBy('idAdmin')->selectRaw('idAdmin, MAX(waktu) as waktu')->pluck('waktu', 'idAdmin');
+        $hitung = fn (string $tabel) => DB::table($tabel)->whereNotNull('idAdmin')->groupBy('idAdmin')->selectRaw('idAdmin, COUNT(*) as n')->pluck('n', 'idAdmin');
+        [$pembayaran, $laporan, $booking] = [$hitung('pembayarans'), $hitung('laporan_pembayarans'), $hitung('bookings')];
+
         return Inertia::render('Manager/Admin', [
-            'admin' => DB::table('admins')->orderBy('namaAdmin')->get(['idAdmin', 'namaAdmin', 'username']),
+            'admin' => DB::table('admins')->orderBy('namaAdmin')->get(['idAdmin', 'namaAdmin', 'username'])->map(fn ($a) => (array) $a + [
+                'aktivitasTerakhir' => isset($terakhir[$a->idAdmin]) ? Carbon::parse($terakhir[$a->idAdmin])->toIso8601String() : null,
+                'pembayaran' => (int) ($pembayaran[$a->idAdmin] ?? 0),
+                'laporan' => (int) ($laporan[$a->idAdmin] ?? 0),
+                'booking' => (int) ($booking[$a->idAdmin] ?? 0),
+            ]),
         ]);
     }
 
