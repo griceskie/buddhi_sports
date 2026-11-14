@@ -11,7 +11,7 @@ export default function AksiBaris({ nama, onEdit, hapus }: { nama: string; onEdi
                     <Pencil />
                 </Button>
             )}
-            {hapus && <DeleteButton href={hapus} label={`Hapus ${nama}`} />}
+            {hapus && <DeleteButton href={hapus} method="delete" label={`Hapus ${nama}`} />}
         </span>
     );
 }

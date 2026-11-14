@@ -82,12 +82,12 @@ class MasterLaporanPembayaranController extends Controller
 
     public function insertData(Request $request){
         $request->validate([
-            'txtadmin' => 'required|integer',
-            'txtmanager' => 'required|integer',
+            'txtadmin' => 'required|integer|exists:admins,idAdmin',
+            'txtmanager' => 'required|integer|exists:managers,idManager',
             'txtbulan' => 'required|integer|min:1|max:12',
             'txttahun' => 'required|integer',
             'txttgllaporan' => 'required|date',
-            'txtpembayaran' => 'nullable|integer',
+            'txtpembayaran' => 'nullable|integer|exists:pembayarans,idPembayaran',
         ]);
 
         if (DB::table('laporan_pembayarans')->where('bulan', $request->txtbulan)->where('tahun', $request->txttahun)->exists()) {
@@ -114,12 +114,12 @@ class MasterLaporanPembayaranController extends Controller
     public function updateData(Request $request){
         $request->validate([
             'txtid' => 'required|integer',
-            'txtadmin' => 'required|integer',
-            'txtmanager' => 'required|integer',
+            'txtadmin' => 'required|integer|exists:admins,idAdmin',
+            'txtmanager' => 'required|integer|exists:managers,idManager',
             'txtbulan' => 'required|integer|min:1|max:12',
             'txttahun' => 'required|integer',
             'txttgllaporan' => 'required|date',
-            'txtpembayaran' => 'nullable|integer',
+            'txtpembayaran' => 'nullable|integer|exists:pembayarans,idPembayaran',
         ]);
 
         if ($this->sudahDiperiksa($request->txtid)) {
@@ -160,6 +160,7 @@ class MasterLaporanPembayaranController extends Controller
         $pdf = DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->value('filePdf');
         try {
             $lama = (array) DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->first();
+            abort_if(! $lama, 404);
             DB::transaction(function () use ($idhapus, $lama) {
                 DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->delete();
                 LogAktivitas::catat('hapus', 'Laporan', LaporanPembayaranController::namaLaporan((int) ($lama['bulan'] ?? 1), (int) ($lama['tahun'] ?? 0)), LogAktivitas::selisih('Laporan', $lama, null));

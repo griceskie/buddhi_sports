@@ -83,7 +83,7 @@ Route::middleware(['auth:admin', 'auth.session'])->group(function () {
     Route::post('/laporanpembayaran/buat', [LaporanPembayaranController::class, 'buat'])->name('laporan.buat');
 
     Route::get('/tampilpenyewa', [MasterPenyewaController::class, 'tampilData']);
-    Route::get('/deletepenyewa/{idhapus}', [MasterPenyewaController::class, 'deleteDataPenyewa']);
+    Route::delete('/deletepenyewa/{idhapus}', [MasterPenyewaController::class, 'deleteDataPenyewa']);
 
     Route::post('/insertpenyewa', [MasterPenyewaController::class, 'insertData']);
     Route::post('/updatepenyewa', [MasterPenyewaController::class, 'updateData']);
@@ -91,25 +91,25 @@ Route::middleware(['auth:admin', 'auth.session'])->group(function () {
     // Data Admin dan Manager sengaja tidak tersedia untuk Admin: Admin tidak boleh mengubah/menghapus akun Admin lain atau Manager.
 
     Route::get('/tampillapangan', [MasterLapanganController::class, 'tampilData']);
-    Route::get('/deletelapangan/{idhapus}', [MasterLapanganController::class, 'deleteDataLapangan']);
+    Route::delete('/deletelapangan/{idhapus}', [MasterLapanganController::class, 'deleteDataLapangan']);
 
     Route::post('/insertlapangan', [MasterLapanganController::class, 'insertData']);
     Route::post('/updatelapangan', [MasterLapanganController::class, 'updateData']);
 
     Route::get('/tampilbooking', [MasterBookingController::class, 'tampilData']);
-    Route::get('/deletebooking/{idhapus}', [MasterBookingController::class, 'deleteDataBooking']);
+    Route::delete('/deletebooking/{idhapus}', [MasterBookingController::class, 'deleteDataBooking']);
 
     Route::post('/insertbooking', [MasterBookingController::class, 'insertData']);
     Route::post('/updatebooking', [MasterBookingController::class, 'updateData']);
 
     Route::get('/tampilpembayaran', [MasterPembayaranController::class, 'tampilData']);
-    Route::get('/deletepembayaran/{idhapus}', [MasterPembayaranController::class, 'deleteDataPembayaran']);
+    Route::delete('/deletepembayaran/{idhapus}', [MasterPembayaranController::class, 'deleteDataPembayaran']);
 
     Route::post('/insertpembayaran', [MasterPembayaranController::class, 'insertData']);
     Route::post('/updatepembayaran', [MasterPembayaranController::class, 'updateData']);
 
     Route::get('/tampillaporanpembayaran', [MasterLaporanPembayaranController::class, 'tampilData']);
-    Route::get('/deletelaporanpembayaran/{idhapus}', [MasterLaporanPembayaranController::class, 'deleteDataLaporanPembayaran']);
+    Route::delete('/deletelaporanpembayaran/{idhapus}', [MasterLaporanPembayaranController::class, 'deleteDataLaporanPembayaran']);
 
     Route::post('/insertlaporanpembayaran', [MasterLaporanPembayaranController::class, 'insertData']);
     Route::post('/updatelaporanpembayaran', [MasterLaporanPembayaranController::class, 'updateData']);

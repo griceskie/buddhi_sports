@@ -64,7 +64,7 @@ class LogAktivitasTest extends TestCase
         DB::table('bookings')->insert(['idPenyewa' => $id, 'idLapangan' => $lap, 'tanggal' => '2026-11-20', 'jamMulai' => '10:00', 'jamSelesai' => '11:00', 'totalBayar' => 50000, 'status' => 'Dipesan']);
 
         // penyewa punya booking: hapus ditolak foreign key, transaksi dibatalkan, log tidak bertambah
-        $this->get('/deletepenyewa/'.$id)->assertSessionHas('error');
+        $this->delete('/deletepenyewa/'.$id)->assertSessionHas('error');
         $this->assertSame(1, DB::table('log_aktivitas')->count());
         $this->assertSame(1, DB::table('penyewas')->count());
     }

@@ -31,7 +31,7 @@ class MasterLapanganController extends Controller
     public function insertData(Request $request){
         $request->validate([
             'txtnama' => 'required|string|max:255',
-            'txtjenis' => 'required|string|max:255',
+            'txtjenis' => 'required|in:Bulu Tangkis,Basket',
             'txttarif' => 'required|integer|min:0',
             'txtstatus' => 'required|in:Tersedia,Perbaikan',
         ] + self::aturanFoto());
@@ -55,13 +55,14 @@ class MasterLapanganController extends Controller
         $request->validate([
             'txtid' => 'required|integer',
             'txtnama' => 'required|string|max:255',
-            'txtjenis' => 'required|string|max:255',
+            'txtjenis' => 'required|in:Bulu Tangkis,Basket',
             'txttarif' => 'required|integer|min:0',
             'txtstatus' => 'required|in:Tersedia,Perbaikan',
             'fotoLama' => 'nullable|array',
             'fotoLama.*' => 'string',
         ] + self::aturanFoto());
 
+        abort_if(! DB::table('lapangans')->where('idLapangan', $request->txtid)->exists(), 404);
         $lama = FotoLapangan::paths(DB::table('lapangans')->where('idLapangan', $request->txtid)->value('foto'));
         // hanya path yang memang milik lapangan ini yang boleh dipertahankan
         $tetap = array_values(array_intersect($lama, $request->input('fotoLama', [])));
@@ -90,6 +91,7 @@ class MasterLapanganController extends Controller
         $foto = FotoLapangan::paths(DB::table('lapangans')->where('idLapangan', $idhapus)->value('foto'));
         try {
             $barisLama = (array) DB::table('lapangans')->where('idLapangan', $idhapus)->first();
+            abort_if(! $barisLama, 404);
             DB::transaction(function () use ($idhapus, $barisLama) {
                 DB::table('lapangans')->where('idLapangan', $idhapus)->delete();
                 LogAktivitas::catat('hapus', 'Lapangan', $barisLama['namaLapangan'] ?? '#'.$idhapus, LogAktivitas::selisih('Lapangan', $barisLama, null));

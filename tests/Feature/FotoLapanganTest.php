@@ -95,7 +95,7 @@ class FotoLapanganTest extends TestCase
         $this->actingAs($this->admin, 'admin')->post('/insertlapangan', $this->data(['foto' => [$this->foto('a.jpg')]]));
         $foto = $this->fotoTersimpan();
 
-        $this->actingAs($this->admin, 'admin')->get('/deletelapangan/'.DB::table('lapangans')->value('idLapangan'));
+        $this->actingAs($this->admin, 'admin')->delete('/deletelapangan/'.DB::table('lapangans')->value('idLapangan'));
 
         Storage::disk('public')->assertMissing($foto);
     }
