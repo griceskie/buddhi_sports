@@ -18,7 +18,11 @@ class MasterBookingController extends Controller
 
     public function tampilData(){
 
-        $varbooking = DB::table('bookings')->get();
+        // tanpaBayar: Dikonfirmasi tetapi tanpa pembayaran Terverifikasi (mengisi okupansi, tidak masuk pemasukan laporan)
+        $varbooking = DB::table('bookings')->select('bookings.*')
+            ->selectRaw("(bookings.status = 'Dikonfirmasi' and not exists (select 1 from pembayarans where pembayarans.idBooking = bookings.idBooking and pembayarans.status = 'Terverifikasi')) as tanpaBayar")
+            ->get()
+            ->map(fn ($b) => tap($b, fn ($b) => $b->tanpaBayar = (bool) $b->tanpaBayar));
         return Inertia::render('Master/Booking/TampilData', [
             'databooking' => $varbooking,
             // hanya kolom yang dipakai form; jangan kirim hash password ke browser

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\LogAktivitas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,8 +72,14 @@ class PengelolaAuthenticatedSessionController extends Controller
             ]);
         }
 
+        $username = $request->string('username')->toString();
         if (! Auth::guard($guard)->attempt($request->only('username', 'password'))) {
             RateLimiter::hit($kunci, 60);
+            // hanya untuk username yang ada, supaya tebakan acak tidak memenuhi log (laju sudah dibatasi di atas)
+            $tabel = $guard === 'admin' ? 'admins' : 'managers';
+            if (DB::table($tabel)->where('username', $username)->exists()) {
+                DB::transaction(fn () => LogAktivitas::catat('gagal', 'Akun', $username, [], 'Login '.$guard.' dari IP '.$request->ip(), olehSistem: true));
+            }
             throw ValidationException::withMessages([
                 'password' => 'Username atau password salah.',
             ]);
@@ -80,6 +87,7 @@ class PengelolaAuthenticatedSessionController extends Controller
 
         RateLimiter::clear($kunci);
         $request->session()->regenerate();
+        DB::transaction(fn () => LogAktivitas::catat('masuk', 'Akun', $username, [], 'Dari IP '.$request->ip(), guard: $guard));
 
         return redirect()->intended(
             $guard === 'admin' ? route('dashboard.admin') : route('dashboard.manager')

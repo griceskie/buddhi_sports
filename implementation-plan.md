@@ -255,14 +255,14 @@ Audit setelah PR #35–#39. Bukan daftar tugas yang sudah diputuskan: semua buti
 
 | # | Celah | Usulan |
 |---|-------|--------|
-| 8.9 | Field bukti di form Pembayaran (`txtbukti`) berupa teks bebas yang dibaca dari disk privat oleh `BuktiBayarController`; Admin (atau data lama) bisa mengarahkannya ke `laporan/*.pdf` sehingga penyewa pemilik booking bisa membukanya. (Dari kode, belum dicoba.) | Validasi awalan `bukti/` dan tolak `..`; atau jangan boleh diedit dari form. |
-| 8.10 | Yang belum masuk log: login dan login gagal, ubah profil, ubah sandi. Ubah sandi tidak mengeluarkan sesi lain. | Catat ke `log_aktivitas`; `Auth::logoutOtherDevices()` / invalidasi sesi lain. |
+| 8.9 | **Selesai 2026-11-14** (`txtbukti` wajib berawalan `bukti/` tanpa `..`; `BuktiBayarController` juga menolak path di luar `bukti/` untuk data lama). Field bukti di form Pembayaran (`txtbukti`) berupa teks bebas yang dibaca dari disk privat oleh `BuktiBayarController`; Admin (atau data lama) bisa mengarahkannya ke `laporan/*.pdf` sehingga penyewa pemilik booking bisa membukanya. (Dari kode, belum dicoba.) | Validasi awalan `bukti/` dan tolak `..`; atau jangan boleh diedit dari form. |
+| 8.10 | **Selesai 2026-11-14** (ubah profil dan ganti password sudah tercatat sejak #47, sesi lain keluar lewat `auth.session` sejak #50; kini login berhasil (`masuk`) dan login gagal untuk username yang ada (`gagal`, atas nama Sistem, dengan IP) juga tercatat). Yang belum masuk log: login dan login gagal, ubah profil, ubah sandi. Ubah sandi tidak mengeluarkan sesi lain. | Catat ke `log_aktivitas`; `Auth::logoutOtherDevices()` / invalidasi sesi lain. |
 | 8.11 | **Selesai 2026-11-14** (`in:Bulu Tangkis,Basket`). Form memakai Select (Bulu Tangkis / Basket), tetapi server hanya memvalidasi `string|max:255`, jadi permintaan langsung bisa mengisi jenis lain padahal ikon dan tampilan penyewa bergantung pada dua nilai. | `in:Bulu Tangkis,Basket` di server. |
-| 8.12 | Admin bisa mengubah email dan sandi penyewa (tercatat di log, sandi tidak ditulis). | Pertimbangkan: hanya reset lewat tautan, bukan ketik sandi. |
-| 8.13 | Booking `Dikonfirmasi` dari form Admin tanpa pembayaran memberi okupansi tanpa pemasukan di analitik laporan. | Beri tanda di tabel Booking, atau wajibkan pembayaran. |
-| 8.14 | "Periksa keaslian log" menghitung seluruh rantai secara sinkron; lambat saat log besar. | Periksa bertahap (dari titik terakhir yang lolos) dan jalankan lewat antrean. |
+| 8.12 | **Selesai 2026-11-14** (keputusan user: Admin hanya mengetik password saat Tambah penyewa; Edit tidak punya field password dan server mengabaikannya). Admin bisa mengubah email dan sandi penyewa (tercatat di log, sandi tidak ditulis). | Pertimbangkan: hanya reset lewat tautan, bukan ketik sandi. |
+| 8.13 | **Selesai 2026-11-14** (tabel Booking memberi tanda "Tanpa pembayaran" + tooltip untuk `Dikonfirmasi` tanpa pembayaran Terverifikasi; pembayaran tidak diwajibkan). Booking `Dikonfirmasi` dari form Admin tanpa pembayaran memberi okupansi tanpa pemasukan di analitik laporan. | Beri tanda di tabel Booking, atau wajibkan pembayaran. |
+| 8.14 | **Selesai 2026-11-14** (tombol menelusuri dari titik terakhir yang lolos; penelusuran penuh tiap Minggu 03.00 lewat `log:periksa --penuh`; antrean tidak dipakai karena belum ada worker). "Periksa keaslian log" menghitung seluruh rantai secara sinkron; lambat saat log besar. | Periksa bertahap (dari titik terakhir yang lolos) dan jalankan lewat antrean. |
 | 8.15 | **Selesai 2026-11-14** (PDF bernama berversi, versi lama jadi arsip; file baru dihapus bila simpan gagal). PDF laporan ditimpa tanpa arsip, dan file ditulis sebelum transaksi DB selesai (gagal di tengah → file dan baris tidak cocok). | Simpan dengan nama berversi; tulis file setelah commit atau bersihkan saat gagal. |
-| 8.16 | Prop `dataadmin` / `datamanager` di Pembayaran dan Laporan masih mengirim hash sandi (backlog lama). | `select` kolom yang perlu saja. |
+| 8.16 | **Selesai 2026-11-14** (`dataadmin`/`datamanager` hanya id + nama). Prop `dataadmin` / `datamanager` di Pembayaran dan Laporan masih mengirim hash sandi (backlog lama). | `select` kolom yang perlu saja. |
 | 8.17 | Konfigurasi: `.env.example` memakai `APP_DEBUG=true` / `APP_ENV=local`, `SESSION_SECURE_COOKIE` belum diatur, sandi dev ada di PRD. | Ubah sebelum aplikasi dipublikasikan (sandi dev sengaja dibiarkan sampai itu, keputusan user 2026-10-25). |
 
 ### Tambahan audit 2026-11-14 (sesudah tahap Manager)
@@ -271,8 +271,8 @@ Audit setelah PR #35–#39. Bukan daftar tugas yang sudah diputuskan: semua buti
 |---|-------|--------|
 | B1 | Reset password Admin oleh Manager tidak mengeluarkan sesi Admin yang sedang login. | **Selesai 2026-11-14**: middleware `auth.session` di grup `auth:admin`, `auth:manager`, `auth:admin,manager` (hash password di sesi; berubah = keluar). Ganti password sendiri tetap login di perangkat yang dipakai, perangkat lain keluar. |
 | B2 | Password Admin dari halaman Manager cukup 6 karakter, Profile minimal 8. | **Selesai 2026-11-14**: `Password::defaults()` (min. 8) untuk Tambah admin dan Reset password. |
-| B3 | Pemantauan memperbarui data tiap 30 detik, jadi sesi Manager yang ditinggal terbuka tidak pernah habis. | Belum diputuskan (batas diam berapa lama). |
-| B4 | Akun Manager hanya satu dan tidak bisa direset dari aplikasi. | Belum diputuskan (Manager kedua atau perintah `artisan`). |
+| B3 | Pemantauan memperbarui data tiap 30 detik, jadi sesi Manager yang ditinggal terbuka tidak pernah habis. | **Dikerjakan 2026-11-14 dengan nilai bawaan, menunggu keputusan user**: pembaruan berhenti setelah 30 menit tanpa sentuhan dan lanjut saat ada sentuhan lagi. |
+| B4 | Akun Manager hanya satu dan tidak bisa direset dari aplikasi. | **Dikerjakan 2026-11-14 dengan nilai bawaan, menunggu keputusan user**: `php artisan manager:reset-password {username}` (minta password dua kali, min. 8, tercatat di log atas nama Sistem). |
 | B5 | Peringatan Laporan Manager hanya memuat tombol untuk laporan terlama yang menunggu. | Keputusan desain PR #46, menunggu user. |
 | B6 | Analisis bisnis belum memakai cache. | Belum diputuskan. |
 

@@ -15,6 +15,9 @@ use Inertia\Inertia;
 
 class MasterPembayaranController extends Controller
 {
+    // bukti hanya dibaca dari folder bukti/ di disk privat (PDF laporan juga ada di disk itu)
+    public const PESAN_BUKTI = 'Bukti bayar harus berupa file di folder bukti/ yang diunggah penyewa.';
+
     public const PESAN_LEWAT_TERIMA = 'Status Terverifikasi hanya bisa diberikan lewat tombol Terima di panel verifikasi, supaya jam bentrok dicek dan booking ikut dikonfirmasi.';
 
 
@@ -85,7 +88,7 @@ class MasterPembayaranController extends Controller
                 ->orderByDesc('bookings.idBooking')
                 ->get(['bookings.idBooking', 'bookings.tanggal', 'penyewas.namaPenyewa', 'lapangans.namaLapangan'])
                 ->map(fn ($b) => (array) $b + ['kode' => Pemesanan::kode($b->idBooking)]),
-            'dataadmin' => DB::table('admins')->get(),
+            'dataadmin' => DB::table('admins')->get(['idAdmin', 'namaAdmin']),
         ]);
     }
 
@@ -95,13 +98,15 @@ class MasterPembayaranController extends Controller
             'txtbooking' => 'required|integer|exists:bookings,idBooking',
             'txttglbayar' => 'required|date',
             'txtjumlah' => 'required|integer|min:0',
-            'txtbukti' => 'nullable|string|max:255',
+            'txtbukti' => ['nullable', 'string', 'max:255', 'starts_with:bukti/', 'not_regex:/\.\./'],
             // Terverifikasi hanya lewat Terima di panel verifikasi (cek bentrok, booking jadi Dikonfirmasi, tercatat terima)
             'txtstatus' => 'required|in:Menunggu Verifikasi,Ditolak',
             'txtalasan' => 'required_if:txtstatus,Ditolak|nullable|string|max:500',
         ], [
             'txtalasan.required_if' => 'Tulis alasan penolakan untuk penyewa.',
             'txtstatus.in' => self::PESAN_LEWAT_TERIMA,
+            'txtbukti.starts_with' => self::PESAN_BUKTI,
+            'txtbukti.not_regex' => self::PESAN_BUKTI,
         ]);
 
         if (KunciLaporan::terkunci($request->txttglbayar)) {
@@ -138,10 +143,14 @@ class MasterPembayaranController extends Controller
             'txtbooking' => 'required|integer|exists:bookings,idBooking',
             'txttglbayar' => 'required|date',
             'txtjumlah' => 'required|integer|min:0',
-            'txtbukti' => 'nullable|string|max:255',
+            'txtbukti' => ['nullable', 'string', 'max:255', 'starts_with:bukti/', 'not_regex:/\.\./'],
             'txtstatus' => 'required|string|max:255',
             'txtalasan' => 'required_if:txtstatus,Ditolak|nullable|string|max:500',
-        ], ['txtalasan.required_if' => 'Tulis alasan penolakan untuk penyewa.']);
+        ], [
+            'txtalasan.required_if' => 'Tulis alasan penolakan untuk penyewa.',
+            'txtbukti.starts_with' => self::PESAN_BUKTI,
+            'txtbukti.not_regex' => self::PESAN_BUKTI,
+        ]);
 
         // booking tidak boleh dipindah ke booking lain yang sudah punya pembayaran
         $sudahAda = DB::table('pembayarans')

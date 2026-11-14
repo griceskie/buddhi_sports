@@ -68,8 +68,8 @@ class MasterLaporanPembayaranController extends Controller
                 'lalu' => AnalitikLaporan::untuk($awal->copy()->subMonth()),
             ],
             'datalaporan' => $varlaporan,
-            'dataadmin' => DB::table('admins')->get(),
-            'datamanager' => DB::table('managers')->get(),
+            'dataadmin' => DB::table('admins')->get(['idAdmin', 'namaAdmin']),
+            'datamanager' => DB::table('managers')->get(['idManager', 'namaManager']),
             // kode booking dan penyewa untuk pilihan Pembayaran di form
             'datapembayaran' => DB::table('pembayarans')
                 ->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')

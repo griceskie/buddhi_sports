@@ -116,18 +116,20 @@ function FormPenyewa({ row, onDone }: { row: Penyewa | null; onDone: () => void 
                 <InputError message={errors.txtemail} className="mt-1" />
             </div>
 
-            <div>
-                <Label htmlFor="txtpassword">{row ? 'Password Baru (opsional)' : 'Password'}</Label>
-                <Input
-                    id="txtpassword"
-                    type="password"
-                    className="mt-1"
-                    placeholder={row ? 'Biarkan kosong jika tidak diubah' : undefined}
-                    value={data.txtpassword}
-                    onChange={(e) => setData('txtpassword', e.target.value)}
-                />
-                <InputError message={errors.txtpassword} className="mt-1" />
-            </div>
+            {/* password hanya diisi saat Tambah; Admin tidak bisa mengubah password penyewa yang sudah ada */}
+            {!row && (
+                <div>
+                    <Label htmlFor="txtpassword">Password</Label>
+                    <Input
+                        id="txtpassword"
+                        type="password"
+                        className="mt-1"
+                        value={data.txtpassword}
+                        onChange={(e) => setData('txtpassword', e.target.value)}
+                    />
+                    <InputError message={errors.txtpassword} className="mt-1" />
+                </div>
+            )}
         </SheetForm>
     );
 }

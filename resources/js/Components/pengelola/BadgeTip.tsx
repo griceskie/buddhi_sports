@@ -27,7 +27,8 @@ export function tipPembayaran(p: { status: string; alasanTolak?: string | null; 
     }
 }
 
-export function tipBooking(status: string): string {
+export function tipBooking(status: string, tanpaBayar = false): string {
+    if (status === 'Dikonfirmasi' && tanpaBayar) return 'Dikonfirmasi tanpa pembayaran terverifikasi. Jamnya ditahan, tetapi tidak dihitung di pemasukan laporan.';
     if (status === 'Dikonfirmasi') return 'Pembayaran sudah diterima. Jam ini ditahan untuk penyewa.';
     if (status === 'Dibatalkan') return 'Booking batal. Jamnya kembali kosong.';
     return 'Belum dikonfirmasi. Jam ini belum ditahan untuk penyewa.';
