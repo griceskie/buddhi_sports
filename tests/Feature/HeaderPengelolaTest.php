@@ -73,13 +73,33 @@ class HeaderPengelolaTest extends TestCase
         $this->get('/dashboard-admin')->assertInertia(fn (Assert $page) => $page->where('pengelola.notifikasi.baru', 1));
     }
 
-    public function test_manager_tidak_mendapat_notifikasi_admin(): void
+    public function test_manager_mendapat_notifikasi_laporan_bukan_bukti_bayar(): void
     {
         $manager = Manager::create(['namaManager' => 'Jarwo', 'username' => 'Manager1', 'password' => Hash::make('Manager123')]);
         $this->bukti('2026-11-13 14:00:00');
+        // laporan Oktober diserahkan dan menunggu diperiksa; laporan September sedang diminta revisi (tidak tampil)
+        DB::table('laporan_pembayarans')->insert([
+            ['idAdmin' => $this->admin->idAdmin, 'idManager' => $manager->idManager, 'bulan' => 10, 'tahun' => 2026, 'totalPemasukan' => 0, 'tglLaporan' => '2026-11-03', 'namaLaporan' => 'Laporan Oktober 2026', 'filePdf' => 'laporan/a.pdf', 'revisiPada' => null],
+            ['idAdmin' => $this->admin->idAdmin, 'idManager' => $manager->idManager, 'bulan' => 9, 'tahun' => 2026, 'totalPemasukan' => 0, 'tglLaporan' => '2026-10-03', 'namaLaporan' => 'Laporan September 2026', 'filePdf' => 'laporan/b.pdf', 'revisiPada' => '2026-10-04 10:00:00'],
+        ]);
 
         $this->actingAs($manager, 'manager')->get('/dashboard-manager')
-            ->assertInertia(fn (Assert $page) => $page->missing('pengelola.notifikasi'));
-        $this->post('/notifikasi/dibaca')->assertRedirect('/login-pengelola');
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('pengelola.notifikasi.daftar', 1)
+                ->where('pengelola.notifikasi.daftar.0.judul', 'Laporan menunggu diperiksa')
+                ->where('pengelola.notifikasi.baru', 1));
+
+        $this->actingAs($manager, 'manager')->post('/notifikasi/dibaca')->assertRedirect();
+        $this->assertNotNull(DB::table('managers')->value('notifDibacaPada'));
+        $this->actingAs($manager->refresh(), 'manager')->get('/dashboard-manager')
+            ->assertInertia(fn (Assert $page) => $page->where('pengelola.notifikasi.baru', 0));
+    }
+
+    public function test_manager_diberi_tahu_laporan_bulan_lalu_yang_terlambat(): void
+    {
+        $manager = Manager::create(['namaManager' => 'Jarwo', 'username' => 'Manager1', 'password' => Hash::make('Manager123')]);
+        $this->actingAs($manager, 'manager')->get('/dashboard-manager')
+            ->assertInertia(fn (Assert $page) => $page->where('pengelola.notifikasi.daftar.0.jenis', 'terlambat')
+                ->where('pengelola.notifikasi.daftar.0.judul', 'Laporan Oktober 2026 belum diserahkan'));
     }
 }

@@ -297,10 +297,14 @@ class AdminDashboardController extends Controller
         return null;
     }
 
-    /** "Tandai sudah dibaca" di notifikasi header: disimpan per akun Admin, jadi berlaku di semua perangkat. */
+    /** "Tandai sudah dibaca" di notifikasi header: disimpan per akun (Admin atau Manager), jadi berlaku di semua perangkat. */
     public function tandaiNotifikasiDibaca(): RedirectResponse
     {
-        DB::table('admins')->where('idAdmin', Auth::guard('admin')->id())->update(['notifDibacaPada' => now()]);
+        if (Auth::guard('admin')->check()) {
+            DB::table('admins')->where('idAdmin', Auth::guard('admin')->id())->update(['notifDibacaPada' => now()]);
+        } else {
+            DB::table('managers')->where('idManager', Auth::guard('manager')->id())->update(['notifDibacaPada' => now()]);
+        }
 
         return back();
     }

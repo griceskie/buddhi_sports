@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-/** Tema panel pengelola (terang/gelap) hanya untuk Admin dan halaman login pengelola. */
+/** Tema panel pengelola (terang/gelap) untuk Admin, Manager, dan halaman login pengelola; penyewa tidak. */
 class TemaPanelTest extends TestCase
 {
     use RefreshDatabase;
@@ -27,7 +27,15 @@ class TemaPanelTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('temaPanel', true));
     }
 
-    public function test_manager_dan_penyewa_tidak_memakai_tema_panel(): void
+    public function test_manager_memakai_tema_panel(): void
+    {
+        $manager = Manager::create(['namaManager' => 'Jarwo', 'username' => 'Manager1', 'password' => Hash::make('Manager123')]);
+        $this->actingAs($manager, 'manager')->get('/profile-pengelola')
+            ->assertSee('class="tema-pengelola"', false)
+            ->assertInertia(fn (Assert $page) => $page->where('temaPanel', true));
+    }
+
+    public function test_penyewa_tidak_memakai_tema_panel(): void
     {
         $this->get('/login')
             ->assertDontSee('tema-pengelola', false)
@@ -37,9 +45,5 @@ class TemaPanelTest extends TestCase
         $this->actingAs($penyewa)->get('/profile')
             ->assertInertia(fn (Assert $page) => $page->where('temaPanel', false));
 
-        $manager = Manager::create(['namaManager' => 'Jarwo', 'username' => 'Manager1', 'password' => Hash::make('Manager123')]);
-        $this->actingAs($manager, 'manager')->get('/profile-pengelola')
-            ->assertDontSee('tema-pengelola', false)
-            ->assertInertia(fn (Assert $page) => $page->where('temaPanel', false));
     }
 }

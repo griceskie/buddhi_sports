@@ -1,12 +1,4 @@
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger } from '@/Components/ui/dropdown-menu';
 import {
     Sidebar,
     SidebarContent,
@@ -19,13 +11,11 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarRail,
-    SidebarTrigger,
     useSidebar,
 } from '@/Components/ui/sidebar';
 import { PageProps } from '@/types';
 import { IsiMenuAkunPengelola, inisial } from '@/Components/pengelola/MenuAkunPengelola';
 import { Link, usePage } from '@inertiajs/react';
-import { cn } from 'cn';
 import {
     CalendarDays,
     ChevronsUpDown,
@@ -33,10 +23,8 @@ import {
     History,
     LandPlot,
     LayoutDashboard,
-    LogOut,
     LucideIcon,
     Trophy,
-    User,
     UserCog,
     Users,
     Wallet,
@@ -65,34 +53,35 @@ const MENU_ADMIN: Kelompok[] = [
     { label: 'Pengawasan', menu: [{ href: '/log-aktivitas', label: 'Log aktivitas', icon: History }] },
 ];
 
-/** Judul header panel Admin: label menu yang aktif. */
-export function judulHalamanAdmin(url: string) {
-    const path = url.split('?')[0];
-    if (path.startsWith('/profile-pengelola')) return 'Profil pengelola';
-    const semua = MENU_ADMIN.flatMap((k) => k.menu);
-    return semua.find((m) => (m.href === '/dashboard-admin' ? path === m.href : path.startsWith(m.href)))?.label ?? 'Panel Admin';
-}
-
 // Manager hanya melihat pembayaran, lapangan, dan laporan; yang bisa diubah hanya akun Admin (PRD bagian 4).
 const MENU_MANAGER: Kelompok[] = [
-    { menu: [{ href: '/dashboard-manager', label: 'Dashboard', icon: LayoutDashboard }] },
+    { label: 'Utama', menu: [{ href: '/dashboard-manager', label: 'Dashboard', icon: LayoutDashboard }] },
     {
-        label: 'Pemantauan',
+        label: 'Data',
         menu: [
             { href: '/manager/pembayaran', label: 'Pembayaran', icon: Wallet },
             { href: '/manager/lapangan', label: 'Lapangan', icon: LandPlot },
         ],
     },
-    { label: 'Laporan', menu: [{ href: '/manager/laporan', label: 'Laporan Pembayaran', icon: FileText }] },
+    { label: 'Laporan', menu: [{ href: '/manager/laporan', label: 'Laporan pembayaran', icon: FileText }] },
     { label: 'Pengguna', menu: [{ href: '/manager/admin', label: 'Admin', icon: UserCog }] },
 ];
+
+/** Judul header panel pengelola: label menu yang aktif. */
+export function judulHalamanPengelola(url: string, peran: 'admin' | 'manager') {
+    const path = url.split('?')[0];
+    if (path.startsWith('/profile-pengelola')) return 'Profil pengelola';
+    const kelompok = peran === 'admin' ? MENU_ADMIN : MENU_MANAGER;
+    const beranda = kelompok[0].menu[0].href;
+    const semua = kelompok.flatMap((k) => k.menu);
+    return semua.find((m) => (m.href === beranda ? path === m.href : path.startsWith(m.href)))?.label ?? (peran === 'admin' ? 'Panel admin' : 'Panel manager');
+}
 
 function PenggunaMenu() {
     const { isMobile } = useSidebar();
     const pengelola = usePage<PageProps>().props.pengelola;
 
     if (!pengelola) return null;
-    const admin = pengelola.role === 'admin';
 
     return (
         <SidebarMenu>
@@ -106,43 +95,16 @@ function PenggunaMenu() {
                             />
                         }
                     >
-                        {admin ? (
-                            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-foreground">
-                                {inisial(pengelola.nama)}
-                            </div>
-                        ) : (
-                            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
-                                <User className="size-4" />
-                            </div>
-                        )}
+                        <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-foreground">
+                            {inisial(pengelola.nama)}
+                        </div>
                         <div className="grid flex-1 text-left text-sm leading-tight">
                             <span className="truncate font-medium">{pengelola.nama}</span>
-                            <span className="truncate text-xs text-muted-foreground">{admin ? 'admin' : pengelola.username}</span>
+                            <span className="truncate text-xs text-muted-foreground">{pengelola.role}</span>
                         </div>
-                        <ChevronsUpDown className={cn('ml-auto size-4', admin && 'text-muted-foreground')} />
+                        <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
                     </DropdownMenuTrigger>
-                    {admin ? (
-                        <IsiMenuAkunPengelola pengelola={pengelola} side={isMobile ? 'top' : 'right'} align="end" sideOffset={8} />
-                    ) : (
-                        <DropdownMenuContent className="min-w-56" side={isMobile ? 'top' : 'right'} align="end" sideOffset={8}>
-                            <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                    {pengelola.username} · {pengelola.role === 'admin' ? 'Admin' : 'Manager'}
-                                </DropdownMenuLabel>
-                                <DropdownMenuItem render={<Link href={route('profile.pengelola')} />}>
-                                    <User />
-                                    Profile
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem render={<Link href={route('logout.pengelola')} method="post" as="button" />}>
-                                    <LogOut />
-                                    Log Out
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                        </DropdownMenuContent>
-                    )}
+                    <IsiMenuAkunPengelola pengelola={pengelola} side={isMobile ? 'top' : 'right'} align="end" sideOffset={8} />
                 </DropdownMenu>
             </SidebarMenuItem>
         </SidebarMenu>
@@ -164,12 +126,7 @@ export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
 
     return (
         <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader
-                className={cn(
-                    'flex-row items-center gap-1 group-data-[collapsible=icon]:flex-col',
-                    !manager && 'h-14 justify-center border-b border-sidebar-border',
-                )}
-            >
+            <SidebarHeader className="h-14 flex-row items-center justify-center gap-1 border-b border-sidebar-border group-data-[collapsible=icon]:flex-col">
                 <SidebarMenu className="min-w-0 flex-1">
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" render={<Link href={beranda} />}>
@@ -178,13 +135,11 @@ export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate font-semibold">Buddhi Sports</span>
-                                <span className="truncate text-xs text-muted-foreground">{manager ? 'Panel Manager' : 'Panel admin'}</span>
+                                <span className="truncate text-xs text-muted-foreground">{manager ? 'Panel manager' : 'Panel admin'}</span>
                             </div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
-                {/* Admin: tombol ciutkan pindah ke header halaman (HeaderPengelola) */}
-                {manager && <SidebarTrigger className="shrink-0 text-sidebar-foreground/70" />}
             </SidebarHeader>
 
             <SidebarContent>
@@ -214,7 +169,7 @@ export default function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
                 ))}
             </SidebarContent>
 
-            {/* Admin juga punya menu akun di header (HeaderPengelola); kanvas tetap menampilkan profil di bawah sidebar */}
+            {/* menu akun juga ada di header (HeaderPengelola); kanvas tetap menampilkan profil di bawah sidebar */}
             <SidebarFooter>
                 <PenggunaMenu />
             </SidebarFooter>

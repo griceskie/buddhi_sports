@@ -34,7 +34,7 @@ function Avatar({ nama, besar = false }: { nama: string; besar?: boolean }) {
     );
 }
 
-/** Isi menu akun Admin (profil, log aktivitas, mode gelap, keluar); dipakai di header dan di sidebar bawah. */
+/** Isi menu akun pengelola (profil, log aktivitas, mode gelap, keluar); dipakai di header dan di sidebar bawah. */
 export function IsiMenuAkunPengelola({ pengelola, ...props }: { pengelola: Pengelola } & ComponentProps<typeof DropdownMenuContent>) {
     const [gelap, setGelap] = useModeGelap();
 
@@ -45,7 +45,9 @@ export function IsiMenuAkunPengelola({ pengelola, ...props }: { pengelola: Penge
                     <Avatar nama={pengelola.nama} besar />
                     <span className="flex min-w-0 flex-col">
                         <span className="truncate text-sm font-medium text-foreground">{pengelola.nama}</span>
-                        <span className="truncate text-sm text-muted-foreground">Admin · {pengelola.username}</span>
+                        <span className="truncate text-sm text-muted-foreground">
+                            {pengelola.role === 'admin' ? 'Admin' : 'Manager'} · {pengelola.username}
+                        </span>
                     </span>
                 </DropdownMenuLabel>
             </DropdownMenuGroup>
@@ -55,10 +57,12 @@ export function IsiMenuAkunPengelola({ pengelola, ...props }: { pengelola: Penge
                     <User />
                     Profil pengelola
                 </DropdownMenuItem>
-                <DropdownMenuItem render={<Link href={route('log.aktivitas')} />}>
-                    <History />
-                    Log aktivitas
-                </DropdownMenuItem>
+                {pengelola.role === 'admin' && (
+                    <DropdownMenuItem render={<Link href={route('log.aktivitas')} />}>
+                        <History />
+                        Log aktivitas
+                    </DropdownMenuItem>
+                )}
                 <DropdownMenuItem closeOnClick={false} onClick={() => setGelap(!gelap)} className="justify-between">
                     <span className="flex items-center gap-2">
                         <Moon />
@@ -78,7 +82,7 @@ export function IsiMenuAkunPengelola({ pengelola, ...props }: { pengelola: Penge
     );
 }
 
-/** Menu akun di header Admin. */
+/** Menu akun di header pengelola. */
 export default function MenuAkunPengelola({ pengelola }: { pengelola: Pengelola }) {
     return (
         <DropdownMenu>

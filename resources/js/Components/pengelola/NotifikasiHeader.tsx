@@ -5,14 +5,15 @@ import { Link, router } from '@inertiajs/react';
 import { cn } from 'cn';
 import { format, isToday, isYesterday } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Bell, CircleX, FileText, History, Wallet } from 'lucide-react';
+import { Bell, CircleX, Clock, FileText, History, Wallet } from 'lucide-react';
 import { useState } from 'react';
 
-const IKON = { bayar: Wallet, laporan: FileText, batal: CircleX };
+const IKON = { bayar: Wallet, laporan: FileText, batal: CircleX, terlambat: Clock };
 const WARNA = {
     bayar: 'bg-accessible-orange/15 text-accessible-orange',
     laporan: 'bg-accessible-green/15 text-accessible-green',
     batal: 'bg-muted text-muted-foreground',
+    terlambat: 'bg-accessible-red/15 text-accessible-red',
 };
 
 function waktuSingkat(iso: string | null) {
@@ -23,8 +24,8 @@ function waktuSingkat(iso: string | null) {
     return format(d, 'd MMM', { locale: id });
 }
 
-/** Lonceng notifikasi di header Admin: titik merah selama ada bukti bayar baru yang belum ditandai dibaca. */
-export default function NotifikasiHeader({ daftar, baru }: { daftar: NotifikasiPengelola[]; baru: number }) {
+/** Lonceng notifikasi di header pengelola: titik merah selama ada hal baru yang belum ditandai dibaca. */
+export default function NotifikasiHeader({ daftar, baru, hrefLog }: { daftar: NotifikasiPengelola[]; baru: number; hrefLog?: string }) {
     const [buka, setBuka] = useState(false);
 
     const tandaiDibaca = () => router.post(route('notifikasi.dibaca'), {}, { preserveScroll: true, preserveState: true });
@@ -73,14 +74,16 @@ export default function NotifikasiHeader({ daftar, baru }: { daftar: NotifikasiP
                         })}
                     </ul>
                 )}
-                <Link
-                    href={route('log.aktivitas')}
-                    onClick={() => setBuka(false)}
-                    className="flex h-9 items-center justify-center gap-1.5 text-[13px] font-medium text-primary hover:bg-muted"
-                >
-                    <History className="size-3.5" aria-hidden />
-                    Lihat semua di Log aktivitas
-                </Link>
+                {hrefLog && (
+                    <Link
+                        href={hrefLog}
+                        onClick={() => setBuka(false)}
+                        className="flex h-9 items-center justify-center gap-1.5 text-sm font-medium text-primary hover:bg-muted"
+                    >
+                        <History className="size-3.5" aria-hidden />
+                        Lihat semua di Log aktivitas
+                    </Link>
+                )}
             </PopoverContent>
         </Popover>
     );
