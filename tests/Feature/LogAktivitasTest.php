@@ -203,8 +203,11 @@ class LogAktivitasTest extends TestCase
             $dataPdf = $view->getData();
         });
 
+        // laporan butuh data di bulannya (celah 8.3)
+        DB::table('bookings')->insert(['idPenyewa' => DB::table('penyewas')->value('idPenyewa'), 'idLapangan' => DB::table('lapangans')->value('idLapangan') ?? DB::table('lapangans')->insertGetId(['namaLapangan' => 'A', 'jenisLapangan' => 'Basket', 'tarifPerJam' => 1, 'status' => 'Tersedia'], 'idLapangan'),
+            'tanggal' => '2026-10-10', 'jamMulai' => '18:00:00', 'jamSelesai' => '19:00:00', 'totalBayar' => 1, 'status' => 'Dikonfirmasi']);
         $this->actingAs($this->admin, 'admin')->post('/laporanpembayaran/buat', [
-            'bulan' => 11, 'tahun' => 2026, 'tglLaporan' => '2026-11-13', 'idManager' => $manager->idManager,
+            'bulan' => 10, 'tahun' => 2026, 'idManager' => $manager->idManager,
             'tandaTangan' => trim(file_get_contents(base_path('tests/Fixtures/tanda-tangan.txt'))),
         ])->assertSessionHas('success');
 

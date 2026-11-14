@@ -11,7 +11,6 @@ import { Ringkasan } from '@/Components/RingkasanPembayaran';
 import { Period, PeriodPicker } from '@/Components/ui/period-picker';
 import { Badge } from '@/Components/ui/badge';
 import { Button, buttonVariants } from '@/Components/ui/button';
-import { CurrencyInput } from '@/Components/ui/currency-input';
 import { DateInput } from '@/Components/ui/date-input';
 import { BULAN, formatRupiah, formatTanggal } from '@/Components/ui/format';
 import { Input } from '@/Components/ui/input';
@@ -304,7 +303,6 @@ function FormLaporan({
         txtmanager: row ? String(row.idManager) : '',
         txtbulan: row ? String(row.bulan) : '',
         txttahun: row ? String(row.tahun) : '',
-        txttotal: row ? String(row.totalPemasukan) : '',
         txttgllaporan: row?.tglLaporan ?? '',
         txtpembayaran: row?.idPembayaran ? String(row.idPembayaran) : '',
     });
@@ -365,7 +363,7 @@ function FormLaporan({
                         id="txtbulan"
                         className="mt-1"
                         value={String(data.txtbulan)}
-                        onChange={(v) => setData('txtbulan', v)}
+                        onChange={(v) => !row && setData('txtbulan', v)}
                         placeholder="Pilih Bulan"
                         options={BULAN.map((b, i) => ({ value: String(i + 1), label: b }))}
                     />
@@ -380,6 +378,7 @@ function FormLaporan({
                         min={2000}
                         className="mt-1"
                         value={data.txttahun}
+                        readOnly={!!row}
                         onChange={(e) => setData('txttahun', e.target.value)}
                     />
                     <InputError message={errors.txttahun} className="mt-1" />
@@ -387,14 +386,10 @@ function FormLaporan({
             </div>
 
             <div>
-                <Label htmlFor="txttotal">Total Pemasukan (Rp)</Label>
-                <CurrencyInput
-                    id="txttotal"
-                    className="mt-1"
-                    value={data.txttotal === '' ? null : Number(data.txttotal)}
-                    onValueChange={(v) => setData('txttotal', v == null ? '' : String(v))}
-                />
-                <InputError message={errors.txttotal} className="mt-1" />
+                <Label>Total Pemasukan</Label>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    {row ? `${formatRupiah(row.totalPemasukan)}. ` : ''}Dihitung otomatis dari pembayaran terverifikasi di bulan itu saat disimpan.
+                </p>
             </div>
 
             <div>

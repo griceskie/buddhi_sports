@@ -51,6 +51,9 @@ class BlackboxLaporanPembayaranTest extends TestCase
 
     private function buat(array $ubah = [])
     {
+        // laporan Mei baru bisa dibuat setelah Mei selesai (celah 8.3)
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-06-02 10:00:00'));
+
         return $this->actingAs($this->admin, 'admin')->post('/laporanpembayaran/buat', array_merge([
             'bulan' => 5, 'tahun' => 2026, 'tglLaporan' => '2026-05-31',
             'idManager' => $this->manager->idManager, 'tandaTangan' => $this->ttd,
@@ -98,7 +101,7 @@ class BlackboxLaporanPembayaranTest extends TestCase
         $this->assertSame(1, DB::table('laporan_pembayarans')->where('bulan', 5)->where('tahun', 2026)->count());
         $laporan = DB::table('laporan_pembayarans')->first();
         $this->assertSame(130000, (int) $laporan->totalPemasukan);
-        $this->assertSame('2026-06-01', $laporan->tglLaporan);
+        $this->assertSame('2026-06-02', $laporan->tglLaporan); // diisi server
     }
 
     // H04: buka dan unduh PDF -> isi dan total sesuai.

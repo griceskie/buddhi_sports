@@ -86,17 +86,20 @@ class MasterLaporanPembayaranController extends Controller
             'txtmanager' => 'required|integer',
             'txtbulan' => 'required|integer|min:1|max:12',
             'txttahun' => 'required|integer',
-            'txttotal' => 'required|integer|min:0',
             'txttgllaporan' => 'required|date',
             'txtpembayaran' => 'nullable|integer',
         ]);
+
+        if (DB::table('laporan_pembayarans')->where('bulan', $request->txtbulan)->where('tahun', $request->txttahun)->exists()) {
+            return back()->withErrors(['txtbulan' => 'Laporan periode ini sudah ada. Ubah laporan yang ada, atau buat ulang dari tombol Buat laporan.']);
+        }
 
         $data = [
             'idAdmin' => $request->txtadmin,
             'idManager' => $request->txtmanager,
             'bulan' => $request->txtbulan,
             'tahun' => $request->txttahun,
-            'totalPemasukan' => $request->txttotal,
+            'totalPemasukan' => self::totalPeriode((int) $request->txtbulan, (int) $request->txttahun),
             'tglLaporan' => $request->txttgllaporan,
             'idPembayaran' => $request->txtpembayaran,
         ];
@@ -115,7 +118,6 @@ class MasterLaporanPembayaranController extends Controller
             'txtmanager' => 'required|integer',
             'txtbulan' => 'required|integer|min:1|max:12',
             'txttahun' => 'required|integer',
-            'txttotal' => 'required|integer|min:0',
             'txttgllaporan' => 'required|date',
             'txtpembayaran' => 'nullable|integer',
         ]);
@@ -124,21 +126,21 @@ class MasterLaporanPembayaranController extends Controller
             return back()->with('error', 'Laporan ini sudah diperiksa Manager, jadi tidak bisa diubah.');
         }
 
+        $lama = (array) DB::table('laporan_pembayarans')->where('idLaporan', $request->txtid)->first();
+        abort_if(! $lama, 404);
+        // periode tidak bisa dipindah dan total selalu dihitung dari pembayaran terverifikasi bulan itu
         $data = [
             'idAdmin' => $request->txtadmin,
             'idManager' => $request->txtmanager,
-            'bulan' => $request->txtbulan,
-            'tahun' => $request->txttahun,
-            'totalPemasukan' => $request->txttotal,
+            'totalPemasukan' => self::totalPeriode((int) $lama['bulan'], (int) $lama['tahun']),
             'tglLaporan' => $request->txttgllaporan,
             'idPembayaran' => $request->txtpembayaran,
         ];
-        $lama = (array) DB::table('laporan_pembayarans')->where('idLaporan', $request->txtid)->first();
         DB::transaction(function () use ($request, $data, $lama) {
             DB::table('laporan_pembayarans')
             -> where('idLaporan', $request->txtid)
             ->update($data);
-            LogAktivitas::catat('ubah', 'Laporan', LaporanPembayaranController::namaLaporan((int) $data['bulan'], (int) $data['tahun']), LogAktivitas::selisih('Laporan', $lama, $data));
+            LogAktivitas::catat('ubah', 'Laporan', LaporanPembayaranController::namaLaporan((int) $lama['bulan'], (int) $lama['tahun']), LogAktivitas::selisih('Laporan', $lama, $data));
         });
 
         return redirect('/tampillaporanpembayaran');
@@ -147,6 +149,12 @@ class MasterLaporanPembayaranController extends Controller
     public function deleteDataLaporanPembayaran($idhapus){
         if ($this->sudahDiperiksa($idhapus)) {
             return redirect('/tampillaporanpembayaran')->with('error', 'Laporan ini sudah diperiksa Manager, jadi tidak bisa dihapus.');
+        }
+
+        // laporan yang sudah diserahkan ke Manager (dan tidak sedang direvisi) mengunci pembayaran bulannya; menghapusnya membuka kunci itu
+        $diserahkan = DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->whereNotNull('filePdf')->whereNull('revisiPada')->exists();
+        if ($diserahkan) {
+            return redirect('/tampillaporanpembayaran')->with('error', 'Laporan ini sudah diserahkan ke Manager, jadi tidak bisa dihapus. Minta Manager mengembalikannya untuk direvisi bila ada yang salah.');
         }
 
         $pdf = DB::table('laporan_pembayarans')->where('idLaporan', $idhapus)->value('filePdf');
@@ -164,6 +172,15 @@ class MasterLaporanPembayaranController extends Controller
         }
 
         return redirect('/tampillaporanpembayaran');
+    }
+
+    /** Total pembayaran Terverifikasi menurut tanggal bayar dalam satu bulan (sama dengan PDF laporan). */
+    private static function totalPeriode(int $bulan, int $tahun): int
+    {
+        $awal = Carbon::create($tahun, $bulan, 1);
+
+        return (int) DB::table('pembayarans')->where('status', 'Terverifikasi')
+            ->whereBetween('tglBayar', [$awal->toDateString(), $awal->copy()->endOfMonth()->toDateString()])->sum('jumlahBayar');
     }
 
     // laporan yang sudah diperiksa Manager terkunci

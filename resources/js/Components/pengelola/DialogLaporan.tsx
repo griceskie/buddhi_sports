@@ -3,7 +3,6 @@ import FormSelect from '@/Components/FormSelect';
 import InputError from '@/Components/InputError';
 import { Ringkasan } from '@/Components/RingkasanPembayaran';
 import { Button } from '@/Components/ui/button';
-import { DatePicker } from '@/Components/ui/date-picker';
 import {
     Dialog,
     DialogContent,
@@ -12,18 +11,13 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/Components/ui/dialog';
-import { formatRupiah } from '@/Components/ui/format';
+import { formatRupiah, formatTanggal } from '@/Components/ui/format';
 import { Label } from '@/Components/ui/label';
 import { Period } from '@/Components/ui/period-picker';
 import { SignaturePad } from '@/Components/ui/signature-pad';
 import { useForm } from '@inertiajs/react';
 
 type Manager = { idManager: number; namaManager: string };
-
-const keTanggal = (iso: string) => {
-    const [y, m, d] = iso.split('-').map(Number);
-    return new Date(y, m - 1, d);
-};
 
 /** Dialog "Buat laporan pembayaran": tanggal, Manager tujuan, tanda tangan; dipakai di halaman Pembayaran dan Laporan. */
 export default function DialogLaporan({
@@ -47,7 +41,6 @@ export default function DialogLaporan({
     const form = useForm({
         bulan: periode.bulan,
         tahun: periode.tahun,
-        tglLaporan: isoTanggal(new Date()),
         idManager: idManagerAwal ? String(idManagerAwal) : datamanager[0] ? String(datamanager[0].idManager) : '',
         tandaTangan: '',
     });
@@ -79,14 +72,9 @@ export default function DialogLaporan({
                     </div>
 
                     <div>
-                        <Label htmlFor="tglLaporan">Tanggal laporan</Label>
-                        <DatePicker
-                            id="tglLaporan"
-                            className="mt-1"
-                            value={keTanggal(form.data.tglLaporan)}
-                            onChange={(d) => d && form.setData('tglLaporan', isoTanggal(d))}
-                        />
-                        <InputError message={form.errors.tglLaporan} className="mt-1" />
+                        <Label>Tanggal laporan</Label>
+                        <p className="mt-1 font-medium">{formatTanggal(isoTanggal(new Date()), 'd MMMM yyyy')}</p>
+                        <p className="text-sm text-muted-foreground">Diisi otomatis dengan tanggal hari ini.</p>
                     </div>
 
                     <div>
