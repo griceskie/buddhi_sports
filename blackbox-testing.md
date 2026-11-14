@@ -147,6 +147,7 @@ Diuji otomatis lewat request HTTP ke `/laporanpembayaran/buat` dan `/laporanpemb
 | I03 | Tambah Admin dengan username duplikat | Ditolak | Ditolak dengan error pada `username` | Valid |
 | I04 | Reset password Admin, lalu login dengan password baru | Berhasil | Password lama langsung tidak berfungsi, password baru berhasil login ke guard `admin` | Valid |
 | I05 | Hapus Admin yang masih dipakai di data lain | Ditolak dengan toast error | Ditolak (flash `error`), baris Admin tetap ada | Valid |
+| I06 | Analisis bisnis: kartu pemasukan dan grafik | Sesuai pembayaran `Terverifikasi` | Pemasukan bulan, pembanding bulan lalu, Pemasukan tahun berjalan, dan 12 batang grafik (Jan–Des) sesuai; pembayaran `Menunggu Verifikasi` tidak ikut terhitung | Valid |
 
 Diuji otomatis lewat request HTTP ke `/dashboard-manager`, `/manager/pembayaran`, `/manager/lapangan`, `/manager/admin` (`tests/Feature/BlackboxPanelManagerTest.php`, 5 skenario/45 assertion).
 

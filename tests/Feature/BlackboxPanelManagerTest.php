@@ -66,6 +66,23 @@ class BlackboxPanelManagerTest extends TestCase
         $this->post('/verifikasi/1/terima')->assertRedirect('/login-pengelola');
     }
 
+    // I06: Analisis bisnis, kartu pemasukan dan grafik -> sesuai pembayaran Terverifikasi (maksud lama I01).
+    public function test_i06_analisis_pemasukan_hanya_pembayaran_terverifikasi(): void
+    {
+        $idLapangan = $this->buatLapangan();
+        $this->buatPembayaran($idLapangan, '2026-04-10', 100000);
+        $this->buatPembayaran($idLapangan, '2026-05-05', 150000);
+        $this->buatPembayaran($idLapangan, '2026-05-20', 50000, 'Menunggu Verifikasi');
+
+        $this->actingAs($this->manager, 'manager')->get('/manager/analisis?jenis=bulan&th=2026&bl=5')->assertInertia(fn (Assert $p) => $p
+            ->component('Manager/Analisis')
+            ->where('data.metrik.0.nilai', 'Rp150.000')
+            ->where('data.metrik.0.delta.teks', '+50%')
+            ->where('data.metrik.1.nilai', 'Rp250.000')
+            ->has('data.grafik.titik', 12)
+            ->where('data.grafik.titik.4.nilai', 'Rp150.000'));
+    }
+
     // I02: halaman Pembayaran dan Lapangan Manager hanya bisa dilihat -> tidak ada rute ubah yang bisa dipakai.
     public function test_i02_pembayaran_dan_lapangan_hanya_baca(): void
     {
