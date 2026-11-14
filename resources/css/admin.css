@@ -141,3 +141,11 @@ html.tema-pengelola [data-slot='badge']:is([data-status='ditolak'], [data-status
 html.tema-pengelola [data-slot='badge']:is([data-status='dipesan'], [data-nada='biru']) {
   --nada: var(--primary);
 }
+
+/* Tooltip di panel gelap: ui/tooltip memakai warna terbalik (bg-foreground), yang di mode gelap jadi putih menyala.
+   Di panel gelap pakai permukaan popover gelap dengan garis tepi. Mode terang dan halaman penyewa tidak berubah. */
+html.tema-pengelola.dark [data-slot='tooltip-content'] {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+}

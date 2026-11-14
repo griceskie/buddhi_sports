@@ -205,7 +205,7 @@ export default function TabPola({ data }: { data: DataPola }) {
                                         <span className="font-medium whitespace-nowrap tabular-nums underline decoration-dotted underline-offset-[3px]">{s.nilai}</span>
                                         <span className="text-sm text-muted-foreground">{s.nilaiKet}</span>
                                     </TooltipTrigger>
-                                    <TooltipContent className="grid grid-cols-[10px_auto_auto_auto] items-center gap-x-2.5 gap-y-1.5 px-3 py-2.5 text-sm">
+                                    <TooltipContent className="grid max-w-none grid-cols-[10px_auto_auto_auto] items-center gap-x-2.5 gap-y-1.5 px-3 py-2.5 text-sm whitespace-nowrap">
                                         <span className="col-span-full font-medium">{ramai ? 'Pemasukan per lapangan' : 'Potensi per lapangan'}</span>
                                         <span />
                                         <span className="opacity-70">Lapangan</span>
