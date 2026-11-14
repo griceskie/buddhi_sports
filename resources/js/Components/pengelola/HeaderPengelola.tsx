@@ -15,7 +15,7 @@ export default function HeaderPengelola({ judul, pengelola }: { judul: string; p
                 <NotifikasiHeader
                     daftar={pengelola.notifikasi?.daftar ?? []}
                     baru={pengelola.notifikasi?.baru ?? 0}
-                    hrefLog={pengelola.role === 'admin' ? route('log.aktivitas') : undefined}
+                    hrefLog={route('log.aktivitas')}
                 />
                 <TombolTema className="size-9 text-muted-foreground hover:text-foreground" />
                 <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />

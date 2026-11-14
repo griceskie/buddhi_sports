@@ -141,7 +141,7 @@ class LogAktivitasTest extends TestCase
         $this->actingAs($this->admin, 'admin')->post('/log-aktivitas/periksa')->assertSessionHas('error');
     }
 
-    public function test_halaman_hanya_baca_dan_hanya_admin(): void
+    public function test_halaman_hanya_baca_untuk_admin_dan_manager(): void
     {
         $this->tambahPenyewa();
         $this->get('/log-aktivitas?aksi=tambah')
@@ -151,9 +151,43 @@ class LogAktivitasTest extends TestCase
 
         $manager = Manager::create(['namaManager' => 'Jarwo', 'username' => 'Manager1', 'password' => Hash::make('Manager123')]);
         auth('admin')->logout();
-        $this->actingAs($manager, 'manager')->get('/log-aktivitas')->assertRedirect('/login-pengelola');
+        $this->actingAs($manager, 'manager')->get('/log-aktivitas')->assertOk();
+        auth('manager')->logout();
+        $this->get('/log-aktivitas')->assertRedirect('/login-pengelola');
         // tidak ada rute ubah atau hapus
         $this->assertFalse(collect(app('router')->getRoutes())->contains(fn ($r) => str_contains($r->uri(), 'log-aktivitas') && array_intersect($r->methods(), ['PUT', 'PATCH', 'DELETE'])));
+    }
+
+    public function test_tindakan_manager_tercatat_dan_filter_peran(): void
+    {
+        $this->tambahPenyewa();
+        $manager = Manager::create(['namaManager' => 'Jarwo', 'username' => 'Manager1', 'password' => Hash::make('Manager123')]);
+        auth('admin')->logout();
+        $this->actingAs($manager, 'manager')->post('/manager/admin', ['nama' => 'Sari', 'username' => 'Admin2', 'password' => 'rahasia'])->assertRedirect();
+        $idSari = DB::table('admins')->where('username', 'Admin2')->value('idAdmin');
+        $this->put("/manager/admin/{$idSari}/password", ['password' => 'barubaru'])->assertRedirect();
+        $this->delete("/manager/admin/{$idSari}")->assertRedirect();
+
+        $baris = DB::table('log_aktivitas')->where('peran', 'manager')->orderBy('id')->get();
+        $this->assertSame(['tambah', 'reset', 'hapus'], $baris->pluck('aksi')->all());
+        $this->assertSame('Jarwo', $baris[0]->namaAdmin);
+        $this->assertNull($baris[0]->idAdmin);
+        $this->assertStringNotContainsString('barubaru', $baris[1]->rincian);
+
+        // Manager melihat semua pengelola; Admin bawaannya hanya Admin, bisa diganti ke semua
+        $this->get('/log-aktivitas')->assertInertia(fn (Assert $page) => $page->has('log.data', 4)->where('filter.peran', 'semua'));
+        auth('manager')->logout();
+        $this->actingAs($this->admin, 'admin')->get('/log-aktivitas')->assertInertia(fn (Assert $page) => $page->has('log.data', 1)->where('filter.peran', 'admin'));
+        $this->get('/log-aktivitas?peran=manager')->assertInertia(fn (Assert $page) => $page->has('log.data', 3)->where('log.data.0.peran', 'manager'));
+        $this->get('/log-aktivitas?peran=semua')->assertInertia(fn (Assert $page) => $page->has('log.data', 4));
+
+        // baris gaya lama (tanpa kolom peran) tetap sah di tengah rantai berperan
+        $lama = ['waktu' => '2026-11-13 10:05:00', 'idAdmin' => $this->admin->idAdmin, 'namaAdmin' => 'Budi Santoso', 'aksi' => 'ubah', 'jenisObjek' => 'Penyewa',
+            'kodeObjek' => 'Rina Wulan', 'ringkasan' => 'Budi Santoso mengubah penyewa Rina Wulan', 'rincian' => '[]', 'catatan' => null,
+            'hashSebelumnya' => DB::table('log_aktivitas')->orderByDesc('id')->value('hash')];
+        DB::table('log_aktivitas')->insert([...$lama, 'hash' => LogAktivitas::hash($lama)]);
+        $this->assertTrue(LogAktivitas::periksa()['utuh']);
+        $this->get('/log-aktivitas')->assertInertia(fn (Assert $page) => $page->has('log.data', 2)->where('log.data.0.peran', 'admin'));
     }
 
     public function test_laporan_mencetak_jangkar_log_dan_tercatat(): void

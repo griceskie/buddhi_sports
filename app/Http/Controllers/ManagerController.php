@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\LogAktivitas;
 use App\Support\Pemesanan;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -124,7 +125,10 @@ class ManagerController extends Controller
         }
 
         if (! $laporan->diperiksaPada) {
-            DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->update(['diperiksaPada' => now(), 'catatanRevisi' => null, 'revisiPada' => null]);
+            DB::transaction(function () use ($idLaporan, $laporan) {
+                DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->update(['diperiksaPada' => now(), 'catatanRevisi' => null, 'revisiPada' => null]);
+                LogAktivitas::catat('periksa', 'Laporan', $laporan->namaLaporan ?? '#'.$idLaporan, [['Status', 'Menunggu diperiksa', 'Sudah diperiksa']]);
+            });
         }
 
         return back()->with('success', "{$laporan->namaLaporan} ditandai sudah diperiksa.");
@@ -147,7 +151,10 @@ class ManagerController extends Controller
             return back()->with('error', 'Laporan ini belum punya PDF.');
         }
 
-        DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->update(['catatanRevisi' => trim($request->catatan), 'revisiPada' => now()]);
+        DB::transaction(function () use ($request, $idLaporan, $laporan) {
+            DB::table('laporan_pembayarans')->where('idLaporan', $idLaporan)->update(['catatanRevisi' => trim($request->catatan), 'revisiPada' => now()]);
+            LogAktivitas::catat('revisi', 'Laporan', $laporan->namaLaporan ?? '#'.$idLaporan, [['Status', 'Menunggu diperiksa', 'Perlu revisi']], mb_substr(trim($request->catatan), 0, 255));
+        });
 
         return back()->with('success', "Permintaan revisi {$laporan->namaLaporan} dikirim ke Admin.");
     }
@@ -167,11 +174,14 @@ class ManagerController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
-        DB::table('admins')->insert([
-            'namaAdmin' => $request->nama,
-            'username' => $request->username,
-            'password' => Hash::make($request->password),
-        ]);
+        DB::transaction(function () use ($request) {
+            DB::table('admins')->insert([
+                'namaAdmin' => $request->nama,
+                'username' => $request->username,
+                'password' => Hash::make($request->password),
+            ]);
+            LogAktivitas::catat('tambah', 'Admin', $request->username, [['Nama', '—', $request->nama], ['Username', '—', $request->username]]);
+        });
 
         return back()->with('success', "Admin {$request->nama} ditambahkan.");
     }
@@ -179,18 +189,29 @@ class ManagerController extends Controller
     public function resetPasswordAdmin(Request $request, int $idAdmin): RedirectResponse
     {
         $request->validate(['password' => 'required|string|min:6']);
-        $nama = DB::table('admins')->where('idAdmin', $idAdmin)->value('namaAdmin');
-        abort_if($nama === null, 404);
+        $admin = DB::table('admins')->where('idAdmin', $idAdmin)->first(['namaAdmin', 'username']);
+        abort_if($admin === null, 404);
+        $nama = $admin->namaAdmin;
 
-        DB::table('admins')->where('idAdmin', $idAdmin)->update(['password' => Hash::make($request->password)]);
+        DB::transaction(function () use ($request, $idAdmin, $admin) {
+            DB::table('admins')->where('idAdmin', $idAdmin)->update(['password' => Hash::make($request->password)]);
+            // isi password tidak pernah dicatat
+            LogAktivitas::catat('reset', 'Admin', $admin->username, [['Password', '••••••', 'Diganti']]);
+        });
 
         return back()->with('success', "Password {$nama} diganti.");
     }
 
     public function hapusAdmin(int $idAdmin): RedirectResponse
     {
+        $admin = DB::table('admins')->where('idAdmin', $idAdmin)->first(['namaAdmin', 'username']);
         try {
-            DB::table('admins')->where('idAdmin', $idAdmin)->delete();
+            DB::transaction(function () use ($idAdmin, $admin) {
+                DB::table('admins')->where('idAdmin', $idAdmin)->delete();
+                if ($admin) {
+                    LogAktivitas::catat('hapus', 'Admin', $admin->username, [['Nama', $admin->namaAdmin, '—']]);
+                }
+            });
         } catch (QueryException $e) {
             // masih dirujuk booking/pembayaran/laporan (foreign key)
             return back()->with('error', 'Admin tidak bisa dihapus karena masih tercatat di booking, pembayaran, atau laporan.');
