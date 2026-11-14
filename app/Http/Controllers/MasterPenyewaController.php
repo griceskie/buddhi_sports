@@ -57,7 +57,6 @@ class MasterPenyewaController extends Controller
             'txtnama' => 'required|string|max:255',
             'txtnohp' => 'required|string|max:255',
             'txtemail' => ['required', 'email', 'max:255', Rule::unique('penyewas', 'email')->ignore($request->txtid, 'idPenyewa')],
-            'txtpassword' => 'nullable|string|min:6',
         ]);
 
         $data = [
@@ -66,11 +65,7 @@ class MasterPenyewaController extends Controller
             'email' => $request->txtemail,
         ];
 
-        // password hanya diubah jika diisi
-        if ($request->filled('txtpassword')) {
-            $data['password'] = Hash::make($request->txtpassword);
-        }
-
+        // password penyewa tidak bisa diubah Admin (celah 8.12); penyewa menggantinya sendiri di Profile
         $lama = (array) DB::table('penyewas')->where('idPenyewa', $request->txtid)->first();
         abort_if(! $lama, 404);
         DB::transaction(function () use ($request, $data, $lama) {

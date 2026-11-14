@@ -113,4 +113,14 @@ class CelahPrioritasRendahTest extends TestCase
         $this->assertDatabaseHas('log_aktivitas', ['aksi' => 'reset', 'kodeObjek' => 'manager1', 'peran' => 'sistem']);
         $this->artisan('manager:reset-password', ['username' => 'tidakada'])->assertFailed();
     }
+
+    // 8.12: Admin tidak bisa mengubah password penyewa lewat Edit
+    public function test_admin_tidak_bisa_mengubah_password_penyewa(): void
+    {
+        $id = DB::table('penyewas')->value('idPenyewa');
+        $this->actingAs($this->admin, 'admin')->post('/updatepenyewa', [
+            'txtid' => $id, 'txtnama' => 'Rina', 'txtnohp' => '081', 'txtemail' => 'rina@example.com', 'txtpassword' => 'diubahadmin',
+        ])->assertRedirect();
+        $this->assertTrue(Hash::check('rahasia123', DB::table('penyewas')->where('idPenyewa', $id)->value('password')));
+    }
 }
