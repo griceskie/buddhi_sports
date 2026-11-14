@@ -208,7 +208,7 @@ export default function DataTable<T>({
                             Tampilan
                         </PopoverTrigger>
                         <PopoverContent align="end" className="w-52 p-1">
-                            <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Tampilkan kolom</p>
+                            <p className="px-2 py-1.5 text-sm font-medium text-muted-foreground">Tampilkan kolom</p>
                             <div className="-mx-1 my-1 h-px bg-border" />
                             {kolom
                                 .filter((k) => !k.tetap)
@@ -403,7 +403,7 @@ function FilterFacet<T>({
                         >
                             <Checkbox tabIndex={-1} checked={on} className="pointer-events-none flex" aria-hidden />
                             <span className="flex-1 text-left">{o.label}</span>
-                            <span className="font-mono text-xs text-muted-foreground">{jumlah(o.id)}</span>
+                            <span className="font-mono text-sm text-muted-foreground">{jumlah(o.id)}</span>
                         </button>
                     );
                 })}

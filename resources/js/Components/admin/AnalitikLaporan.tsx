@@ -38,7 +38,7 @@ export default function AnalitikLaporan({ kini, lalu, bulan, tahun, sementara = 
     return (
         <div className="flex flex-col gap-6 rounded-xl border bg-card px-4 py-6 text-card-foreground shadow-sm sm:px-6">
             {sementara && (
-                <p className="-mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <p className="-mb-2 flex items-center gap-2 text-sm text-muted-foreground">
                     <Badge data-nada="oranye">Sementara</Badge>
                     Bulan ini masih berjalan, jadi angkanya terus bertambah dan belum dibandingkan dengan bulan lalu.
                 </p>
@@ -60,7 +60,7 @@ function Bagian({ judul, ket, aksi, children }: { judul: string; ket: string; ak
             <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 flex-col gap-0.5">
                     <h3 className="font-medium">{judul}</h3>
-                    <p className="text-xs text-muted-foreground">{ket}</p>
+                    <p className="text-sm text-muted-foreground">{ket}</p>
                 </div>
                 {aksi}
             </div>
@@ -119,7 +119,7 @@ function AngkaUtama({ kini, lalu, bulan, tahun, sementara }: { kini: Analitik; l
                                 <span
                                     title={banding}
                                     className={cn(
-                                        'flex items-center gap-1 text-xs font-medium whitespace-nowrap',
+                                        'flex items-center gap-1 text-sm font-medium whitespace-nowrap',
                                         pct > 0 ? 'text-accessible-green' : pct < 0 ? 'text-accessible-red' : 'text-muted-foreground',
                                     )}
                                 >
@@ -130,7 +130,7 @@ function AngkaUtama({ kini, lalu, bulan, tahun, sementara }: { kini: Analitik; l
                             )}
                         </div>
                         <span className="text-2xl leading-8 font-semibold tracking-tight tabular-nums">{m.nilai}</span>
-                        <span className="text-xs text-muted-foreground">{m.ket}</span>
+                        <span className="text-sm text-muted-foreground">{m.ket}</span>
                     </div>
                 );
             })}
@@ -291,7 +291,7 @@ function GrafikPemasukan({ data, bulan, tahun }: { data: Analitik; bulan: number
                     ))}
                 </div>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 {data.lapangan.map((l, c) => (
                     <span key={l.id} className="inline-flex items-center gap-1.5">
                         <span className="size-2.5 rounded-xs" style={{ background: warnaLapangan(c) }} />
@@ -345,7 +345,7 @@ function PetaJam({ data, bulan }: { data: Analitik; bulan: number }) {
                                     style={{ background: `color-mix(in oklab, var(--primary) ${Math.round(Math.min(1, v / 0.8) * 100)}%, var(--muted))` }}
                                 >
                                     <TipGelap
-                                        t1={`${HARI_PANJANG[h]}, ${dua(8 + j)}:00–${dua(9 + j)}:00`}
+                                        t1={`${HARI_PANJANG[h]}, ${dua(8 + j)}.00–${dua(9 + j)}.00`}
                                         t2={`${Math.round(v * 100)}% terisi · ${isi[h][j]} dari ${sedia(h)} jam sewa`}
                                         t3={`${tanggal[h].length} hari ${HARI_PANJANG[h]}: ${tanggal[h].join(', ')} ${bln3}`}
                                         className={j < 4 ? 'left-0' : j > jamBuka - 5 ? 'right-0' : 'left-1/2 -translate-x-1/2'}
@@ -362,10 +362,10 @@ function PetaJam({ data, bulan }: { data: Analitik; bulan: number }) {
                     </span>
                 ))}
             </div>
-            <div className="mt-auto flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
                 <span className="text-foreground">
                     {puncak.v > 0
-                        ? `Paling ramai: ${HARI_PANJANG[puncak.h]} ${dua(8 + puncak.j)}:00 (${Math.round(puncak.v * 100)}% terisi)`
+                        ? `Paling ramai: ${HARI_PANJANG[puncak.h]} ${dua(8 + puncak.j)}.00 (${Math.round(puncak.v * 100)}% terisi)`
                         : 'Belum ada jam terisi di periode ini.'}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
@@ -389,13 +389,13 @@ function KeterisianLapangan({ data }: { data: Analitik }) {
         .map((l, i) => ({ ...l, warna: warnaLapangan(i), p: l.kapasitas ? l.jam / l.kapasitas : 0 }))
         .sort((a, b) => b.p - a.p);
     return (
-        <Bagian judul="Keterisian per lapangan" ket="Jam terisi dibanding jam buka (08:00–22:00)">
+        <Bagian judul="Keterisian per lapangan" ket="Jam terisi dibanding jam buka (08.00–22.00)">
             <ul className="my-auto flex flex-col gap-3.5">
                 {baris.map((l) => (
                     <li key={l.nama} className="flex flex-col gap-1.5">
                         <div className="flex items-baseline gap-2">
                             <span className="truncate font-medium">{l.nama}</span>
-                            <span className="ml-auto text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                            <span className="ml-auto text-sm whitespace-nowrap text-muted-foreground tabular-nums">
                                 {l.jam} dari {l.kapasitas} jam · {l.booking} booking
                             </span>
                             <span className="w-11 text-right font-semibold tabular-nums">{Math.round(l.p * 100)}%</span>
@@ -476,12 +476,12 @@ function BookingDanBatal({ data, bulan }: { data: Analitik; bulan: number }) {
                             ))}
                         </div>
                         <span className="text-right whitespace-nowrap tabular-nums">
-                            <span className="font-semibold">{b.n}</span> <span className="inline-block w-10 text-xs text-muted-foreground">{pct(b.n)}</span>
+                            <span className="font-semibold">{b.n}</span> <span className="inline-block w-12 text-sm text-muted-foreground">{pct(b.n)}</span>
                         </span>
                     </div>
                 ))}
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 {SEBAB.map((s) => (
                     <span key={s.k} className="inline-flex items-center gap-1.5">
                         <span className="size-2.5 rounded-xs" style={{ background: s.warna }} />
@@ -494,7 +494,7 @@ function BookingDanBatal({ data, bulan }: { data: Analitik; bulan: number }) {
                     <span className="text-muted-foreground">Pemasukan yang batal</span>
                     <span className="font-semibold tabular-nums">{jt(batalRp)}</span>
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                     {batalN ? `${f.batal[terbesar.k].n} dari ${batalN} pembatalan ${terbesar.kalimat}.` : 'Tidak ada booking yang dibatalkan di periode ini.'}
                 </span>
             </div>

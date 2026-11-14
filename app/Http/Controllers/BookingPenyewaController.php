@@ -109,7 +109,7 @@ class BookingPenyewaController extends Controller
         $selesai = (int) substr($data['jamSelesai'], 0, 2);
 
         if ($mulai < Pemesanan::JAM_BUKA || $selesai > Pemesanan::JAM_TUTUP) {
-            throw ValidationException::withMessages(['jamMulai' => 'Lapangan buka pukul 08:00–22:00.']);
+            throw ValidationException::withMessages(['jamMulai' => 'Lapangan buka pukul 08.00–22.00.']);
         }
         if ($selesai <= $mulai) {
             throw ValidationException::withMessages(['jamSelesai' => 'Jam selesai harus setelah jam mulai.']);

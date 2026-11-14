@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover
 import { cn } from 'cn';
 import { X } from 'lucide-react';
 import { useState } from 'react';
-import { jam, Lapangan, Pilihan } from './jadwal';
+import { jam, jamTeks, Lapangan, Pilihan } from './jadwal';
 
 type Props = {
     lapangan: Lapangan | null;
@@ -19,7 +19,7 @@ const hitung = (lapangan: Lapangan | null, pilihan: Pilihan | null) =>
         ? {
               durasi: pilihan.end - pilihan.start,
               total: bookingTotal(jam(pilihan.start), jam(pilihan.end), lapangan.tarifPerJam),
-              rentang: `${jam(pilihan.start)}–${jam(pilihan.end)}`,
+              rentang: `${jamTeks(pilihan.start)}–${jamTeks(pilihan.end)}`,
           }
         : null;
 

@@ -87,7 +87,7 @@ class NotifikasiAdmin
                 'jenis' => 'batal',
                 'judul' => 'Booking dibatalkan · '.$r->namaPenyewa,
                 'ket' => Pemesanan::kode($r->idBooking).' · '.$r->namaLapangan.' · '
-                    .Carbon::parse($r->tanggal)->locale('id')->translatedFormat('j M').' '.substr($r->jamMulai, 0, 5).'–'.substr($r->jamSelesai, 0, 5),
+                    .Carbon::parse($r->tanggal)->locale('id')->translatedFormat('j M').' '.str_replace(':', '.', substr($r->jamMulai, 0, 5)).'–'.str_replace(':', '.', substr($r->jamSelesai, 0, 5)),
                 'waktu' => null,
                 'href' => url('/tampilbooking'),
                 'baru' => false,

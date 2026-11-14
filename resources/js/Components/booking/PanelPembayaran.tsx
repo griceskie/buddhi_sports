@@ -14,7 +14,7 @@ import InputError from '@/Components/InputError';
 import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/alert';
 import { Button, buttonVariants } from '@/Components/ui/button';
 import { FileUpload } from '@/Components/ui/file-upload';
-import { durationHours, formatRupiah, formatTanggal } from '@/Components/ui/format';
+import { durationHours, formatRupiah, formatTanggal, rentangJam } from '@/Components/ui/format';
 import { Link, useForm } from '@inertiajs/react';
 import { cn } from 'cn';
 import {
@@ -56,7 +56,7 @@ export default function PanelPembayaran({ booking, rekening, tampilan, terisi, o
     const sebab = habis ? 'otomatis' : sebabBatal(booking);
     const belum = k === 'belumBayar';
     const ditolak = k === 'ditolak';
-    const jamBatas = booking.batasBayar ? formatTanggal(booking.batasBayar, 'HH:mm') : null;
+    const jamBatas = booking.batasBayar ? formatTanggal(booking.batasBayar, 'HH.mm') : null;
 
     const [langkah, setLangkah] = useState<'transfer' | 'unggah'>(ditolak ? 'unggah' : 'transfer');
     const [bukaUbah, setBukaUbah] = useState(false);
@@ -685,7 +685,7 @@ function Ringkasan({
                         <div className="grid min-w-0 gap-0.5">
                             <p className="text-subheadline font-semibold">Durasi</p>
                             <p className="text-subheadline tabular-nums">
-                                {booking.jamMulai}–{booking.jamSelesai} ({durasi} jam)
+                                {rentangJam(booking.jamMulai, booking.jamSelesai)} ({durasi} jam)
                             </p>
                         </div>
                         {belum && (

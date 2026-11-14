@@ -4,14 +4,16 @@ import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
 import AksiBaris from '@/Components/pengelola/AksiBaris';
+import BadgeTip, { tipBooking } from '@/Components/pengelola/BadgeTip';
 import DataTable from '@/Components/pengelola/DataTable';
 import JudulHalaman from '@/Components/pengelola/JudulHalaman';
 import { BookingStatusBadge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { CurrencyInput } from '@/Components/ui/currency-input';
 import { DateInput } from '@/Components/ui/date-input';
-import { bookingTotal, formatRupiah, formatTanggal } from '@/Components/ui/format';
+import { bookingTotal, formatRupiah, formatTanggal, rentangJam as teksRentangJam } from '@/Components/ui/format';
 import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
@@ -30,7 +32,7 @@ type Booking = {
 };
 // jam bulat dalam jam operasional: mulai 08:00-21:00, selesai paling lambat 22:00
 const rentangJam = (dari: number, sampai: number) =>
-    Array.from({ length: sampai - dari + 1 }, (_, i) => ({ value: jam(dari + i), label: jam(dari + i) }));
+    Array.from({ length: sampai - dari + 1 }, (_, i) => ({ value: jam(dari + i), label: jam(dari + i).replace(':', '.') }));
 const angkaJam = (j: string) => Number(j.slice(0, 2));
 type Penyewa = { idPenyewa: number; namaPenyewa: string; email: string };
 type Lapangan = { idLapangan: number; namaLapangan: string; jenisLapangan: string; tarifPerJam: number };
@@ -111,14 +113,18 @@ export default function TampilData({ databooking, ...pilihan }: { databooking: B
                         id: 'jam',
                         label: 'Jam',
                         className: 'text-muted-foreground tabular-nums',
-                        render: (r) => `${r.jamMulai.slice(0, 5)}–${r.jamSelesai.slice(0, 5)}`,
+                        render: (r) => teksRentangJam(r.jamMulai, r.jamSelesai),
                     },
                     { id: 'total', label: 'Total', className: 'tabular-nums', urut: (r) => r.totalBayar, render: (r) => formatRupiah(r.totalBayar) },
                     {
                         id: 'status',
                         label: 'Status',
                         urut: (r) => ['Dipesan', 'Dikonfirmasi', 'Dibatalkan'].indexOf(r.status),
-                        render: (r) => <BookingStatusBadge status={r.status} />,
+                        render: (r) => (
+                            <BadgeTip tip={tipBooking(r.status)}>
+                                <BookingStatusBadge status={r.status} />
+                            </BadgeTip>
+                        ),
                     },
                 ]}
                 aksi={(r) => {
@@ -159,6 +165,7 @@ function FormBooking({
         txtjamselesai: row ? row.jamSelesai.slice(0, 5) : '',
         txttotal: row ? String(row.totalBayar) : '',
         txtstatus: row?.status ?? 'Dipesan',
+        txtalasanbatal: '',
     });
 
     // total = tarif lapangan x jumlah jam, dihitung ulang tiap lapangan atau jam berganti; Admin masih bisa mengubahnya
@@ -317,6 +324,23 @@ function FormBooking({
                 />
                 <InputError message={errors.txtstatus} className="mt-1" />
             </div>
+
+            {row && row.status !== 'Dibatalkan' && data.txtstatus === 'Dibatalkan' && (
+                <div>
+                    <Label htmlFor="txtalasanbatal">Alasan pembatalan</Label>
+                    <Textarea
+                        id="txtalasanbatal"
+                        className="mt-1"
+                        rows={3}
+                        maxLength={255}
+                        placeholder="Misalnya: penyewa minta batal lewat telepon."
+                        value={data.txtalasanbatal}
+                        onChange={(e) => setData('txtalasanbatal', e.target.value)}
+                    />
+                    <p className="mt-1 text-sm text-muted-foreground">Tercatat di Log aktivitas dan dibaca Manager.</p>
+                    <InputError message={errors.txtalasanbatal} className="mt-1" />
+                </div>
+            )}
         </SheetForm>
     );
 }

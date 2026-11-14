@@ -1,7 +1,7 @@
 import { IKON_JENIS } from '@/Components/booking/jadwal';
 import { BookingPenyewa, keadaan, sebabBatal, useSisaWaktu } from '@/Components/booking/pembayaran';
 import { Button } from '@/Components/ui/button';
-import { durationHours, formatRupiah, formatTanggal } from '@/Components/ui/format';
+import { durationHours, formatRupiah, formatTanggal, rentangJam } from '@/Components/ui/format';
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover';
 import { cn } from 'cn';
 import { Check, CircleCheck, CircleX, Clock, Copy, Info } from 'lucide-react';
@@ -96,7 +96,7 @@ export default function KartuBookingSaya({
     }[k];
 
     const durasi = durationHours(booking.jamMulai, booking.jamSelesai);
-    const rentang = `${booking.jamMulai}–${booking.jamSelesai}`;
+    const rentang = rentangJam(booking.jamMulai, booking.jamSelesai);
     const ikon = IKON_JENIS[booking.jenisLapangan];
 
     const badge = (hp: boolean) => (

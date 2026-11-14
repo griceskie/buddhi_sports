@@ -3,6 +3,7 @@ import FormSelect from '@/Components/FormSelect';
 import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
 import AksiBaris from '@/Components/pengelola/AksiBaris';
+import BadgeTip, { tipLapangan } from '@/Components/pengelola/BadgeTip';
 import DataTable from '@/Components/pengelola/DataTable';
 import JudulHalaman from '@/Components/pengelola/JudulHalaman';
 import { CourtStatusBadge } from '@/Components/ui/badge';
@@ -79,7 +80,11 @@ export default function TampilData({ datalapangan }: { datalapangan: Lapangan[] 
                     },
                     { id: 'jenis', label: 'Jenis', render: (r) => r.jenisLapangan },
                     { id: 'tarif', label: 'Tarif per jam', urut: (r) => r.tarifPerJam, render: (r) => formatRupiah(r.tarifPerJam) },
-                    { id: 'status', label: 'Status', render: (r) => <CourtStatusBadge status={r.status} /> },
+                    { id: 'status', label: 'Status', render: (r) => (
+                            <BadgeTip tip={tipLapangan(r.status)}>
+                                <CourtStatusBadge status={r.status} />
+                            </BadgeTip>
+                        ) },
                 ]}
                 aksi={(r) => <AksiBaris nama={r.namaLapangan} onEdit={() => sheet.buka(r)} hapus={`/deletelapangan/${r.idLapangan}`} />}
                 toolbarKanan={

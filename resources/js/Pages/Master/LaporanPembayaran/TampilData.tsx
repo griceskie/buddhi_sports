@@ -4,6 +4,7 @@ import FormSheet, { SheetForm, useFormSheet } from '@/Components/FormSheet';
 import InputError from '@/Components/InputError';
 import AksiBaris from '@/Components/pengelola/AksiBaris';
 import DataTable from '@/Components/pengelola/DataTable';
+import BadgeTip from '@/Components/pengelola/BadgeTip';
 import JudulHalaman from '@/Components/pengelola/JudulHalaman';
 import DialogLaporan from '@/Components/pengelola/DialogLaporan';
 import { Ringkasan } from '@/Components/RingkasanPembayaran';
@@ -231,11 +232,18 @@ export default function TampilData({
                         urut: (r) => ['revisi', 'belum', 'cek'].indexOf(statusBaris(r)),
                         render: (r) => {
                             const st = STATUS_BARIS[statusBaris(r)];
+                            const tip = {
+                                belum: 'Sudah diserahkan. Manager belum memeriksanya.',
+                                revisi: `Manager meminta revisi${r.catatanRevisi ? `: ${r.catatanRevisi}` : '.'}`,
+                                cek: `Diperiksa Manager${r.diperiksaPada ? ` pada ${tgl(r.diperiksaPada)}` : ''}. Laporan terkunci.`,
+                            }[statusBaris(r)];
                             return (
-                                <Badge data-nada={st.nada}>
-                                    <st.Ikon aria-hidden="true" />
-                                    {st.teks}
-                                </Badge>
+                                <BadgeTip tip={tip}>
+                                    <Badge data-nada={st.nada}>
+                                        <st.Ikon aria-hidden="true" />
+                                        {st.teks}
+                                    </Badge>
+                                </BadgeTip>
                             );
                         },
                     },

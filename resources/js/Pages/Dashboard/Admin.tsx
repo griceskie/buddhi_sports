@@ -1,12 +1,13 @@
 import DrawerVerifikasi, { BuktiAntrean } from '@/Components/admin/DrawerVerifikasi';
 import JadwalGeser, { JadwalBooking, JadwalLapangan } from '@/Components/admin/JadwalGeser';
 import { awalHari, isoTanggal, JAM_TUTUP, tambahHari } from '@/Components/booking/jadwal';
+import BadgeTip, { tipBooking, tipPembayaran } from '@/Components/pengelola/BadgeTip';
 import { BookingStatusBadge, PaymentStatusBadge } from '@/Components/ui/badge';
 import { Button, buttonVariants } from '@/Components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card';
 import { DatePicker } from '@/Components/ui/date-picker';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/Components/ui/dropdown-menu';
-import { formatRupiah, formatTanggal, toMinutes } from '@/Components/ui/format';
+import { formatJam, formatRupiah, formatTanggal, rentangJam, toMinutes } from '@/Components/ui/format';
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 import { toast } from '@/Components/ui/toast';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
@@ -65,7 +66,7 @@ const keTanggal = (iso: string) => {
     const [y, m, d] = iso.split('-').map(Number);
     return new Date(y, m - 1, d);
 };
-const jam = (hhmm: string) => hhmm.slice(0, 5);
+const jam = (hhmm: string) => formatJam(hhmm);
 const selisihHari = (a: Date, b: Date) => Math.round((awalHari(a).getTime() - awalHari(b).getTime()) / 86_400_000);
 
 function judulTanggal(tanggal: Date) {
@@ -87,7 +88,7 @@ function Angka({ ikon, label, nilai, ket, className }: { ikon: ReactNode; label:
                 {label}
             </span>
             <span className="text-2xl leading-8 font-semibold tracking-tight tabular-nums">{nilai}</span>
-            <span className="text-xs text-muted-foreground">{ket}</span>
+            <span className="text-sm text-muted-foreground">{ket}</span>
         </div>
     );
 }
@@ -207,9 +208,9 @@ export default function AdminDashboard({
         const d = keTanggal(a.tanggal);
         const dd = selisihHari(d, sekarang);
         if (dd < 0 || (dd === 0 && toMinutes(a.jamMulai) < menitKini)) return <Chip warna="bg-muted text-muted-foreground">Main {formatTanggal(a.tanggal, 'd MMM')} · sudah lewat</Chip>;
-        if (dd === 0) return <Chip warna="bg-accessible-orange/12 text-accessible-orange">Main hari ini {a.jamMulai}</Chip>;
-        if (dd === 1) return <Chip warna="bg-primary/10 text-primary">Main besok {a.jamMulai}</Chip>;
-        return <Chip warna="bg-muted text-muted-foreground">Main {formatTanggal(a.tanggal, 'EEE, d MMM')} {a.jamMulai}</Chip>;
+        if (dd === 0) return <Chip warna="bg-accessible-orange/12 text-accessible-orange">Main hari ini {jam(a.jamMulai)}</Chip>;
+        if (dd === 1) return <Chip warna="bg-primary/10 text-primary">Main besok {jam(a.jamMulai)}</Chip>;
+        return <Chip warna="bg-muted text-muted-foreground">Main {formatTanggal(a.tanggal, 'EEE, d MMM')} {jam(a.jamMulai)}</Chip>;
     };
     const chipTunggu = (a: BuktiAntrean) => {
         if (a.bentrokDengan) return <Chip warna="bg-accessible-red/12 text-accessible-red">Jam bentrok</Chip>;
@@ -220,7 +221,7 @@ export default function AdminDashboard({
         return hari < 1 ? (
             <Chip warna="bg-muted text-muted-foreground">
                 Dikirim {selisihHari(sekarang, kirim) === 1 ? 'kemarin ' : ''}
-                {formatTanggal(kirim, 'HH:mm')}
+                {formatTanggal(kirim, 'HH.mm')}
             </Chip>
         ) : (
             <Chip warna="bg-accessible-red/12 text-accessible-red">Menunggu {hari} hari</Chip>
@@ -272,7 +273,7 @@ export default function AdminDashboard({
                             nilai={sesi.length}
                             ket={
                                 sesi.length
-                                    ? `${berjalan ? `${berjalan} berjalan · ` : ''}${nanti ? `berikutnya ${nanti.jamMulai} di ${namaLap(nanti.idLapangan)}` : 'tidak ada sesi lagi'}`
+                                    ? `${berjalan ? `${berjalan} berjalan · ` : ''}${nanti ? `berikutnya ${jam(nanti.jamMulai)} di ${namaLap(nanti.idLapangan)}` : 'tidak ada sesi lagi'}`
                                     : 'Belum ada sesi'
                             }
                         />
@@ -319,7 +320,7 @@ export default function AdminDashboard({
                     <CardContent className="flex flex-col gap-4">
                         <JadwalGeser lapangan={lapangan} booking={jadwalTanggal} sekarang={tampilHariIni ? sekarang : undefined} onTinjau={tinjau} />
                         {jadwalTanggal.length === 0 && <p className="text-center text-sm text-muted-foreground">Belum ada booking terkonfirmasi di tanggal ini.</p>}
-                        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
+                        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1.5">
                                 <span className="size-3 rounded-sm border border-accessible-green/30 bg-accessible-green/10" />
                                 Dikonfirmasi
@@ -365,7 +366,7 @@ export default function AdminDashboard({
                     )}
                     {antrean.length > 0 && (
                         <>
-                            <div className="flex items-center justify-between border-y bg-tabel-header px-4 py-2 text-xs text-muted-foreground">
+                            <div className="flex items-center justify-between border-y bg-tabel-header px-4 py-2 text-sm text-muted-foreground">
                                 <span>Verifikasi bukti bayar · {antrean.length}</span>
                                 <Link href="/tampilpembayaran" className="font-medium text-primary hover:underline">
                                     Buka Pembayaran
@@ -394,7 +395,7 @@ export default function AdminDashboard({
                     )}
                     {tugas.length > 0 && (
                         <>
-                            <div className="border-y bg-tabel-header px-4 py-2 text-xs text-muted-foreground">Tugas lain · {tugas.length}</div>
+                            <div className="border-y bg-tabel-header px-4 py-2 text-sm text-muted-foreground">Tugas lain · {tugas.length}</div>
                             <ul aria-label="Tugas lain" className="divide-y">
                                 {tugas.map((g) => {
                                     const Ikon = IKON_TUGAS[g.jenis];
@@ -406,7 +407,7 @@ export default function AdminDashboard({
                                             </span>
                                             <div className="flex min-w-0 flex-1 flex-col">
                                                 <span className="truncate font-medium">{g.judul}</span>
-                                                <span className="truncate text-xs text-muted-foreground" title={g.ket}>
+                                                <span className="truncate text-sm text-muted-foreground" title={g.ket}>
                                                     {g.ket}
                                                 </span>
                                             </div>
@@ -483,15 +484,19 @@ export default function AdminDashboard({
                                         <TableCell className="font-medium">{b.namaPenyewa}</TableCell>
                                         <TableCell>{b.namaLapangan}</TableCell>
                                         <TableCell className="text-muted-foreground">
-                                            {formatTanggal(b.tanggal, 'EEE, d MMM')} · {b.jamMulai}–{b.jamSelesai}
+                                            {formatTanggal(b.tanggal, 'EEE, d MMM')} · {rentangJam(b.jamMulai, b.jamSelesai)}
                                         </TableCell>
                                         <TableCell className="text-right tabular-nums">{formatRupiah(b.totalBayar)}</TableCell>
                                         <TableCell>
-                                            <BookingStatusBadge status={b.status} />
+                                            <BadgeTip tip={tipBooking(b.status)}>
+                                                <BookingStatusBadge status={b.status} />
+                                            </BadgeTip>
                                         </TableCell>
                                         <TableCell>
                                             {b.statusPembayaran ? (
-                                                <PaymentStatusBadge status={b.statusPembayaran} />
+                                                <BadgeTip tip={tipPembayaran({ status: b.statusPembayaran })}>
+                                                    <PaymentStatusBadge status={b.statusPembayaran} />
+                                                </BadgeTip>
                                             ) : b.status === 'Dipesan' ? (
                                                 <span className="text-sm text-muted-foreground">Belum bayar</span>
                                             ) : (

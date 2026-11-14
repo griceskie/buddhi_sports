@@ -46,6 +46,7 @@ return [
         'txtjumlah' => 'amount paid',
         'txtbukti' => 'proof of payment',
         'txtalasan' => 'rejection reason',
+        'txtalasanbatal' => 'cancellation reason',
         'txtbulan' => 'month',
         'txttahun' => 'year',
         'txttgllaporan' => 'report date',

@@ -1,6 +1,6 @@
 import { Button } from '@/Components/ui/button';
 import { PaymentStatusBadge } from '@/Components/ui/badge';
-import { formatRupiah, formatTanggal } from '@/Components/ui/format';
+import { formatRupiah, formatTanggal, rentangJam } from '@/Components/ui/format';
 import { Label } from '@/Components/ui/label';
 import { ProofPreview } from '@/Components/ui/proof-review';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/Components/ui/sheet';
@@ -131,7 +131,7 @@ function IsiDrawer({
                     {baris('Status', <PaymentStatusBadge status={bukti.status} />)}
                     {baris('Penyewa', bukti.namaPenyewa)}
                     {baris('Lapangan', bukti.namaLapangan)}
-                    {baris('Jadwal main', `${formatTanggal(bukti.tanggal, 'd MMM')} · ${bukti.jamMulai}–${bukti.jamSelesai}`)}
+                    {baris('Jadwal main', `${formatTanggal(bukti.tanggal, 'd MMM')} · ${rentangJam(bukti.jamMulai, bukti.jamSelesai)}`)}
                     {baris('Tanggal bayar', formatTanggal(bukti.tglBayar, 'EEE, d MMM yyyy'))}
                     <div className="my-1 border-t" />
                     {baris('Total booking', formatRupiah(bukti.totalBayar))}
@@ -154,7 +154,7 @@ function IsiDrawer({
                         {galatAlasan ? (
                             <p className="text-sm text-destructive">{galatAlasan}</p>
                         ) : (
-                            <p className="text-xs text-muted-foreground">Ditampilkan ke penyewa agar bisa mengunggah ulang bukti yang benar.</p>
+                            <p className="text-sm text-muted-foreground">Ditampilkan ke penyewa agar bisa mengunggah ulang bukti yang benar.</p>
                         )}
                     </div>
                 )}
@@ -193,7 +193,7 @@ function IsiDrawer({
                     </>
                 ) : (
                     <>
-                        {bentrok && <span className="text-xs text-muted-foreground">Tidak bisa diterima: jam bentrok.</span>}
+                        {bentrok && <span className="text-sm text-muted-foreground">Tidak bisa diterima: jam bentrok.</span>}
                         <Button variant="destructive" disabled={memproses || !bukti.buktiBayar} onClick={() => setMenolak(true)}>
                             Tolak
                         </Button>

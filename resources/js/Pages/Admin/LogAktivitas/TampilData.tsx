@@ -64,8 +64,8 @@ const IKON_JENIS: Record<string, LucideIcon> = {
     Laporan: FileText,
 };
 
-const kapan = (w: string) => format(new Date(w.replace(' ', 'T')), 'EEE, d MMM yyyy, HH:mm', { locale: id });
-const kapanPanjang = (w: string) => format(new Date(w.replace(' ', 'T')), 'EEEE, d MMMM yyyy, HH:mm', { locale: id });
+const kapan = (w: string) => format(new Date(w.replace(' ', 'T')), 'EEE, d MMM yyyy, HH.mm', { locale: id });
+const kapanPanjang = (w: string) => format(new Date(w.replace(' ', 'T')), 'EEEE, d MMMM yyyy, HH.mm', { locale: id });
 
 function Chip({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
@@ -160,10 +160,10 @@ export default function TampilData({
                             {memeriksa ? 'Memeriksa…' : 'Periksa keaslian log'}
                         </Button>
                         {pemeriksaan && (
-                            <span className={`flex items-center gap-1 text-xs ${pemeriksaan.utuh ? 'text-muted-foreground' : 'text-destructive'}`}>
+                            <span className={`flex items-center gap-1 text-sm ${pemeriksaan.utuh ? 'text-muted-foreground' : 'text-destructive'}`}>
                                 {pemeriksaan.utuh ? <ShieldCheck className="size-3.5 text-accessible-green" /> : <ShieldAlert className="size-3.5" />}
                                 {pemeriksaan.utuh ? 'Utuh' : `Rantai putus di #${pemeriksaan.rusakPada}`} · diperiksa{' '}
-                                {format(new Date(pemeriksaan.waktu), 'd MMM yyyy, HH:mm', { locale: id })}
+                                {format(new Date(pemeriksaan.waktu), 'd MMM yyyy, HH.mm', { locale: id })}
                             </span>
                         )}
                     </div>
@@ -228,7 +228,7 @@ export default function TampilData({
                                             <span aria-hidden className="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">
                                                 {inisial(e.namaAdmin)}
                                             </span>
-                                            {e.namaAdmin}
+                                            <span className="font-medium">{e.namaAdmin}</span>
                                         </span>
                                     </TableCell>
                                     <TableCell className="whitespace-nowrap tabular-nums">{kapan(e.waktu)}</TableCell>
@@ -281,7 +281,7 @@ export default function TampilData({
                                 <div className="flex flex-col gap-2">
                                     <span className="text-sm font-medium">Apa yang terjadi</span>
                                     <div className="overflow-hidden rounded-lg border text-sm">
-                                        <div className="grid grid-cols-[30%_35%_35%] bg-muted text-xs font-medium text-muted-foreground">
+                                        <div className="grid grid-cols-[30%_35%_35%] bg-muted text-sm font-medium text-muted-foreground">
                                             <span className="px-3 py-2">Isian</span>
                                             <span className="px-3 py-2">Sebelum</span>
                                             <span className="px-3 py-2">Sesudah</span>
@@ -295,11 +295,11 @@ export default function TampilData({
                                         ))}
                                         {detail.rincian.length === 0 && <p className="border-t px-3 py-2.5 text-muted-foreground">Tidak ada isian yang berubah.</p>}
                                     </div>
-                                    {detail.catatan && <p className="text-xs text-muted-foreground">{detail.catatan}</p>}
+                                    {detail.catatan && <p className="text-sm text-muted-foreground">{detail.catatan}</p>}
                                 </div>
                             </SheetBody>
                             <SheetFooter className="flex-row items-center justify-between border-t">
-                                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                                     <Lock className="size-3.5" />
                                     Log tidak bisa diubah atau dihapus.
                                 </span>

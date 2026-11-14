@@ -36,6 +36,8 @@ type SlotPickerProps = {
 
 const pad = (n: number) => String(n).padStart(2, "0")
 const toTime = (min: number) => `${pad(Math.floor(min / 60))}:${pad(min % 60)}`
+/** Label jam untuk ditampilkan (EYD, titik): 960 → "16.00". */
+const toLabel = (min: number) => toTime(min).replace(":", ".")
 
 function SlotPicker({
   open = "08:00",
@@ -84,7 +86,7 @@ function SlotPicker({
 
   const pick = (m: number) => {
     if (isBooked(m)) {
-      setConflict(`${toTime(m)}–${toTime(m + 60)}`)
+      setConflict(`${toLabel(m)}–${toLabel(m + 60)}`)
       return
     }
     setConflict(null)
@@ -123,7 +125,7 @@ function SlotPicker({
       const middle = selected && !edge
       // the only chosen hour, clicked again, clears the choice
       const single = !preview && selected && hours === 1
-      const label = `${toTime(m)}–${toTime(m + 60)}`
+      const label = `${toLabel(m)}–${toLabel(m + 60)}`
       return (
         <button
           key={m}
