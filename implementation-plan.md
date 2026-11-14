@@ -214,7 +214,7 @@ Rencana lengkap: `project/RENCANA-IMPLEMENTASI.md` di kanvas "Redesign Dashboard
 | 1 | Admin disamakan dengan kanvas (teks abu minimal 14px, tooltip di semua badge status, Jumlah rata kanan), format jam titik di pengelola dan penyewa, alasan wajib saat Admin membatalkan booking | `feat/admin-sinkron-kanvas-2` | selesai (PR #41) |
 | 2 | Kerangka panel Manager: tema, header, sidebar, menu akun, notifikasi | `feat/manager-kerangka` | PR dibuka |
 | 3 | Log aktivitas: kolom `peran`, tindakan Manager tercatat, satu log untuk semua pengelola (Admin bawaan filter Admin) | `feat/manager-log` | PR dibuka |
-| 4 | Pemantauan | `feat/manager-pemantauan` | belum |
+| 4 | Pemantauan: `/dashboard-manager` = dashboard Admin hanya baca (`dataHariIni` dipakai bersama), lama tunggu bukti di jam operasional, Aktivitas hari ini, polling 30 dtk | `feat/manager-pemantauan` | PR dibuka |
 | 5 | Analisis bisnis (Pendapatan, Penyewa, Pola booking, Kinerja Admin) | `feat/manager-analisis` | belum |
 | 6 | Halaman data Manager | `feat/manager-halaman-data` | belum |
 | 7 | Profile Admin dan Manager | `feat/pengelola-profil` | belum |

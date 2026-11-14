@@ -48,32 +48,20 @@ class ManagerTest extends TestCase
         );
     }
 
-    public function test_dashboard_menghitung_pemasukan_grafik_dan_laporan(): void
+    public function test_pemantauan_mencerminkan_dashboard_admin_tanpa_tindakan(): void
     {
-        $this->bayar('2026-10-05', 100000, 'Terverifikasi');
-        $this->bayar('2026-10-20', 50000, 'Menunggu Verifikasi', 'Dipesan');
-        $this->bayar('2026-09-10', 70000, 'Terverifikasi');
-        $this->bayar('2026-01-15', 30000, 'Terverifikasi');
-        $this->bayar('2025-10-31', 999000, 'Terverifikasi'); // di luar 12 bulan dan tahun ini
-        DB::table('laporan_pembayarans')->insert([
-            'idAdmin' => $this->admin->idAdmin, 'idManager' => $this->manager->idManager, 'bulan' => 9, 'tahun' => 2026,
-            'totalPemasukan' => 70000, 'tglLaporan' => '2026-10-01', 'namaLaporan' => 'Laporan Pembayaran September 2026', 'filePdf' => 'laporan/x.pdf',
-        ]);
+        // jam sekarang 10.00; bukti dikirim kemarin 21.30 -> 30 menit kemarin + 120 menit pagi ini = 150 menit di jam operasional
+        $id = $this->bayar('2026-10-24', 100000, 'Menunggu Verifikasi', 'Dipesan');
+        DB::table('pembayarans')->where('idPembayaran', $id)->update(['dikirimPada' => '2026-10-23 21:30:00']);
+        $this->bayar('2026-10-24', 50000, 'Terverifikasi');
 
         $this->actingAs($this->manager, 'manager')->get('/dashboard-manager')->assertInertia(fn (Assert $p) => $p
-            ->component('Dashboard/Manager')
-            ->where('stat.pemasukanBulanIni', 100000)
-            ->where('stat.pemasukanBulanLalu', 70000)
-            ->where('stat.pemasukanTahunIni', 200000)
-            ->where('stat.bookingBulanIni', 1)
-            ->has('grafik', 12)
-            ->where('grafik.0', ['bulan' => 10, 'tahun' => 2026, 'totalPemasukan' => 100000]) // bulan ini paling kiri
-            ->where('grafik.1.totalPemasukan', 70000)
-            ->where('grafik.11', ['bulan' => 11, 'tahun' => 2025, 'totalPemasukan' => 0])
-            ->where('bulanIni.namaLaporan', 'Laporan Pembayaran Oktober 2026')
-            ->where('bulanIni.sudahDibuat', false)
-            ->has('laporan', 1)
-            ->where('laporan.0.namaAdmin', 'Budi')
+            ->component('Manager/Pemantauan')
+            ->has('stat')->has('jadwalHariIni', 2)->has('tugas')
+            ->has('antrean', 1)
+            ->where('antrean.0.menitTunggu', 150)
+            ->missing('terbaru')
+            ->has('aktivitas')
             ->where('pengelola.role', 'manager'));
     }
 

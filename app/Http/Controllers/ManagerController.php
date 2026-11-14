@@ -19,51 +19,55 @@ use Inertia\Response;
  */
 class ManagerController extends Controller
 {
-    public function dashboard(): Response
+    /**
+     * Pemantauan: cermin dashboard Admin tanpa tombol tindakan (data dari AdminDashboardController::dataHariIni),
+     * ditambah aktivitas hari ini. Halaman ini diperbarui otomatis lewat polling Inertia.
+     */
+    public function dashboard(Request $request): Response
     {
-        $hariIni = today();
-        $pemasukan = fn (Carbon $awal, Carbon $akhir) => (int) DB::table('pembayarans')
-            ->where('status', 'Terverifikasi')
-            ->whereBetween('tglBayar', [$awal->toDateString(), $akhir->toDateString()])
-            ->sum('jumlahBayar');
-        $bulanLalu = $hariIni->copy()->subMonthNoOverflow();
-
-        // 12 bulan terakhir, bulan ini paling kiri lalu mundur; dijumlah di PHP agar sama di MySQL dan SQLite (tes)
-        $awalGrafik = $hariIni->copy()->startOfMonth()->subMonths(11);
-        $perBulan = DB::table('pembayarans')
-            ->where('status', 'Terverifikasi')
-            ->whereBetween('tglBayar', [$awalGrafik->toDateString(), $hariIni->copy()->endOfMonth()->toDateString()])
-            ->get(['tglBayar', 'jumlahBayar'])
-            ->groupBy(fn ($p) => substr($p->tglBayar, 0, 7));
-        $grafik = collect(range(0, 11))->map(function ($i) use ($hariIni, $perBulan) {
-            $bulan = $hariIni->copy()->startOfMonth()->subMonths($i);
-
-            return [
-                'bulan' => $bulan->month,
-                'tahun' => $bulan->year,
-                'totalPemasukan' => (int) ($perBulan->get($bulan->format('Y-m'))?->sum('jumlahBayar') ?? 0),
-            ];
-        });
-
-        return Inertia::render('Dashboard/Manager', [
-            'stat' => [
-                'pemasukanBulanIni' => $pemasukan($hariIni->copy()->startOfMonth(), $hariIni->copy()->endOfMonth()),
-                'pemasukanBulanLalu' => $pemasukan($bulanLalu->copy()->startOfMonth(), $bulanLalu->copy()->endOfMonth()),
-                'pemasukanTahunIni' => $pemasukan($hariIni->copy()->startOfYear(), $hariIni->copy()->endOfYear()),
-                'bookingBulanIni' => DB::table('bookings')
-                    ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
-                    ->whereBetween('tanggal', [$hariIni->copy()->startOfMonth()->toDateString(), $hariIni->copy()->endOfMonth()->toDateString()])
-                    ->count(),
-            ],
-            'grafik' => $grafik,
-            'bulanIni' => [
-                'bulan' => $hariIni->month,
-                'tahun' => $hariIni->year,
-                'namaLaporan' => LaporanPembayaranController::namaLaporan($hariIni->month, $hariIni->year),
-                'sudahDibuat' => DB::table('laporan_pembayarans')->where('bulan', $hariIni->month)->where('tahun', $hariIni->year)->exists(),
-            ],
-            'laporan' => $this->laporan()->limit(5)->get(),
+        return Inertia::render('Manager/Pemantauan', [
+            ...app(AdminDashboardController::class)->dataHariIni($request),
+            'aktivitas' => $this->aktivitasHariIni(),
         ]);
+    }
+
+    /**
+     * Bukti bayar yang dikirim penyewa hari ini dan tindakan pengelola hari ini (dari Log aktivitas), terbaru di atas.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function aktivitasHariIni(): array
+    {
+        $hariIni = today()->toDateString();
+        $kirim = DB::table('pembayarans')
+            ->join('bookings', 'bookings.idBooking', '=', 'pembayarans.idBooking')
+            ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
+            ->whereDate('pembayarans.dikirimPada', $hariIni)
+            ->get(['pembayarans.idPembayaran', 'pembayarans.dikirimPada', 'bookings.idBooking', 'penyewas.namaPenyewa'])
+            ->map(fn ($r) => [
+                'id' => 'kirim-'.$r->idPembayaran,
+                'waktu' => Carbon::parse($r->dikirimPada)->toIso8601String(),
+                'siapa' => $r->namaPenyewa,
+                'peran' => 'penyewa',
+                'aksi' => 'kirim',
+                'teks' => 'mengirim bukti bayar '.Pemesanan::kode($r->idBooking),
+                'catatan' => null,
+            ]);
+        $log = DB::table('log_aktivitas')
+            ->whereDate('waktu', $hariIni)
+            ->orderByDesc('id')->limit(30)
+            ->get(['id', 'waktu', 'idAdmin', 'namaAdmin', 'peran', 'aksi', 'jenisObjek', 'kodeObjek', 'catatan'])
+            ->map(fn ($r) => [
+                'id' => 'log-'.$r->id,
+                'waktu' => Carbon::parse($r->waktu)->toIso8601String(),
+                'siapa' => $r->namaAdmin,
+                'peran' => $r->peran ?? ($r->idAdmin ? 'admin' : 'sistem'),
+                'aksi' => $r->aksi,
+                'teks' => (LogAktivitas::KATA_KERJA[$r->aksi] ?? $r->aksi).' '.strtolower($r->jenisObjek).' '.$r->kodeObjek,
+                'catatan' => $r->catatan,
+            ]);
+
+        return $kirim->concat($log)->sortByDesc('waktu')->take(30)->values()->all();
     }
 
     public function pembayaran(Request $request): Response

@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableR
 import { toast } from '@/Components/ui/toast';
 import AdminSidebarLayout from '@/Layouts/AdminSidebarLayout';
 import { PageProps } from '@/types';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage, usePoll } from '@inertiajs/react';
 import { cn } from 'cn';
 import {
     ArrowRight,
@@ -33,7 +33,7 @@ import {
     Trophy,
     Wallet,
 } from 'lucide-react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 
 type Stat = {
     jamTerisi: number;
@@ -44,6 +44,10 @@ type Stat = {
     terverifikasiJumlah: number;
     terverifikasiN: number;
 };
+
+/** Satu baris Aktivitas hari ini di Pemantauan Manager (bukti dari penyewa dan tindakan pengelola). */
+export type Aktivitas = { id: string; waktu: string; siapa: string; peran: 'penyewa' | 'admin' | 'manager' | 'sistem'; aksi: string; teks: string; catatan: string | null };
+const PERAN_AKTIVITAS = { penyewa: 'Penyewa', admin: 'Admin', manager: 'Manager', sistem: 'Sistem' };
 
 type Tugas = { jenis: 'revisi' | 'tertahan' | 'siap' | 'ditolak'; judul: string; ket: string; aksi: string; idPembayaran: number | null; href: string | null };
 
@@ -107,7 +111,8 @@ export default function AdminDashboard({
     jadwalHariIni,
     antrean,
     tugas,
-    terbaru,
+    terbaru = [],
+    pemantauan,
 }: {
     stat: Stat;
     lapangan: JadwalLapangan[];
@@ -118,9 +123,20 @@ export default function AdminDashboard({
     jadwalHariIni: JadwalBooking[];
     antrean: BuktiAntrean[];
     tugas: Tugas[];
-    terbaru: Terbaru[];
+    terbaru?: Terbaru[];
+    /** Pemantauan Manager: halaman yang sama tanpa tombol tindakan, dengan aktivitas hari ini dan pembaruan otomatis. */
+    pemantauan?: { aktivitas: Aktivitas[] };
 }) {
-    const nama = usePage<PageProps>().props.pengelola?.nama;
+    const pengelola = usePage<PageProps>().props.pengelola;
+    const nama = pengelola?.nama;
+    // Pemantauan: diperbarui otomatis setiap 30 detik; Inertia memperlambatnya saat tab tidak aktif
+    usePoll(30_000, { only: ['stat', 'jadwal', 'jadwalHariIni', 'antrean', 'tugas', 'aktivitas', 'pengelola'] }, { autoStart: !!pemantauan });
+    // aktivitas baru disorot sebentar
+    const sudahTampil = useRef<Set<string> | null>(null);
+    const baruMuncul = new Set((pemantauan?.aktivitas ?? []).filter((a) => sudahTampil.current && !sudahTampil.current.has(a.id)).map((a) => a.id));
+    useEffect(() => {
+        sudahTampil.current = new Set((pemantauan?.aktivitas ?? []).map((a) => a.id));
+    }, [pemantauan?.aktivitas]);
     const [sekarang, setSekarang] = useState(() => new Date());
     useEffect(() => {
         const t = setInterval(() => setSekarang(new Date()), 60_000);
@@ -168,7 +184,7 @@ export default function AdminDashboard({
     const lihatTanggal = (d: Date) => {
         const iso = isoTanggal(d);
         if (iso >= jadwalDari && iso <= jadwalSampai) return setTampil(iso);
-        router.get(route('dashboard.admin'), d.getTime() === hariIni.getTime() ? {} : { tanggal: iso }, {
+        router.get(route(pemantauan ? 'dashboard.manager' : 'dashboard.admin'), d.getTime() === hariIni.getTime() ? {} : { tanggal: iso }, {
             only: ['jadwal', 'tanggalJadwal', 'jadwalDari', 'jadwalSampai'],
             preserveState: true,
             preserveScroll: true,
@@ -195,13 +211,31 @@ export default function AdminDashboard({
     // ---------- ringkasan satu kalimat di bawah sapaan
     const isoHariIni = isoTanggal(hariIni);
     const buktiHariIni = antrean.filter((a) => a.tanggal === isoHariIni && toMinutes(a.jamMulai) >= menitKini);
-    const ringkasan = sesi.length
+    const ringkasanAdmin = sesi.length
         ? `${sesi.length} sesi hari ini · ${
               buktiHariIni.length
                   ? `${buktiHariIni.length} bukti harus dicek sebelum ${jam([...buktiHariIni].sort((a, b) => a.jamMulai.localeCompare(b.jamMulai))[0].jamMulai)}`
                   : 'semua bukti untuk sesi hari ini sudah dicek'
           }`
         : 'Belum ada sesi hari ini';
+    const nLaporan = pengelola?.laporanBelumDiperiksa ?? 0;
+    const ringkasan = pemantauan
+        ? `${sesi.length ? `${sesi.length} sesi hari ini` : 'Belum ada sesi hari ini'} · ${antrean.length ? `${antrean.length} bukti menunggu Admin` : 'tidak ada bukti yang menunggu'} · ${
+              nLaporan ? `${nLaporan} laporan menunggu Anda periksa` : 'tidak ada laporan untuk Anda periksa'
+          }`
+        : ringkasanAdmin;
+    // Pemantauan: lama menunggu dihitung server di jam operasional; lewat 1 jam ditandai merah
+    // di atas 10 jam menitnya tidak berarti lagi
+    const lama = (m: number) => (m < 60 ? `${m} menit` : `${Math.floor(m / 60)} jam${m % 60 && m < 600 ? ` ${m % 60} menit` : ''}`);
+    const chipLama = (a: BuktiAntrean) => {
+        if (a.bentrokDengan) return <Chip warna="bg-accessible-red/12 text-accessible-red">Jam bentrok</Chip>;
+        if (a.menitTunggu == null) return null;
+        return a.menitTunggu > 60 ? (
+            <Chip warna="bg-accessible-red/12 text-accessible-red">Lewat 1 jam · menunggu {lama(a.menitTunggu)}</Chip>
+        ) : (
+            <Chip warna="bg-muted text-muted-foreground">Menunggu {lama(a.menitTunggu)}</Chip>
+        );
+    };
 
     // ---------- antrean: chip jadwal main dan lama menunggu
     const chipMain = (a: BuktiAntrean) => {
@@ -248,7 +282,7 @@ export default function AdminDashboard({
 
     return (
         <AdminSidebarLayout>
-            <Head title="Dashboard Admin" />
+            <Head title={pemantauan ? 'Pemantauan' : 'Dashboard Admin'} />
 
             <div className="grid gap-6">
                 <div className="flex flex-wrap items-end justify-between gap-3">
@@ -258,10 +292,12 @@ export default function AdminDashboard({
                             {formatTanggal(sekarang)} · <span className="font-medium text-foreground">{ringkasan}</span>
                         </p>
                     </div>
-                    <Link href="/tampilbooking?tambah" className={buttonVariants({ variant: 'elevated' })}>
-                        <Plus />
-                        Tambah booking
-                    </Link>
+                    {!pemantauan && (
+                        <Link href="/tampilbooking?tambah" className={buttonVariants({ variant: 'elevated' })}>
+                            <Plus />
+                            Tambah booking
+                        </Link>
+                    )}
                 </div>
 
                 <Card className="gap-0 py-0" aria-label="Ringkasan hari ini">
@@ -318,7 +354,7 @@ export default function AdminDashboard({
                         </CardAction>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-4">
-                        <JadwalGeser lapangan={lapangan} booking={jadwalTanggal} sekarang={tampilHariIni ? sekarang : undefined} onTinjau={tinjau} />
+                        <JadwalGeser lapangan={lapangan} booking={jadwalTanggal} sekarang={tampilHariIni ? sekarang : undefined} onTinjau={pemantauan ? undefined : tinjau} />
                         {jadwalTanggal.length === 0 && <p className="text-center text-sm text-muted-foreground">Belum ada booking terkonfirmasi di tanggal ini.</p>}
                         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1.5">
@@ -345,9 +381,9 @@ export default function AdminDashboard({
                     </CardContent>
                 </Card>
 
-                <Card className="gap-0 overflow-hidden py-0" aria-label="Perlu tindakan">
+                <Card className="gap-0 overflow-hidden py-0" aria-label={pemantauan ? 'Hal yang masih harus diselesaikan Admin' : 'Perlu tindakan'}>
                     <div className="flex items-center gap-2 px-4 py-4">
-                        <CardTitle>Perlu tindakan</CardTitle>
+                        <CardTitle>{pemantauan ? 'Hal yang masih harus diselesaikan Admin' : 'Perlu tindakan'}</CardTitle>
                         <span
                             className={cn(
                                 'inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums',
@@ -361,14 +397,16 @@ export default function AdminDashboard({
                         <div className="flex flex-col items-center gap-1 border-t px-4 py-10 text-center">
                             <CircleCheck className="size-6 text-accessible-green" />
                             <span className="font-medium">Semua beres</span>
-                            <span className="text-sm text-muted-foreground">Tidak ada bukti yang menunggu dan tidak ada tugas lain.</span>
+                            <span className="text-sm text-muted-foreground">
+                                {pemantauan ? 'Admin tidak punya bukti yang menunggu atau tugas lain.' : 'Tidak ada bukti yang menunggu dan tidak ada tugas lain.'}
+                            </span>
                         </div>
                     )}
                     {antrean.length > 0 && (
                         <>
                             <div className="flex items-center justify-between border-y bg-tabel-header px-4 py-2 text-sm text-muted-foreground">
                                 <span>Verifikasi bukti bayar · {antrean.length}</span>
-                                <Link href="/tampilpembayaran" className="font-medium text-primary hover:underline">
+                                <Link href={pemantauan ? '/manager/pembayaran' : '/tampilpembayaran'} className="font-medium text-primary hover:underline">
                                     Buka Pembayaran
                                 </Link>
                             </div>
@@ -382,12 +420,14 @@ export default function AdminDashboard({
                                             </span>
                                             <span className="flex flex-wrap gap-1">
                                                 {chipMain(a)}
-                                                {chipTunggu(a)}
+                                                {pemantauan ? chipLama(a) : chipTunggu(a)}
                                             </span>
                                         </div>
-                                        <Button size="sm" variant="outline" onClick={() => tinjau(a.idPembayaran)}>
-                                            Tinjau
-                                        </Button>
+                                        {!pemantauan && (
+                                            <Button size="sm" variant="outline" onClick={() => tinjau(a.idPembayaran)}>
+                                                Tinjau
+                                            </Button>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -411,7 +451,7 @@ export default function AdminDashboard({
                                                     {g.ket}
                                                 </span>
                                             </div>
-                                            {g.href ? (
+                                            {pemantauan ? null : g.href ? (
                                                 <Link href={g.href} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-7 shrink-0 px-2.5 text-[13px]')}>
                                                     {g.aksi}
                                                 </Link>
@@ -428,6 +468,37 @@ export default function AdminDashboard({
                     )}
                 </Card>
 
+                {pemantauan && (
+                    <Card className="gap-0 overflow-hidden py-0" aria-label="Aktivitas hari ini">
+                        <CardHeader className="py-4">
+                            <CardTitle>Aktivitas hari ini</CardTitle>
+                            <CardDescription>Bukti dari penyewa dan tindakan pengelola hari ini.</CardDescription>
+                        </CardHeader>
+                        {pemantauan.aktivitas.length === 0 ? (
+                            <p className="border-t px-4 py-8 text-center text-sm text-muted-foreground">Belum ada aktivitas hari ini.</p>
+                        ) : (
+                            <ul aria-label="Aktivitas hari ini" aria-live="polite" className="max-h-[480px] divide-y overflow-y-auto border-t">
+                                {pemantauan.aktivitas.map((a) => (
+                                    <li key={a.id} className={cn('flex items-start gap-3 px-4 py-3 transition-colors duration-1000', baruMuncul.has(a.id) && 'bg-primary/8')}>
+                                        <span aria-hidden className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                                            {a.siapa.slice(0, 1).toUpperCase()}
+                                        </span>
+                                        <div className="flex min-w-0 flex-1 flex-col">
+                                            <span className="min-w-0">
+                                                <span className="font-medium">{a.siapa}</span>
+                                                {a.peran !== 'sistem' && <span className="text-muted-foreground"> · {PERAN_AKTIVITAS[a.peran]}</span>} {a.teks}
+                                            </span>
+                                            {a.catatan && <span className="truncate text-sm text-muted-foreground">{a.catatan}</span>}
+                                        </div>
+                                        <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{formatTanggal(a.waktu, 'HH.mm')}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Card>
+                )}
+
+                {!pemantauan && (
                 <Card className="gap-0 overflow-hidden py-0" aria-label="Booking terbaru">
                     <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                         <div className="flex flex-wrap items-center gap-4">
@@ -548,8 +619,10 @@ export default function AdminDashboard({
                         </TableBody>
                     </Table>
                 </Card>
+                )}
             </div>
 
+            {!pemantauan && (
             <DrawerVerifikasi
                 bukti={bukti}
                 posisi={pos}
@@ -563,6 +636,7 @@ export default function AdminDashboard({
                 galatAlasan={galatAlasan}
                 memproses={memproses}
             />
+            )}
         </AdminSidebarLayout>
     );
 }

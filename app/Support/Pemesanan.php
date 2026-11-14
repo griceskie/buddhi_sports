@@ -59,6 +59,26 @@ class Pemesanan
         });
     }
 
+    /**
+     * Menit di antara dua waktu yang jatuh di jam operasional (08.00–22.00); malam tidak dihitung dan berlanjut
+     * besok paginya. Dipakai untuk lama menunggu verifikasi (batas 1 jam).
+     */
+    public static function menitOperasional(Carbon $dari, Carbon $sampai): int
+    {
+        $menit = 0;
+        for ($hari = $dari->copy()->startOfDay(); $hari->lte($sampai); $hari->addDay()) {
+            $buka = $hari->copy()->setTime(self::JAM_BUKA, 0);
+            $tutup = $hari->copy()->setTime(self::JAM_TUTUP, 0);
+            $awal = $dari->gt($buka) ? $dari : $buka;
+            $akhir = $sampai->lt($tutup) ? $sampai : $tutup;
+            if ($akhir->gt($awal)) {
+                $menit += (int) $awal->diffInMinutes($akhir);
+            }
+        }
+
+        return $menit;
+    }
+
     public static function kode(int $idBooking): string
     {
         return 'BK-'.str_pad((string) $idBooking, 4, '0', STR_PAD_LEFT);

@@ -16,6 +16,17 @@ class AdminDashboardController extends Controller
 {
     public function index(Request $request): Response
     {
+        return Inertia::render('Dashboard/Admin', [...$this->dataHariIni($request), 'terbaru' => $this->terbaru()]);
+    }
+
+    /**
+     * Angka hari ini, jadwal, antrean verifikasi, dan tugas lain. Dipakai dashboard Admin dan halaman Pemantauan Manager
+     * (isinya sama, Pemantauan hanya tanpa tombol tindakan).
+     *
+     * @return array<string, mixed>
+     */
+    public function dataHariIni(Request $request): array
+    {
         Pemesanan::batalkanKedaluwarsa();
         $hariIni = today();
         // ?tanggal=YYYY-MM-DD hanya mengganti kartu Jadwal; angka statistik tetap untuk hari ini
@@ -71,7 +82,7 @@ class AdminDashboardController extends Controller
             ])
             ->map(fn ($p) => self::bukti($p));
 
-        return Inertia::render('Dashboard/Admin', [
+        return [
             'stat' => [
                 'jamTerisi' => $jadwalHariIni->filter(fn ($b) => in_array($b->status, Pemesanan::STATUS_MENAHAN_JAM))->sum($jam),
                 'jamTotal' => $lapangan->count() * (Pemesanan::JAM_TUTUP - Pemesanan::JAM_BUKA),
@@ -110,32 +121,36 @@ class AdminDashboardController extends Controller
             ]),
             'antrean' => $antrean,
             'tugas' => $this->tugasLain($bulanLalu),
-            // 16 booking terakhir; tab status disaring di browser
-            'terbaru' => DB::table('bookings')
-                ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
-                ->join('lapangans', 'lapangans.idLapangan', '=', 'bookings.idLapangan')
-                ->leftJoin('pembayarans', 'pembayarans.idBooking', '=', 'bookings.idBooking')
-                ->orderByDesc('bookings.idBooking')
-                ->limit(16)
-                ->get([
-                    'bookings.idBooking', 'bookings.tanggal', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.totalBayar', 'bookings.status',
-                    'penyewas.namaPenyewa', 'penyewas.noHp', 'lapangans.namaLapangan', 'pembayarans.idPembayaran', 'pembayarans.status as statusPembayaran',
-                ])
-                ->map(fn ($b) => [
-                    'idBooking' => $b->idBooking,
-                    'kode' => Pemesanan::kode($b->idBooking),
-                    'namaPenyewa' => $b->namaPenyewa,
-                    'noHp' => $b->noHp,
-                    'namaLapangan' => $b->namaLapangan,
-                    'tanggal' => $b->tanggal,
-                    'jamMulai' => substr($b->jamMulai, 0, 5),
-                    'jamSelesai' => substr($b->jamSelesai, 0, 5),
-                    'totalBayar' => (int) $b->totalBayar,
-                    'status' => $b->status,
-                    'idPembayaran' => $b->idPembayaran,
-                    'statusPembayaran' => $b->statusPembayaran,
-                ]),
-        ]);
+        ];
+    }
+
+    /** 16 booking terakhir untuk kartu Booking terbaru; tab status disaring di browser. */
+    private function terbaru()
+    {
+        return DB::table('bookings')
+            ->join('penyewas', 'penyewas.idPenyewa', '=', 'bookings.idPenyewa')
+            ->join('lapangans', 'lapangans.idLapangan', '=', 'bookings.idLapangan')
+            ->leftJoin('pembayarans', 'pembayarans.idBooking', '=', 'bookings.idBooking')
+            ->orderByDesc('bookings.idBooking')
+            ->limit(16)
+            ->get([
+                'bookings.idBooking', 'bookings.tanggal', 'bookings.jamMulai', 'bookings.jamSelesai', 'bookings.totalBayar', 'bookings.status',
+                'penyewas.namaPenyewa', 'penyewas.noHp', 'lapangans.namaLapangan', 'pembayarans.idPembayaran', 'pembayarans.status as statusPembayaran',
+            ])
+            ->map(fn ($b) => [
+                'idBooking' => $b->idBooking,
+                'kode' => Pemesanan::kode($b->idBooking),
+                'namaPenyewa' => $b->namaPenyewa,
+                'noHp' => $b->noHp,
+                'namaLapangan' => $b->namaLapangan,
+                'tanggal' => $b->tanggal,
+                'jamMulai' => substr($b->jamMulai, 0, 5),
+                'jamSelesai' => substr($b->jamSelesai, 0, 5),
+                'totalBayar' => (int) $b->totalBayar,
+                'status' => $b->status,
+                'idPembayaran' => $b->idPembayaran,
+                'statusPembayaran' => $b->statusPembayaran,
+            ]);
     }
 
     /**
@@ -168,6 +183,8 @@ class AdminDashboardController extends Controller
             'jamSelesai' => substr($p->jamSelesai, 0, 5),
             'tglBayar' => $p->tglBayar,
             'dikirimPada' => $p->dikirimPada ? Carbon::parse($p->dikirimPada)->toIso8601String() : null,
+            // lama menunggu di jam operasional (malam tidak dihitung); Pemantauan Manager menandai yang lewat 1 jam
+            'menitTunggu' => $p->dikirimPada ? Pemesanan::menitOperasional(Carbon::parse($p->dikirimPada), now()) : null,
             'jumlahBayar' => (int) $p->jumlahBayar,
             'totalBayar' => (int) $p->totalBayar,
             'buktiBayar' => $p->buktiBayar ? route('pembayaran.bukti', $p->idPembayaran) : null,
