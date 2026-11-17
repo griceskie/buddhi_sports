@@ -1,20 +1,23 @@
 import AuthScene from '@/Components/auth/AuthScene';
+import { cn } from 'cn';
 import { PropsWithChildren, ReactNode } from 'react';
 
 /**
  * Frame for the guest pages: no card, a 360px column in the middle of the canvas and sports objects
- * around it (AuthScene). Optional `title` and `description` become the page heading.
+ * around it (AuthScene). Optional `title` and `description` become the page heading; `kolomClassName`
+ * changes the column (the Landing page uses a wider one).
  */
 export default function Guest({
     title,
     description,
+    kolomClassName,
     children,
-}: PropsWithChildren<{ title?: ReactNode; description?: ReactNode }>) {
+}: PropsWithChildren<{ title?: ReactNode; description?: ReactNode; kolomClassName?: string }>) {
     return (
         <div className="relative flex min-h-screen flex-col overflow-hidden bg-canvas px-5 pt-28 pb-40 text-foreground min-[1100px]:px-6 min-[1100px]:py-12">
             <AuthScene />
 
-            <main className="relative z-10 my-auto w-full max-w-[360px] self-center">
+            <main className={cn('relative z-10 my-auto w-full max-w-[360px] self-center', kolomClassName)}>
                 {(title || description) && (
                     <div className="mb-7 space-y-1.5">
                         {title && (

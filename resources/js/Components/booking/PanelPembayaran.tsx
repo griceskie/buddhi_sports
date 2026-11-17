@@ -56,6 +56,8 @@ export default function PanelPembayaran({ booking, rekening, tampilan, terisi, o
     const sebab = habis ? 'otomatis' : sebabBatal(booking);
     const belum = k === 'belumBayar';
     const ditolak = k === 'ditolak';
+    // jam sudah ditahan penyewa lain yang lebih dulu mengirim bukti: langkah bayar disembunyikan
+    const diambil = (belum || ditolak) && booking.jamDiambil;
     const jamBatas = booking.batasBayar ? formatTanggal(booking.batasBayar, 'HH.mm') : null;
 
     const [langkah, setLangkah] = useState<'transfer' | 'unggah'>(ditolak ? 'unggah' : 'transfer');
@@ -181,7 +183,35 @@ export default function PanelPembayaran({ booking, rekening, tampilan, terisi, o
                     )}
                 >
                     <section aria-label="Langkah pembayaran" className="flex min-w-0 flex-col gap-4">
-                        {ditolak && (
+                        {diambil && (
+                            <Alert variant="destructive">
+                                <TriangleAlert />
+                                <AlertTitle>Jam ini sudah diambil penyewa lain</AlertTitle>
+                                <AlertDescription>
+                                    {belum ? (
+                                        <p>
+                                            Penyewa lain lebih dulu mengirim bukti bayar untuk jam yang sama. Jangan transfer
+                                            untuk jadwal ini.{' '}
+                                            <button
+                                                type="button"
+                                                onClick={() => setBukaUbah(true)}
+                                                className="cursor-pointer font-semibold underline underline-offset-3"
+                                            >
+                                                Pilih jadwal lain
+                                            </button>{' '}
+                                            atau batalkan booking ini.
+                                        </p>
+                                    ) : (
+                                        <p>
+                                            Penyewa lain lebih dulu mengirim bukti bayar untuk jam yang sama.{' '}
+                                            <strong className="font-semibold">Hubungi pengelola</strong> untuk pindah jadwal.
+                                        </p>
+                                    )}
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        {ditolak && !diambil && (
                             <Alert variant="destructive">
                                 <CircleX />
                                 <AlertTitle>
@@ -204,7 +234,7 @@ export default function PanelPembayaran({ booking, rekening, tampilan, terisi, o
                             </Alert>
                         )}
 
-                        {(belum || ditolak) && (
+                        {(belum || ditolak) && !diambil && (
                             <>
                                 <div className={cn(kartu, 'gap-5')}>
                                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -330,7 +360,7 @@ export default function PanelPembayaran({ booking, rekening, tampilan, terisi, o
 
                                 <p className="mt-1 flex items-start gap-2 text-footnote text-muted-foreground">
                                     <Info className="mt-px size-4 shrink-0" aria-hidden="true" />
-                                    <span>Jadwal baru terkunci setelah pengelola memeriksa dan mengonfirmasi bukti transfer.</span>
+                                    <span>Jam Anda ditahan begitu bukti transfer terkirim, lalu dikonfirmasi setelah pengelola memeriksanya.</span>
                                 </p>
                             </>
                         )}
@@ -424,7 +454,7 @@ export default function PanelPembayaran({ booking, rekening, tampilan, terisi, o
                 )}
             </div>
 
-            {(belum || ditolak) && (
+            {(belum || ditolak) && !diambil && (
                 <div
                     className={cn(
                         'bottom-0 z-[7] flex items-center justify-between gap-3 border-t bg-background px-4 pt-3 pb-4 shadow-[0_-4px_16px_rgb(0_0_0/0.06)] sm:hidden',

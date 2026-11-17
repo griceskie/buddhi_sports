@@ -88,6 +88,7 @@ Semua bukti transfer contoh memakai gambar bertanda "CONTOH DATA DEMO".
 - **Email tidak dikirim.** `MAIL_MAILER=log`: tautan reset password penyewa tertulis di `storage/logs/laravel.log`.
 - **Batas bayar.** Booking tanpa bukti bayar batal otomatis setelah 60 menit. Untuk pengujian, isi `BATAS_BAYAR_MENIT=5` di `.env`.
 - **Rekening tujuan** di halaman bayar berasal dari `BANK_*` di `.env` dan masih contoh.
+- **Kapan jam ditahan.** Booking yang belum mengirim bukti belum menahan jam, jadi dua penyewa bisa memesan jam yang sama. Jam ditahan untuk penyewa yang lebih dulu mengirim bukti bayar. Penyewa lain melihat peringatan "Jam ini sudah diambil penyewa lain" dan diminta pindah jadwal atau membatalkan.
 - **Jam operasional** 08.00–22.00, booking per jam penuh, paling jauh 30 hari ke depan. Jam yang sudah lewat tidak bisa dipesan.
 - **Foto lapangan.** Admin bisa mengunggahnya di halaman Lapangan. Untuk foto contoh, jalankan `php artisan lapangan:foto-contoh`.
 

@@ -116,7 +116,7 @@ function IsiDrawer({
                         <span>
                             <span className="block font-medium">Jam bentrok</span>
                             <span className="text-muted-foreground">
-                                Jam ini sudah dikonfirmasi untuk booking {bukti.bentrokDengan}. Pembayaran tidak bisa diterima; tolak dengan alasan dan minta penyewa memilih jam lain.
+                                Jam ini sudah dikonfirmasi untuk booking {bukti.bentrokDengan}. Pembayaran tidak bisa diterima. Tolak dengan alasan; penyewa akan diminta menghubungi pengelola untuk pindah jadwal.
                             </span>
                         </span>
                     </div>

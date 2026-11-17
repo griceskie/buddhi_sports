@@ -77,7 +77,10 @@ function IsiUbahJadwal({
     const sekarang = new Date();
     const hariIni = awalHari(sekarang);
     const [tanggal, setTanggal] = useState(() => new Date(booking.tanggal + 'T00:00:00'));
-    const [pilihan, setPilihan] = useState<TimeRange | null>({ start: booking.jamMulai, end: booking.jamSelesai });
+    const [pilihan, setPilihan] = useState<TimeRange | null>(
+        // jam lama sudah diambil penyewa lain: jangan dipilihkan lagi
+        booking.jamDiambil ? null : { start: booking.jamMulai, end: booking.jamSelesai },
+    );
     const [galat, setGalat] = useState<string | null>(null);
     const [memproses, setMemproses] = useState(false);
 

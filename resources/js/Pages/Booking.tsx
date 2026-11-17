@@ -160,7 +160,7 @@ export default function Booking({ bookings, rekening, terisi }: Props) {
                         <p className="flex items-start gap-2 text-footnote text-muted-foreground">
                             <Info className="mt-px size-4 shrink-0" aria-hidden="true" />
                             <span>
-                                Jadwal baru terkunci setelah pengelola mengonfirmasi pembayaran. Ada kendala?{' '}
+                                Jam Anda ditahan begitu bukti bayar terkirim. Ada kendala?{' '}
                                 <HubungiPengelola awalBesar />.
                             </span>
                         </p>

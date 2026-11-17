@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Carbon\CarbonInterface;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -16,8 +17,34 @@ class Pemesanan
 
     public const STATUS = ['Dipesan', 'Dikonfirmasi', 'Dibatalkan'];
 
-    // Hanya booking yang sudah dikonfirmasi yang menahan jam.
+    // Status booking yang sudah pasti; tahanJam() juga menghitung booking yang buktinya sedang menunggu verifikasi.
     public const STATUS_MENAHAN_JAM = ['Dikonfirmasi'];
+
+    /**
+     * Batasi query tabel bookings ke booking yang menahan jam di sisi penyewa: sudah dikonfirmasi, atau masih Dipesan
+     * tetapi buktinya sedang menunggu verifikasi (penyewa sudah transfer, jadi tidak boleh didahului orang lain).
+     * Booking tanpa bukti tidak menahan jam, supaya jam tidak bisa dikunci tanpa membayar.
+     */
+    public static function tahanJam(Builder $q): Builder
+    {
+        return $q->where(fn ($w) => $w->whereIn('bookings.status', self::STATUS_MENAHAN_JAM)
+            ->orWhere(fn ($x) => $x->where('bookings.status', 'Dipesan')->whereExists(fn ($e) => $e->select(DB::raw(1))
+                ->from('pembayarans')
+                ->whereColumn('pembayarans.idBooking', 'bookings.idBooking')
+                ->where('pembayarans.status', 'Menunggu Verifikasi'))));
+    }
+
+    /** Booking lain yang menahan jam yang bertabrakan dengan jadwal ini. */
+    public static function jamDiambil(int $idLapangan, string $tanggal, string $jamMulai, string $jamSelesai, ?int $kecuali = null): bool
+    {
+        return self::tahanJam(DB::table('bookings'))
+            ->where('bookings.idLapangan', $idLapangan)
+            ->where('bookings.tanggal', $tanggal)
+            ->where('bookings.jamMulai', '<', $jamSelesai)
+            ->where('bookings.jamSelesai', '>', $jamMulai)
+            ->when($kecuali, fn ($q) => $q->where('bookings.idBooking', '!=', $kecuali))
+            ->exists();
+    }
 
     public static function batasBayar(?string $createdAt): ?CarbonInterface
     {
