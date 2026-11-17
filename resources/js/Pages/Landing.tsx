@@ -7,8 +7,16 @@ import { cn } from 'cn';
 export default function Landing() {
     return (
         <GuestLayout
-            title="Halaman depan ini ternyata lebih lama dirancang daripada seluruh aplikasinya."
-            description="Jadi kamu bisa langsung masuk aja dengan tombol di bawah ini."
+            title={
+                <span className="block text-center text-balance">
+                    Halaman depan ini ternyata lebih lama dirancang daripada seluruh aplikasinya.
+                </span>
+            }
+            description={
+                <span className="block text-center text-balance">
+                    Jadi kamu bisa langsung masuk aja dengan tombol di bawah ini.
+                </span>
+            }
         >
             <Head title="Buddhi Sports" />
 
