@@ -37,6 +37,8 @@ export type PageProps<
     pengelola: Pengelola | null;
     /** Penyewa: booking mendatang yang belum dibayar atau buktinya ditolak (0 untuk akun lain). */
     perluTindakan: number;
+    /** Penyewa: nomor WhatsApp pengelola (angka, diawali 62); null untuk akun lain. */
+    waPengelola: string | null;
     /** Halaman memakai tema panel pengelola (Admin dan login pengelola). */
     temaPanel: boolean;
     flash: {

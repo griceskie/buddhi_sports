@@ -204,7 +204,7 @@ export default function PanelPembayaran({ booking, rekening, tampilan, terisi, o
                                     ) : (
                                         <p>
                                             Penyewa lain lebih dulu mengirim bukti bayar untuk jam yang sama.{' '}
-                                            <strong className="font-semibold">Hubungi pengelola</strong> untuk pindah jadwal.
+                                            <HubungiPengelola awalBesar /> untuk pindah jadwal.
                                         </p>
                                     )}
                                 </AlertDescription>

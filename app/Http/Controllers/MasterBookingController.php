@@ -17,6 +17,8 @@ class MasterBookingController extends Controller
 {
 
     public function tampilData(){
+        // status di tabel ini sama dengan halaman lain walau scheduler belum jalan
+        Pemesanan::batalkanKedaluwarsa();
 
         // tanpaBayar: Dikonfirmasi tetapi tanpa pembayaran Terverifikasi (mengisi okupansi, tidak masuk pemasukan laporan)
         $varbooking = DB::table('bookings')->select('bookings.*')

@@ -3,6 +3,7 @@ import InputError from '@/Components/InputError';
 import AksiBaris from '@/Components/pengelola/AksiBaris';
 import DataTable from '@/Components/pengelola/DataTable';
 import JudulHalaman from '@/Components/pengelola/JudulHalaman';
+import PhoneInput from '@/Components/PhoneInput';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
@@ -95,11 +96,12 @@ function FormPenyewa({ row, onDone }: { row: Penyewa | null; onDone: () => void 
 
             <div>
                 <Label htmlFor="txtnohp">No HP</Label>
-                <Input
+                <PhoneInput
                     id="txtnohp"
                     className="mt-1"
+                    placeholder="0812 3456 7890"
                     value={data.txtnohp}
-                    onChange={(e) => setData('txtnohp', e.target.value)}
+                    onValueChange={(digits) => setData('txtnohp', digits)}
                 />
                 <InputError message={errors.txtnohp} className="mt-1" />
             </div>

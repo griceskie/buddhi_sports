@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Penyewa;
 use App\Support\LogAktivitas;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -32,10 +33,10 @@ class MasterPenyewaController extends Controller
     public function insertData(Request $request){
         $request->validate([
             'txtnama' => 'required|string|max:255',
-            'txtnohp' => 'required|string|max:255',
+            'txtnohp' => ['required', 'string', Penyewa::ATURAN_NO_HP],
             'txtemail' => 'required|email|max:255|unique:penyewas,email',
-            'txtpassword' => 'required|string|min:6',
-        ]);
+            'txtpassword' => 'required|string|min:8',
+        ], ['txtnohp.regex' => Penyewa::PESAN_NO_HP]);
 
         $data = [
             'namaPenyewa' => $request->txtnama,
@@ -55,9 +56,9 @@ class MasterPenyewaController extends Controller
         $request->validate([
             'txtid' => 'required|integer',
             'txtnama' => 'required|string|max:255',
-            'txtnohp' => 'required|string|max:255',
+            'txtnohp' => ['required', 'string', Penyewa::ATURAN_NO_HP],
             'txtemail' => ['required', 'email', 'max:255', Rule::unique('penyewas', 'email')->ignore($request->txtid, 'idPenyewa')],
-        ]);
+        ], ['txtnohp.regex' => Penyewa::PESAN_NO_HP]);
 
         $data = [
             'namaPenyewa' => $request->txtnama,

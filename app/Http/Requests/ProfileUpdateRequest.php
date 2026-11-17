@@ -18,7 +18,7 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'namaPenyewa' => ['required', 'string', 'max:255'],
-            'noHp' => ['required', 'string', 'max:255'],
+            'noHp' => ['required', 'string', Penyewa::ATURAN_NO_HP],
             'email' => [
                 'required',
                 'string',
@@ -28,5 +28,10 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(Penyewa::class, 'email')->ignore($this->user()->getKey(), 'idPenyewa'),
             ],
         ];
+    }
+
+    public function messages(): array
+    {
+        return ['noHp.regex' => Penyewa::PESAN_NO_HP];
     }
 }

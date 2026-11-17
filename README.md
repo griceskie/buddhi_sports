@@ -87,6 +87,8 @@ Semua bukti transfer contoh memakai gambar bertanda "CONTOH DATA DEMO".
 - **Satu peran per browser.** Penyewa dan pengelola memakai sesi yang sama. Log Out di satu peran juga mengeluarkan peran lain di browser yang sama. Pakai browser berbeda atau jendela incognito untuk tiap peran.
 - **Email tidak dikirim.** `MAIL_MAILER=log`: tautan reset password penyewa tertulis di `storage/logs/laravel.log`.
 - **Batas bayar.** Booking tanpa bukti bayar batal otomatis setelah 60 menit. Untuk pengujian, isi `BATAS_BAYAR_MENIT=5` di `.env`.
+- **Hubungi pengelola** di halaman penyewa membuka WhatsApp ke nomor `PENGELOLA_WA` di `.env`.
+- **No HP** penyewa harus diawali 08 dan berisi 10–13 angka.
 - **Rekening tujuan** di halaman bayar berasal dari `BANK_*` di `.env` dan masih contoh.
 - **Kapan jam ditahan.** Booking yang belum mengirim bukti belum menahan jam, jadi dua penyewa bisa memesan jam yang sama. Jam ditahan untuk penyewa yang lebih dulu mengirim bukti bayar. Penyewa lain melihat peringatan "Jam ini sudah diambil penyewa lain" dan diminta pindah jadwal atau membatalkan.
 - **Jam operasional** 08.00–22.00, booking per jam penuh, paling jauh 30 hari ke depan. Jam yang sudah lewat tidak bisa dipesan.

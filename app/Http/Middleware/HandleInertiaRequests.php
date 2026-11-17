@@ -84,6 +84,8 @@ class HandleInertiaRequests extends Middleware
                     ->where(fn ($q) => $q->whereNull('pembayarans.idPembayaran')->orWhere('pembayarans.status', 'Ditolak'))
                     ->count();
             },
+            // nomor WhatsApp untuk tautan "Hubungi pengelola" di halaman penyewa
+            'waPengelola' => fn () => $request->user() instanceof Penyewa ? config('pengelola.wa') : null,
             // selalu dikirim, juga pada partial reload; kalau tidak, flash lama ikut terbawa dan toast muncul dua kali
             'flash' => Inertia::always(fn () => [
                 'error' => session('error'),
