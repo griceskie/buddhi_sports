@@ -360,7 +360,7 @@ export default function PanelPembayaran({ booking, rekening, tampilan, terisi, o
 
                                 <p className="mt-1 flex items-start gap-2 text-footnote text-muted-foreground">
                                     <Info className="mt-px size-4 shrink-0" aria-hidden="true" />
-                                    <span>Jadwal baru terkunci setelah pengelola memeriksa dan mengonfirmasi bukti transfer.</span>
+                                    <span>Jam Anda ditahan begitu bukti transfer terkirim, lalu dikonfirmasi setelah pengelola memeriksanya.</span>
                                 </p>
                             </>
                         )}
