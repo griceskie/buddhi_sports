@@ -14,22 +14,12 @@ use App\Http\Controllers\MasterLaporanPembayaranController;
 use App\Http\Controllers\MasterPembayaranController;
 use App\Http\Controllers\MasterPenyewaController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+// halaman depan sementara sampai landing page selesai dirancang
+Route::get('/', fn () => Inertia::render('Landing'));
 
-Route::get('/test', function () {
-    return Inertia::render('Test');
-});
 // Penyewa: pesan lapangan, bayar, dan Booking saya
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [BookingPenyewaController::class, 'home'])->name('dashboard');
