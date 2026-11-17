@@ -173,13 +173,5 @@ The Manager panel redesign (plan: canvas "Redesign Dashboard Admin" `project/REN
 - After that: the Admin gaps in `implementation-plan.md` section 8 (user decision 2026-11-14: after the Manager stages).
 Setup: `composer install`, `npm install`, `php artisan migrate` (new migrations: `managers.notifDibacaPada`, `log_aktivitas.peran`), `npm run build`. Test with `env -u DB_DATABASE php artisan test`.
 
-# Failing tests (8 of 219, `php artisan test`)
-Cause: Breeze tests still create accounts with `User::factory()` and field `name`, but guard `web` now uses `Penyewa` (`namaPenyewa`, `noHp`). Fix needs a `PenyewaFactory` and updated test fields.
-- `Tests\Feature\Auth\AuthenticationTest` › users can authenticate using the login screen
-- `Tests\Feature\Auth\PasswordConfirmationTest` › password can be confirmed
-- `Tests\Feature\Auth\PasswordResetTest` › reset password link can be requested
-- `Tests\Feature\Auth\PasswordResetTest` › reset password screen can be rendered
-- `Tests\Feature\Auth\PasswordResetTest` › password can be reset with valid token
-- `Tests\Feature\Auth\RegistrationTest` › new users can register
-- `Tests\Feature\ProfileTest` › profile information can be updated
-- `Tests\Feature\ProfileTest` › email verification status is unchanged when the email address is unchanged
+# Tests
+All tests pass (`env -u DB_DATABASE php artisan test`). The 8 Breeze tests that used `User::factory()` were moved to `Penyewa` on 2026-11-17 (PR `fix/tes-breeze`): `AuthenticationTest`, `PasswordConfirmationTest`, `PasswordResetTest`, `RegistrationTest` (fields `namaPenyewa`, `noHp`) and `ProfileTest` (the email-verification test became "email is unchanged", because `penyewas` has no `email_verified_at`). `EmailVerificationTest` and `PasswordUpdateTest` still use `User` and pass. A failing run with "Unable to locate file in Vite manifest" means `npm run build` is needed first.

@@ -100,4 +100,4 @@ Semua bukti transfer contoh memakai gambar bertanda "CONTOH DATA DEMO".
 php artisan test
 ```
 
-Tes memakai database SQLite di memori, jadi tidak menyentuh database Anda. Delapan tes bawaan Breeze (login, daftar, reset password, profil) masih gagal karena akun penyewa memakai model `Penyewa`, bukan `User`.
+Tes memakai database SQLite di memori, jadi tidak menyentuh database Anda. Jalankan `npm run build` lebih dulu; tanpa itu tes halaman gagal dengan pesan "Unable to locate file in Vite manifest".
