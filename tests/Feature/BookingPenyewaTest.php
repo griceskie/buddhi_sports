@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\BookingPenyewaController;
 use App\Models\Penyewa;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -315,5 +316,35 @@ class BookingPenyewaTest extends TestCase
             ->has('bookings', 1)
             ->where('bookings.0.namaLapangan', 'Lapangan Airlangga')
             ->where('rekening.bank', config('pembayaran.bank')));
+    }
+
+    // Jam ditahan begitu bukti dikirim: booking tanpa bukti tidak menahan, booking dengan bukti menunggu verifikasi menahan
+    public function test_bukti_yang_menunggu_verifikasi_menahan_jam(): void
+    {
+        Storage::fake('local');
+        $andi = $this->buatPenyewa('andi@example.com');
+        $this->pesan([], $andi);
+        $this->pesan();
+        [$milikAndi, $milikRina] = DB::table('bookings')->orderBy('idBooking')->pluck('idBooking')->all();
+
+        // keduanya belum mengirim bukti: jam belum ditahan, Home masih kosong
+        $this->actingAs($this->penyewa)->get('/dashboard')->assertInertia(fn (Assert $p) => $p->has('terisi', 0));
+
+        $this->actingAs($andi)->post("/booking/$milikAndi/bukti", ['bukti' => UploadedFile::fake()->create('a.jpg', 100, 'image/jpeg')])
+            ->assertSessionHas('success');
+
+        // jam sekarang ditahan: Home menandainya, Rina diberi tahu sebelum transfer, booking dan bukti baru ditolak
+        $this->actingAs($this->penyewa)->get('/dashboard')->assertInertia(fn (Assert $p) => $p->has('terisi', 1));
+        $this->get("/booking/$milikRina/bayar")->assertInertia(fn (Assert $p) => $p->where('booking.jamDiambil', true));
+        $this->post("/booking/$milikRina/bukti", ['bukti' => UploadedFile::fake()->create('r.jpg', 100, 'image/jpeg')])
+            ->assertSessionHasErrors(['bukti' => BookingPenyewaController::PESAN_DIAMBIL]);
+        $this->assertSame(1, DB::table('pembayarans')->count());
+        $this->assertCount(1, Storage::disk('local')->allFiles('bukti'));
+        $this->pesan(['jamMulai' => '19:00', 'jamSelesai' => '20:00'])->assertSessionHasErrors('jamMulai');
+
+        // Rina masih bisa pindah jadwal; bukti Andi ditolak melepas jamnya lagi
+        $this->patch("/booking/$milikRina/jadwal", ['tanggal' => '2026-10-24', 'jamMulai' => '10:00', 'jamSelesai' => '12:00'])->assertSessionHasNoErrors();
+        DB::table('pembayarans')->update(['status' => 'Ditolak']);
+        $this->get('/dashboard')->assertInertia(fn (Assert $p) => $p->has('terisi', 0));
     }
 }

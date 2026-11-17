@@ -23,6 +23,8 @@ export type BookingPenyewa = {
     statusPembayaran: string | null;
     /** Diisi Admin saat menolak bukti; null lagi setelah bukti diunggah ulang. */
     alasanTolak: string | null;
+    /** Belum dibayar (atau bukti ditolak) dan jamnya sudah ditahan booking lain: jangan transfer. */
+    jamDiambil: boolean;
     batasBayar: string | null;
     dibuatPada: string | null;
     /** Waktu bukti terakhir dikirim. */

@@ -18,6 +18,10 @@ use Inertia\Response;
 
 class BookingPenyewaController extends Controller
 {
+    public const PESAN_DIAMBIL = 'Jam ini sudah diambil penyewa lain yang lebih dulu mengirim bukti bayar. Ubah jadwal atau batalkan booking ini.';
+
+    public const PESAN_DIAMBIL_DITOLAK = 'Jam ini sudah diambil penyewa lain yang lebih dulu mengirim bukti bayar. Hubungi pengelola untuk pindah jadwal.';
+
     public function home(): Response
     {
         return Inertia::render('Dashboard', [
@@ -130,14 +134,7 @@ class BookingPenyewaController extends Controller
             throw ValidationException::withMessages(['idLapangan' => 'Lapangan sedang diperbaiki.']);
         }
 
-        $bentrok = DB::table('bookings')
-            ->where('idLapangan', $idLapangan)
-            ->where('tanggal', $tanggal)
-            ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
-            ->where('jamMulai', '<', $jamSelesai)
-            ->where('jamSelesai', '>', $jamMulai)
-            ->exists();
-        if ($bentrok) {
+        if (Pemesanan::jamDiambil($idLapangan, $tanggal, $jamMulai, $jamSelesai)) {
             throw ValidationException::withMessages(['jamMulai' => 'Lapangan sudah terbooking pada jam tersebut.']);
         }
 
@@ -188,16 +185,27 @@ class BookingPenyewaController extends Controller
             'alasanTolak' => null,
         ];
 
-        if ($booking->statusPembayaran === 'Ditolak') {
-            // unggah ulang: ganti bukti lama pada baris pembayaran yang sama (idBooking unik)
-            $lama = DB::table('pembayarans')->where('idBooking', $booking->idBooking)->value('buktiBayar');
-            if ($lama) {
-                Storage::disk('local')->delete($lama);
+        DB::transaction(function () use ($booking, $data) {
+            // kunci baris lapangan supaya dua bukti untuk jam yang sama tidak lolos bersamaan
+            DB::table('lapangans')->where('idLapangan', $booking->idLapangan)->lockForUpdate()->first();
+            if (Pemesanan::jamDiambil($booking->idLapangan, $booking->tanggal, $booking->jamMulai, $booking->jamSelesai, $booking->idBooking)) {
+                Storage::disk('local')->delete($data['buktiBayar']);
+                throw ValidationException::withMessages(['bukti' => $booking->statusPembayaran === 'Ditolak'
+                    ? self::PESAN_DIAMBIL_DITOLAK
+                    : self::PESAN_DIAMBIL]);
             }
-            DB::table('pembayarans')->where('idBooking', $booking->idBooking)->update($data);
-        } else {
-            DB::table('pembayarans')->insert($data + ['idBooking' => $booking->idBooking]);
-        }
+
+            if ($booking->statusPembayaran === 'Ditolak') {
+                // unggah ulang: ganti bukti lama pada baris pembayaran yang sama (idBooking unik)
+                $lama = DB::table('pembayarans')->where('idBooking', $booking->idBooking)->value('buktiBayar');
+                if ($lama) {
+                    Storage::disk('local')->delete($lama);
+                }
+                DB::table('pembayarans')->where('idBooking', $booking->idBooking)->update($data);
+            } else {
+                DB::table('pembayarans')->insert($data + ['idBooking' => $booking->idBooking]);
+            }
+        });
 
         return back()->with('success', 'Bukti terkirim. Pengelola akan memverifikasi pembayaran Anda.');
     }
@@ -285,6 +293,9 @@ class BookingPenyewaController extends Controller
             'dibatalkanPenyewa' => (bool) $b->dibatalkanPenyewa,
             'statusPembayaran' => $b->statusPembayaran,
             'alasanTolak' => $b->alasanTolak,
+            // jadwal yang belum dibayar (atau buktinya ditolak) sudah ditahan booking lain: penyewa jangan transfer
+            'jamDiambil' => $b->status === 'Dipesan' && in_array($b->statusPembayaran, [null, 'Ditolak'], true)
+                && Pemesanan::jamDiambil((int) $b->idLapangan, $b->tanggal, $b->jamMulai, $b->jamSelesai, $b->idBooking),
             'batasBayar' => Pemesanan::batasBayar($b->created_at)?->toIso8601String(),
             'dibuatPada' => $b->created_at ? Carbon::parse($b->created_at)->toIso8601String() : null,
             'dikirimPada' => $b->dikirimPada ? Carbon::parse($b->dikirimPada)->toIso8601String() : null,
@@ -293,13 +304,12 @@ class BookingPenyewaController extends Controller
         ];
     }
 
-    /** Jam yang sudah dipegang booking terkonfirmasi, hari ini sampai HARI_KE_DEPAN hari. */
+    /** Jam yang sudah ditahan (lihat Pemesanan::tahanJam), hari ini sampai HARI_KE_DEPAN hari. */
     private function terisi(): Collection
     {
         $hariIni = today();
 
-        return DB::table('bookings')
-            ->whereIn('status', Pemesanan::STATUS_MENAHAN_JAM)
+        return Pemesanan::tahanJam(DB::table('bookings'))
             ->whereBetween('tanggal', [
                 $hariIni->toDateString(),
                 $hariIni->copy()->addDays(Pemesanan::HARI_KE_DEPAN - 1)->toDateString(),
