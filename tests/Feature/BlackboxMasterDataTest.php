@@ -89,7 +89,7 @@ class BlackboxMasterDataTest extends TestCase
         $this->sbg();
 
         $this->post('/insertpenyewa', [
-            'txtnama' => 'Budi', 'txtnohp' => '0812', 'txtemail' => 'ada@example.com', 'txtpassword' => 'rahasia123',
+            'txtnama' => 'Budi', 'txtnohp' => '081234567890', 'txtemail' => 'ada@example.com', 'txtpassword' => 'rahasia123',
         ])->assertSessionHasErrors('txtemail');
         $this->assertSame(1, DB::table('penyewas')->where('email', 'ada@example.com')->count());
     }

@@ -13,4 +13,7 @@ return [
 
     // Lama hasil status disimpan di cache, supaya halaman publik tidak menekan database.
     'cache_status_detik' => 300,
+
+    // Nomor WhatsApp pengelola untuk tautan "Hubungi pengelola" di halaman penyewa: angka saja, diawali kode negara (62).
+    'wa' => env('PENGELOLA_WA', '6281389947501'),
 ];

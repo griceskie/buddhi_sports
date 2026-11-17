@@ -119,8 +119,39 @@ class CelahPrioritasRendahTest extends TestCase
     {
         $id = DB::table('penyewas')->value('idPenyewa');
         $this->actingAs($this->admin, 'admin')->post('/updatepenyewa', [
-            'txtid' => $id, 'txtnama' => 'Rina', 'txtnohp' => '081', 'txtemail' => 'rina@example.com', 'txtpassword' => 'diubahadmin',
-        ])->assertRedirect();
+            'txtid' => $id, 'txtnama' => 'Rina', 'txtnohp' => '081234567890', 'txtemail' => 'rina@example.com', 'txtpassword' => 'diubahadmin',
+        ])->assertSessionHasNoErrors()->assertRedirect();
         $this->assertTrue(Hash::check('rahasia123', DB::table('penyewas')->where('idPenyewa', $id)->value('password')));
+    }
+
+    // No HP hanya angka diawali 08 (10-13 digit), supaya tautan WhatsApp selalu benar; password dari Admin minimal 8
+    public function test_no_hp_dan_password_penyewa_divalidasi(): void
+    {
+        // daftar sendiri (sebelum ada sesi pengelola: halaman daftar hanya untuk tamu)
+        $this->post('/register', ['namaPenyewa' => 'Budi', 'noHp' => '12345', 'email' => 'budi@example.com', 'password' => 'rahasia123', 'password_confirmation' => 'rahasia123'])
+            ->assertSessionHasErrors(['noHp' => Penyewa::PESAN_NO_HP]);
+
+        $data = ['txtnama' => 'Andi', 'txtemail' => 'andi@example.com', 'txtpassword' => 'rahasia123'];
+        foreach (['abc', '81234567890', '0812345', '08123456789012', '0812-3456-7890'] as $salah) {
+            $this->actingAs($this->admin, 'admin')->from('/tampilpenyewa')->post('/insertpenyewa', $data + ['txtnohp' => $salah])
+                ->assertSessionHasErrors(['txtnohp' => Penyewa::PESAN_NO_HP]);
+        }
+        $this->post('/insertpenyewa', ['txtnohp' => '081234567890', 'txtpassword' => 'pendek1'] + $data)->assertSessionHasErrors('txtpassword');
+        $this->post('/insertpenyewa', ['txtnohp' => '081234567890'] + $data)->assertSessionHasNoErrors();
+    }
+
+    // tabel Booking Admin ikut membatalkan booking yang lewat batas bayar
+    public function test_tabel_booking_admin_membatalkan_yang_kedaluwarsa(): void
+    {
+        DB::table('bookings')->where('idBooking', $this->booking)->update(['status' => 'Dipesan', 'created_at' => now()->subHours(3)]);
+        $this->actingAs($this->admin, 'admin')->get('/tampilbooking')->assertInertia(fn (Assert $p) => $p->where('databooking.0.status', 'Dibatalkan'));
+    }
+
+    // tautan Hubungi pengelola: nomor WhatsApp hanya dikirim ke halaman penyewa
+    public function test_nomor_wa_pengelola_hanya_untuk_penyewa(): void
+    {
+        $rina = Penyewa::first();
+        $this->actingAs($rina)->get('/booking')->assertInertia(fn (Assert $p) => $p->where('waPengelola', config('pengelola.wa')));
+        $this->actingAs($this->admin, 'admin')->get('/tampilbooking')->assertInertia(fn (Assert $p) => $p->where('waPengelola', null));
     }
 }

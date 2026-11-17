@@ -7,6 +7,8 @@ import { formatRupiah } from '@/Components/ui/format';
 import { cn } from 'cn';
 import { ImageOff, X } from 'lucide-react';
 import { useState } from 'react';
+import { PageProps } from '@/types';
+import { usePage } from '@inertiajs/react';
 
 /** Bukti transfer yang sudah dikirim (atau yang ditolak), dengan status dan jumlahnya. */
 export default function DialogBukti({
@@ -113,7 +115,21 @@ export default function DialogBukti({
     );
 }
 
-/** Belum ada kontak pengelola di aplikasi, jadi ditampilkan sebagai teks tebal, bukan tautan. */
+/** Tautan WhatsApp ke pengelola (nomor dari `.env` PENGELOLA_WA), dengan pesan pembuka yang sudah terisi. */
 export function HubungiPengelola({ awalBesar = false }: { awalBesar?: boolean }) {
-    return <span className="font-semibold text-foreground">{awalBesar ? 'Hubungi pengelola' : 'hubungi pengelola'}</span>;
+    const { waPengelola } = usePage<PageProps>().props;
+    const teks = awalBesar ? 'Hubungi pengelola' : 'hubungi pengelola';
+    if (!waPengelola) return <span className="font-semibold text-foreground">{teks}</span>;
+
+    const pesan = encodeURIComponent('Halo pengelola Buddhi Sports, saya mau bertanya tentang booking saya.');
+    return (
+        <a
+            href={`https://wa.me/${waPengelola}?text=${pesan}`}
+            target="_blank"
+            rel="noopener"
+            className="font-semibold text-foreground underline underline-offset-3"
+        >
+            {teks}
+        </a>
+    );
 }

@@ -33,10 +33,10 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'namaPenyewa' => 'required|string|max:255',
-            'noHp' => 'required|string|max:255',
+            'noHp' => ['required', 'string', Penyewa::ATURAN_NO_HP],
             'email' => 'required|string|lowercase|email|max:255|unique:'.Penyewa::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        ], ['noHp.regex' => Penyewa::PESAN_NO_HP]);
 
         $penyewa = Penyewa::create([
             'namaPenyewa' => $request->namaPenyewa,
